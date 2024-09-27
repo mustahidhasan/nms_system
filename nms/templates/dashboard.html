@@ -128,41 +128,21 @@
             <div class="col-md-4">
                 <section class="favorite-reports">
                     <h2>Favorite Reports</h2>
-                    <p>The Favorite Reports section provides links to view your favorite reports. Report workflows enable you to define your favorite reports and to designate one report to appear as your custom dashboard (Report Interactions) instead of the default Welcome Dashboard. This enables you to cater reports to various audiences and to view vital data as soon as you log on.</p>
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <button class="btn btn-primary">Manage</button>
-                            <span> to access the Report Manager, where you access all reports and report workflows.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <button class="btn btn-secondary">Create Report</button>
-                            <span> to access the Report Attachment Wizard, where you create new reports.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="#">Favorite Report 1</a>
-                            <span> to display the report interactions on a new tab, where you can customize the report with real-time data.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="#">Favorite Report 2</a>
-                            <span> to display the report interactions on a new tab, where you can customize the report with real-time data.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="#">Favorite Report 3</a>
-                            <span> to display the report interactions on a new tab, where you can customize the report with real-time data.</span>
-                        </li>
-                    </ul>
+                    <div class="d-flex">
+                        <button class="btn btn-primary me-2">Manage</button>
+                        <button class="btn btn-secondary">Create Report</button>
+                    </div>
                 </section>
+                
+                
 
                 <section class="discovery-status">
                     <h2>Discovery Status</h2>
-                    <p>The Discovery Status section provides links to access additional discovery and device information.</p>
                     <ul class="list-group">
                         <li class="list-group-item">
-                            <button class="btn btn-primary">Devices</button>
                             <span> to access the Discovery Manager, where you view discovery information.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-secondary">Device Manager</button>
                             <span> to access the Device Manager, where you view device information.</span>
                         </li>
                     </ul>
@@ -170,26 +150,20 @@
 
                 <section class="manage-events">
                     <h2>Manage Events</h2>
-                    <p>The Manage Events section provides links to access additional event information.</p>
                     <ul class="list-group">
                         <li class="list-group-item">
-                            <button class="btn btn-primary">Alerts</button>
                             <span> to access the Alerts page, where you view and acknowledge current active alerts.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-secondary">Alert Summary</button>
                             <span> to access the Alert Summary page, where you view active alerts and archived alerts.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-primary">Policies</button>
                             <span> to access the Policy Browser, where you manage policies, which are thresholds that apply to an entire device group.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-secondary">Thresholds</button>
                             <span> to access the Threshold Browser, where you manage the thresholds that trigger events such as alerts and traps for a specific device.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-primary">Status Maps</button>
                             <span> to access the Status Map Manager, where you manage status maps that can depict the physical or geographic location of devices and objects.</span>
                         </li>
                     </ul>
@@ -197,18 +171,14 @@
 
                 <section class="analyze-application-traffic">
                     <h2>Analyze Application Traffic</h2>
-                    <p>The Analyze Application Traffic section provides links to access additional application traffic information.</p>
                     <ul class="list-group">
                         <li class="list-group-item">
-                            <button class="btn btn-primary">FlowFalcon</button>
                             <span> to access the FlowFalcon Reports page, where you create flow technology reports.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-secondary">NBAR</button>
                             <span> to access the NBAR Reports page, where you create Network-Based Application Recognition (NBAR) reports.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-primary">Response Probes</button>
                             <span> to access the Probe Manager, where you manage Internet Protocol Service Level Agreement (IP SLA) data.</span>
                         </li>
                     </ul>
@@ -216,18 +186,14 @@
 
                 <section class="reporting-tools">
                     <h2>Utilize Reporting Tools</h2>
-                    <p>The Utilize Reporting Tools section provides links to access additional information about reporting tools.</p>
                     <ul class="list-group">
                         <li class="list-group-item">
-                            <button class="btn btn-primary">Reports</button>
                             <span> to access the Report Manager, where you view and edit reports.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-secondary">TopN</button>
                             <span> to access the TopN Reports page, where you create reports for projections and the top <n> devices.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-primary">Graphs</button>
                             <span> to access the Instant Graphs page, where you create performance metrics graphs.</span>
                         </li>
                     </ul>
@@ -235,18 +201,14 @@
 
                 <section class="manage-devices-users">
                     <h2>Manage Devices and Users</h2>
-                    <p>The Manage Devices and Users section provides links to access device management and user management tools.</p>
                     <ul class="list-group">
                         <li class="list-group-item">
-                            <button class="btn btn-primary">Add a Device</button>
                             <span> to access the New Device page, where you add a device to SevOne NMS.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-secondary">Devices</button>
                             <span> to access the Device Manager, where you manage the devices SevOne NMS monitors.</span>
                         </li>
                         <li class="list-group-item">
-                            <button class="btn btn-primary">Users</button>
                             <span> to access the User Manager, where you manage users.</span>
                         </li>
                     </ul>
@@ -258,17 +220,23 @@
                     <h2>Alert Summary</h2>
                     <p><!-- Alert summary details here --></p>
                 </section>
-
-                <section class="instant-status">
-                    <h2>Instant Status</h2>
-                    <p><!-- Instant status details here --></p>
-                </section>
-
-                <section class="alerts">
-                    <h2>Alerts</h2>
-                    <p><!-- Alerts details here --></p>
-                </section>
+            
+                <div class="row">
+                    <div class="col-md-6">
+                        <section class="instant-status">
+                            <h2>Instant Status</h2>
+                            <p><!-- Instant status details here --></p>
+                        </section>
+                    </div>
+                    <div class="col-md-6">
+                        <section class="alerts">
+                            <h2>Alerts</h2>
+                            <p><!-- Alerts details here --></p>
+                        </section>
+                    </div>
+                </div>
             </div>
+            
         </div>
     </main>
 
