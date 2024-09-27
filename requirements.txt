@@ -1,0 +1,2 @@
+Django==4.2.6          # Specify the version of Django you'd like to use
+# mysqlclient
