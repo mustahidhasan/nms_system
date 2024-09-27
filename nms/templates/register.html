@@ -4,45 +4,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{% static 'css/user.css' %}">
+    
     <style>
         .invalid {
-            color: red; /* Red for invalid */
+            color: red;
         }
         .valid {
-            color: green; /* Green for valid */
+            color: green;
         }
         .password-message {
-            display: none; /* Initially hide the password requirements */
+            display: none;
             margin-top: 10px;
             font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <div class="register-container">
-        <h1>Register</h1>
-        <form id="register-form" method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h1 class="card-title text-center">Register</h1>
+                        <form id="register-form" method="post">
+                            {% csrf_token %}
+                            {{ form.as_p }}
 
-            <div id="password-message" class="password-message">
-                <p>Password must contain:</p>
-                <ul>
-                    <li id="length" class="invalid">At least 8 characters</li>
-                    <li id="uppercase" class="invalid">At least one uppercase letter</li>
-                    <li id="number" class="invalid">At least one number</li>
-                </ul>
+                            <div id="password-message" class="password-message">
+                                <p>Password must contain:</p>
+                                <ul class="list-unstyled">
+                                    <li id="length" class="invalid">At least 8 characters</li>
+                                    <li id="uppercase" class="invalid">At least one uppercase letter</li>
+                                    <li id="number" class="invalid">At least one number</li>
+                                </ul>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 mt-3">Register</button>
+                        </form>
+
+                        <p class="text-center mt-3 login-message">
+                            Already have an account? <a href="{% url 'login' %}">Login here</a>
+                        </p>
+                    </div>
+                </div>
             </div>
-
-            <button type="submit" class="btn">Register</button>
-        </form>
-
-        <p class="login-message">
-            Already have an account? <a href="{% url 'login' %}">Login here</a>
-        </p>
+        </div>
     </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         const passwordInput = document.querySelector('input[type="password"]');
@@ -83,19 +99,16 @@
         });
 
         registerForm.addEventListener('submit', function(event) {
-            // Check if password meets requirements
             const password = passwordInput.value;
             const isLengthValid = password.length >= 8;
             const isUppercaseValid = /[A-Z]/.test(password);
             const isNumberValid = /\d/.test(password);
 
-            // If any requirement is not met, prevent form submission
             if (!isLengthValid || !isUppercaseValid || !isNumberValid) {
-                event.preventDefault(); // Prevent form submission
-                alert('User did not register. Please fill the form carefully.'); // Pop-up message
-            }else {
-                // If registration is successful (assuming a valid response), show success message
-                alert('Registration successful! Welcome!'); // Pop-up message for successful registration
+                event.preventDefault();
+                alert('User did not register. Please fill the form carefully.');
+            } else {
+                alert('Registration successful! Welcome!');
             }
         });
     </script>
