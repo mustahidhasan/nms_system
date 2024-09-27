@@ -1,0 +1,88 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #004B87; /* Header color */
+    color: #FFFFFF; /* Text color */
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+}
+
+.nav-left ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-left ul li {
+    position: relative;
+    display: inline-block;
+    margin-right: 20px;
+}
+
+.nav-left ul li ul {
+    display: none; /* Hide submenus */
+    position: absolute;
+    background: #005D91; /* Submenu color */
+    min-width: 150px;
+    z-index: 1;
+}
+
+.nav-left ul li:hover ul {
+    display: block; /* Show submenu on hover */
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+}
+
+.nav-right input {
+    padding: 5px;
+    margin-right: 10px;
+}
+
+.username {
+    margin-right: 10px;
+}
+
+button {
+    margin-left: 10px;
+    padding: 5px 10px;
+    background-color: #007BFF; /* Button color */
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3; /* Button hover color */
+}
+
+main {
+    padding: 20px;
+}
+
+h2 {
+    border-bottom: 1px solid #004B87; /* Section header underline */
+    padding-bottom: 10px;
+}
+
+section {
+    margin-bottom: 20px;
+}
+
+section div {
+    margin-top: 10px;
+}
+
+section button {
+    margin-right: 10px; /* Spacing between buttons */
+}

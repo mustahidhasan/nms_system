@@ -1,18 +1,43 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/user.css' %}">
 </head>
 <body>
-    <h1>Login</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Login</button>
-    </form>
-    <ul>
-        <li><a href="{% url 'register' %}">Don't have an account? Register here</a></li>
-    </ul>
+    <div class="login-container">
+        <h1>Login</h1>
+        <form method="POST">
+            {% csrf_token %}
+            
+            <input type="text" name="username" placeholder="Enter your username" required>
+            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+
+            <div class="show-password">
+                <input type="checkbox" id="showPassword" onclick="togglePassword()">
+                <label for="showPassword">Show Password</label>
+            </div>
+
+            <button type="submit" class="btn">Login</button>
+        </form>
+
+        <p class="register-message">
+            Not registered? <a href="{% url 'register' %}">Register now</a>
+        </p>
+    </div>
+
+    <script>
+        function togglePassword() {
+            var passwordField = document.getElementById("password");
+            if (passwordField.type === "password") {
+                passwordField.type = "text"; 
+            } else {
+                passwordField.type = "password";
+            }
+        }
+    </script>
 </body>
 </html>

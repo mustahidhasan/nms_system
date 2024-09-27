@@ -1,18 +1,103 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Register</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/user.css' %}">
+    <style>
+        .invalid {
+            color: red; /* Red for invalid */
+        }
+        .valid {
+            color: green; /* Green for valid */
+        }
+        .password-message {
+            display: none; /* Initially hide the password requirements */
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Register</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Register</button>
-    </form>
-    <ul>
-        <li><a href="{% url 'login' %}">Already have an account? Login here</a></li>
-    </ul>
+    <div class="register-container">
+        <h1>Register</h1>
+        <form id="register-form" method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <div id="password-message" class="password-message">
+                <p>Password must contain:</p>
+                <ul>
+                    <li id="length" class="invalid">At least 8 characters</li>
+                    <li id="uppercase" class="invalid">At least one uppercase letter</li>
+                    <li id="number" class="invalid">At least one number</li>
+                </ul>
+            </div>
+
+            <button type="submit" class="btn">Register</button>
+        </form>
+
+        <p class="login-message">
+            Already have an account? <a href="{% url 'login' %}">Login here</a>
+        </p>
+    </div>
+
+    <script>
+        const passwordInput = document.querySelector('input[type="password"]');
+        const passwordMessage = document.getElementById('password-message');
+        const lengthCheck = document.getElementById('length');
+        const uppercaseCheck = document.getElementById('uppercase');
+        const numberCheck = document.getElementById('number');
+        const registerForm = document.getElementById('register-form');
+
+        passwordInput.addEventListener('input', function() {
+            const password = passwordInput.value;
+
+            if (password.length >= 8) {
+                lengthCheck.classList.remove('invalid');
+                lengthCheck.classList.add('valid');
+            } else {
+                lengthCheck.classList.remove('valid');
+                lengthCheck.classList.add('invalid');
+            }
+
+            if (/[A-Z]/.test(password)) {
+                uppercaseCheck.classList.remove('invalid');
+                uppercaseCheck.classList.add('valid');
+            } else {
+                uppercaseCheck.classList.remove('valid');
+                uppercaseCheck.classList.add('invalid');
+            }
+
+            if (/\d/.test(password)) {
+                numberCheck.classList.remove('invalid');
+                numberCheck.classList.add('valid');
+            } else {
+                numberCheck.classList.remove('valid');
+                numberCheck.classList.add('invalid');
+            }
+
+            passwordMessage.style.display = 'block';
+        });
+
+        registerForm.addEventListener('submit', function(event) {
+            // Check if password meets requirements
+            const password = passwordInput.value;
+            const isLengthValid = password.length >= 8;
+            const isUppercaseValid = /[A-Z]/.test(password);
+            const isNumberValid = /\d/.test(password);
+
+            // If any requirement is not met, prevent form submission
+            if (!isLengthValid || !isUppercaseValid || !isNumberValid) {
+                event.preventDefault(); // Prevent form submission
+                alert('User did not register. Please fill the form carefully.'); // Pop-up message
+            }else {
+                // If registration is successful (assuming a valid response), show success message
+                alert('Registration successful! Welcome!'); // Pop-up message for successful registration
+            }
+        });
+    </script>
 </body>
 </html>

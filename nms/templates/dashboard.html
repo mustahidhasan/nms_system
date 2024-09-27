@@ -1,14 +1,279 @@
-<!-- DASHBOARD/templates/dashboard.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <title>Dashboard</title>
 </head>
 <body>
-    <h1>Welcome to your Dashboard, {{ user.username }}!</h1>
-    <p>This is a secure area only for logged-in users.</p>
-    <!-- You can add more content here as needed -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">Dashboard</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <div class="nav-left me-auto">
+                        <ul class="navbar-nav">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-toggle="dropdown" aria-expanded="false">Reports</a>
+                                <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
+                                    <li><a class="dropdown-item" href="#">Create Report</a></li>
+                                    <li><a class="dropdown-item" href="#">Report Manager</a></li>
+                                    <li><a class="dropdown-item" href="#">Instant Graphs</a></li>
+                                    <li><a class="dropdown-item" href="#">TopN Reports</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="eventsDropdown" role="button" data-toggle="dropdown" aria-expanded="false">Events</a>
+                                <ul class="dropdown-menu" aria-labelledby="eventsDropdown">
+                                    <li><a class="dropdown-item" href="#">Alerts</a></li>
+                                    <li><a class="dropdown-item" href="#">Alert Summary</a></li>
+                                    <li class="dropdown-submenu">
+                                        <a class="dropdown-item dropdown-toggle" href="#">Archives</a>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#">Alert Archive</a></li>
+                                            <li><a class="dropdown-item" href="#">Logged Traps</a></li>
+                                            <li><a class="dropdown-item" href="#">Unknown Traps</a></li>
+                                        </ul>
+                                    </li>
+                                    <li class="dropdown-submenu">
+                                        <a class="dropdown-item dropdown-toggle" href="#">Configuration</a>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#">Policy Browser</a></li>
+                                            <li><a class="dropdown-item" href="#">Threshold Browser</a></li>
+                                            <li><a class="dropdown-item" href="#">Trap Destinations</a></li>
+                                            <li><a class="dropdown-item" href="#">Trap Destination Associations</a></li>
+                                            <li><a class="dropdown-item" href="#">Trap Event Editor</a></li>
+                                            <li><a class="dropdown-item" href="#">Trap v3 Receiver</a></li>
+                                        </ul>
+                                    </li>
+                                    <li><a class="dropdown-item" href="#">Instant Status</a></li>
+                                    <li><a class="dropdown-item" href="#">Status Map Manager</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="applicationsDropdown" role="button" data-toggle="dropdown" aria-expanded="false">Applications</a>
+                                <ul class="dropdown-menu" aria-labelledby="applicationsDropdown">
+                                    <li><a class="dropdown-item" href="#">FlowFalcon Reports</a></li>
+                                    <li><a class="dropdown-item" href="#">NBAR Reports</a></li>
+                                    <li><a class="dropdown-item" href="#">Probe Manager</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="devicesDropdown" role="button" data-toggle="dropdown" aria-expanded="false">Devices</a>
+                                <ul class="dropdown-menu" aria-labelledby="devicesDropdown">
+                                    <li><a class="dropdown-item" href="#">Device Manager</a></li>
+                                    <li><a class="dropdown-item" href="#">Object Manager</a></li>
+                                    <li><a class="dropdown-item" href="#">Device Mover</a></li>
+                                    <li><a class="dropdown-item" href="#">Discovery Manager</a></li>
+                                    <li class="dropdown-submenu">
+                                        <a class="dropdown-item dropdown-toggle" href="#">Grouping</a>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#">Device Groups</a></li>
+                                            <li><a class="dropdown-item" href="#">Object Groups</a></li>
+                                        </ul>
+                                    </li>
+                                    <li><a class="dropdown-item" href="#">SNMP Walk</a></li>
+                                    <li><a class="dropdown-item" href="#">VMware Browser</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-toggle="dropdown" aria-expanded="false">Administration</a>
+                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                    <li><a class="dropdown-item" href="#">About</a></li>
+                                    <li class="dropdown-submenu">
+                                        <a class="dropdown-item dropdown-toggle" href="#">Access Configuration</a>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#">Authentication Settings</a></li>
+                                            <li><a class="dropdown-item" href="#">User Manager</a></li>
+                                            <li><a class="dropdown-item" href="#">User Role Manager</a></li>
+                                            <li><a class="dropdown-item" href="#">Session Manager</a></li>
+                                        </ul>
+                                    </li>
+                                    <li><a class="dropdown-item" href="#">API Docs</a></li>
+                                    <li><a class="dropdown-item" href="#">Baseline Manager</a></li>
+                                    <li><a class="dropdown-item" href="#">Cluster Manager</a></li>
+                                    <li><a class="dropdown-item" href="#">Flow Configuration</a></li>
+                                    <li><a class="dropdown-item" href="#">Maintenance Windows</a></li>
+                                    <li><a class="dropdown-item" href="#">Metadata Schema</a></li>
+                                    <li><a class="dropdown-item" href="#">Monitoring Configuration</a></li>
+                                    <li><a class="dropdown-item" href="#">My Preferences</a></li>
+                                    <li><a class="dropdown-item" href="#">Startup Wizard</a></li>
+                                    <li><a class="dropdown-item" href="#">Work Hours</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="nav-right ms-auto">
+                        <input type="text" class="form-control" placeholder="Search..." />
+                        <span class="username"><!-- user name here --></span>
+                        <button class="btn btn-secondary logout">Logout</button>
+                        <button class="btn btn-secondary new-instance">Open New Instance</button>
+                        <button class="btn btn-secondary refresh">Refresh</button>
+                        <button class="btn btn-secondary home">Home</button>
+                        <button class="btn btn-secondary help">Help</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mt-4">
+        <div class="row">
+            <div class="col-md-4">
+                <section class="favorite-reports">
+                    <h2>Favorite Reports</h2>
+                    <p>The Favorite Reports section provides links to view your favorite reports. Report workflows enable you to define your favorite reports and to designate one report to appear as your custom dashboard (Report Interactions) instead of the default Welcome Dashboard. This enables you to cater reports to various audiences and to view vital data as soon as you log on.</p>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Manage</button>
+                            <span> to access the Report Manager, where you access all reports and report workflows.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-secondary">Create Report</button>
+                            <span> to access the Report Attachment Wizard, where you create new reports.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="#">Favorite Report 1</a>
+                            <span> to display the report interactions on a new tab, where you can customize the report with real-time data.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="#">Favorite Report 2</a>
+                            <span> to display the report interactions on a new tab, where you can customize the report with real-time data.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="#">Favorite Report 3</a>
+                            <span> to display the report interactions on a new tab, where you can customize the report with real-time data.</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="discovery-status">
+                    <h2>Discovery Status</h2>
+                    <p>The Discovery Status section provides links to access additional discovery and device information.</p>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Devices</button>
+                            <span> to access the Discovery Manager, where you view discovery information.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-secondary">Device Manager</button>
+                            <span> to access the Device Manager, where you view device information.</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="manage-events">
+                    <h2>Manage Events</h2>
+                    <p>The Manage Events section provides links to access additional event information.</p>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Alerts</button>
+                            <span> to access the Alerts page, where you view and acknowledge current active alerts.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-secondary">Alert Summary</button>
+                            <span> to access the Alert Summary page, where you view active alerts and archived alerts.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Policies</button>
+                            <span> to access the Policy Browser, where you manage policies, which are thresholds that apply to an entire device group.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-secondary">Thresholds</button>
+                            <span> to access the Threshold Browser, where you manage the thresholds that trigger events such as alerts and traps for a specific device.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Status Maps</button>
+                            <span> to access the Status Map Manager, where you manage status maps that can depict the physical or geographic location of devices and objects.</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="analyze-application-traffic">
+                    <h2>Analyze Application Traffic</h2>
+                    <p>The Analyze Application Traffic section provides links to access additional application traffic information.</p>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">FlowFalcon</button>
+                            <span> to access the FlowFalcon Reports page, where you create flow technology reports.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-secondary">NBAR</button>
+                            <span> to access the NBAR Reports page, where you create Network-Based Application Recognition (NBAR) reports.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Response Probes</button>
+                            <span> to access the Probe Manager, where you manage Internet Protocol Service Level Agreement (IP SLA) data.</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="reporting-tools">
+                    <h2>Utilize Reporting Tools</h2>
+                    <p>The Utilize Reporting Tools section provides links to access additional information about reporting tools.</p>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Reports</button>
+                            <span> to access the Report Manager, where you view and edit reports.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-secondary">TopN</button>
+                            <span> to access the TopN Reports page, where you create reports for projections and the top <n> devices.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Graphs</button>
+                            <span> to access the Instant Graphs page, where you create performance metrics graphs.</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="manage-devices-users">
+                    <h2>Manage Devices and Users</h2>
+                    <p>The Manage Devices and Users section provides links to access device management and user management tools.</p>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Add a Device</button>
+                            <span> to access the New Device page, where you add a device to SevOne NMS.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-secondary">Devices</button>
+                            <span> to access the Device Manager, where you manage the devices SevOne NMS monitors.</span>
+                        </li>
+                        <li class="list-group-item">
+                            <button class="btn btn-primary">Users</button>
+                            <span> to access the User Manager, where you manage users.</span>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+
+            <div class="col-md-8">
+                <section class="alert-summary">
+                    <h2>Alert Summary</h2>
+                    <p><!-- Alert summary details here --></p>
+                </section>
+
+                <section class="instant-status">
+                    <h2>Instant Status</h2>
+                    <p><!-- Instant status details here --></p>
+                </section>
+
+                <section class="alerts">
+                    <h2>Alerts</h2>
+                    <p><!-- Alerts details here --></p>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
