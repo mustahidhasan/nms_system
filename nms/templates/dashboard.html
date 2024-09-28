@@ -190,14 +190,44 @@
                         </ul>
                     </div>
                     <div class="nav-right ms-auto">
-                        <input type="text" class="form-control" placeholder="Search..." />
-                        <span class="username"><!-- user name here --></span>
-                        <button class="btn btn-secondary logout">Logout</button>
-                        <button class="btn btn-secondary new-instance">Open New Instance</button>
-                        <button class="btn btn-secondary refresh">Refresh</button>
-                        <button class="btn btn-secondary home">Home</button>
-                        <button class="btn btn-secondary help">Help</button>
+                        <input type="text" class="form-control" placeholder="Search..." style="margin-right: 15px;" />
+
+                        <button
+                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;font-weight: bold; margin-right: 10px; vertical-align: middle; color: black;">
+                            {{ user.username }}
+                        </button>
+
+                        <button
+                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
+                            <img src="{% static 'images/logout.png' %}" alt="Logout"
+                                style="width: 24px; height: 24px; vertical-align: middle;">
+                        </button>
+
+                        <button
+                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
+                            <img src="{% static 'images/add-button.png' %}" alt="Add"
+                                style="width: 24px; height: 24px; vertical-align: middle;">
+                        </button>
+
+                        <button
+                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
+                            <img src="{% static 'images/refresh-option.png' %}" alt="Refresh"
+                                style="width: 24px; height: 24px; vertical-align: middle;">
+                        </button>
+
+                        <button
+                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
+                            <img src="{% static 'images/home.png' %}" alt="Home"
+                                style="width: 24px; height: 24px; vertical-align: middle;">
+                        </button>
+
+                        <button
+                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
+                            <img src="{% static 'images/ask-for-help.png' %}" alt="Help"
+                                style="width: 24px; height: 24px; vertical-align: middle;">
+                        </button>
                     </div>
+
                 </div>
             </div>
         </nav>
