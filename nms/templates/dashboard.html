@@ -7,6 +7,8 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <title>Dashboard</title>
 </head>
 
@@ -399,11 +401,33 @@
                 </div>
                 <div class="row">
                     <div class="col-md-6">
-                        <section class="instant-status">
+                        <section class="instant-status" style="overflow-y: auto; max-height: 300px;">
                             <h2>Instant Status</h2>
-                            <p>Instant status details here</p>
+                            
+                            <ul style="list-style: none; padding-left: 0;">
+                                <!-- Red Status -->
+                                <li style="display: flex; align-items: center; margin-bottom: 10px;">
+                                    <span style="display: inline-block; width: 20px; height: 20px; background-color: red; border-radius: 50%; margin-right: 10px;"></span>
+                                    <span>Critical Alert</span>
+                                </li>
+                                
+                                <!-- Green Status -->
+                                <li style="display: flex; align-items: center; margin-bottom: 10px;">
+                                    <span style="display: inline-block; width: 20px; height: 20px; background-color: green; border-radius: 50%; margin-right: 10px;"></span>
+                                    <span>All Systems Operational</span>
+                                </li>
+                                
+                                <!-- White Status -->
+                                <li style="display: flex; align-items: center; margin-bottom: 10px;">
+                                    <span style="display: inline-block; width: 20px; height: 20px; background-color: white; border: 1px solid #ccc; border-radius: 50%; margin-right: 10px;"></span>
+                                    <span>Pending Review</span>
+                                </li>
+                                
+                                <!-- Additional status items can be added here -->
+                            </ul>
                         </section>
                     </div>
+                    
                     <div class="col-md-6">
                         <section class="alerts">
                             <h2>Alerts</h2>
