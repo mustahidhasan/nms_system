@@ -199,7 +199,7 @@
                             {{ user.username }}
                         </button>
 
-                        <button
+                        <button onclick="window.location.href='{% url 'logout' %}'"
                             style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
                             <img src="{% static 'images/logout.png' %}" alt="Logout"
                                 style="width: 24px; height: 24px; vertical-align: middle;">
