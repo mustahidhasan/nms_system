@@ -86,3 +86,58 @@ section div {
 section button {
     margin-right: 10px; /* Spacing between buttons */
 }
+/* Base styles for the dropdown menu */
+.navbar-nav .dropdown-menu {
+    display: none; /* Hide the dropdowns by default */
+    position: absolute; /* Position them absolutely */
+    z-index: 1000; /* Ensure it's on top */
+    background-color: #fff; /* Background for dropdown */
+    border: 1px solid #ccc; /* Border around the dropdown */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Shadow */
+    white-space: nowrap; /* Prevent line breaks */
+}
+
+/* Show dropdown on hover */
+.navbar-nav .dropdown:hover > .dropdown-menu {
+    display: block; /* Show the dropdown on hover */
+}
+
+/* Dropdown items styling */
+.dropdown-item {
+    display: block;
+    padding: 8px 12px;
+}
+
+/* Sub-submenu styles */
+.dropdown-submenu {
+    position: relative; /* Parent for sub-submenu */
+}
+
+/* Submenu inside a submenu (sub-submenu) */
+.dropdown-submenu .dropdown-menu {
+    display: none; /* Hidden by default */
+    position: absolute;
+    left: 100%; /* Position it to the right */
+    top: 0;
+    margin-left: 0;
+}
+
+/* Show sub-submenu on hover */
+.dropdown-submenu:hover > .dropdown-menu {
+    display: block;
+}
+
+/* Ensure sub-submenu items are displayed vertically */
+.dropdown-submenu .dropdown-item {
+    display: block;
+    white-space: nowrap; /* Prevent text wrapping */
+    padding: 8px 12px;
+    clear: both; /* Ensure vertical stacking */
+}
+
+/* Ensure dropdown menus display vertically */
+.dropdown-menu .dropdown-item {
+    display: block;
+    padding: 8px 12px;
+    clear: both;
+}
