@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <title>Dashboard</title>
 </head>
 
@@ -388,72 +388,76 @@
 
             <div class="col-md-8">
                 <section>
-                    <span tyle="color: white;"></span>
+                    <span style="color: white;"></span>
                 </section>
 
                 <div class="row">
-                    <div class="col-md-6">
-                        <section class="instant-status">
+                    <div class="col-md-12" style="height: 400px; position: relative;">
+                        <!-- Fixed height for the column -->
+                        <section class="instant-status" style="height: 100%;">
                             <h2>Alert Summary</h2>
                             <p>Instant status details here</p>
+                            <canvas id="alertSummaryChart" style="width: 100%; height: 100%;"></canvas>
+                            <!-- Full-width and height canvas -->
                         </section>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <section class="instant-status" style="overflow-y: auto; max-height: 300px;">
+
+                <div class="row" style="margin-top: 100px;"> <!-- Added margin to create space between sections -->
+                    <div class="col-md-6" style="height: 300px;"> <!-- Fixed height for the instant status -->
+                        <section class="instant-status" style="overflow-y: auto; height: 100%;">
                             <h2>Instant Status</h2>
-                            
                             <ul style="list-style: none; padding-left: 0;">
                                 <!-- Red Status -->
                                 <li style="display: flex; align-items: center; margin-bottom: 10px;">
-                                    <span style="display: inline-block; width: 20px; height: 20px; background-color: red; border-radius: 50%; margin-right: 10px;"></span>
+                                    <span
+                                        style="display: inline-block; width: 20px; height: 20px; background-color: red; border-radius: 50%; margin-right: 10px;"></span>
                                     <span>Critical Alert</span>
                                 </li>
-                                
                                 <!-- Green Status -->
                                 <li style="display: flex; align-items: center; margin-bottom: 10px;">
-                                    <span style="display: inline-block; width: 20px; height: 20px; background-color: green; border-radius: 50%; margin-right: 10px;"></span>
+                                    <span
+                                        style="display: inline-block; width: 20px; height: 20px; background-color: green; border-radius: 50%; margin-right: 10px;"></span>
                                     <span>All Systems Operational</span>
                                 </li>
-                                
                                 <!-- White Status -->
                                 <li style="display: flex; align-items: center; margin-bottom: 10px;">
-                                    <span style="display: inline-block; width: 20px; height: 20px; background-color: white; border: 1px solid #ccc; border-radius: 50%; margin-right: 10px;"></span>
+                                    <span
+                                        style="display: inline-block; width: 20px; height: 20px; background-color: white; border: 1px solid #ccc; border-radius: 50%; margin-right: 10px;"></span>
                                     <span>Pending Review</span>
                                 </li>
-                                
-                                <!-- Additional status items can be added here -->
                             </ul>
                         </section>
                     </div>
-                    
-                    <div class="col-md-6">
-                        <section class="alerts">
+
+                    <div class="col-md-6" style="height: 300px;"> <!-- Fixed height for the alerts -->
+                        <section class="alerts" style="overflow-y: auto; height: 100%;">
                             <h2>Alerts</h2>
-                    
                             <!-- Emergency Alert -->
-                            <div style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; margin-bottom: 10px;">
-                                <strong>Emergency:</strong> <span>There are 3 alerts of Severity Emengency. 2 device affected</span>
+                            <div
+                                style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; margin-bottom: 10px;">
+                                <strong>Emergency:</strong> <span>There are 3 alerts of Severity Emergency. 2 devices
+                                    affected</span>
                                 <span style="color: red;">🚨</span>
                             </div>
-                    
                             <!-- Warning Alert -->
-                            <div style="background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 10px; margin-bottom: 10px;">
-                                <strong>Warning:</strong> <span>There are 2 alert of Warning. 1 Device affected</span>
+                            <div
+                                style="background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 10px; margin-bottom: 10px;">
+                                <strong>Warning:</strong> <span>There are 2 alerts of Warning. 1 Device affected</span>
                                 <span style="color: orange;">⚠️</span>
                             </div>
-                    
                             <!-- Notice Alert -->
-                            <div style="background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; padding: 10px;">
-                                <strong>Notice:</strong> <span>There are 5 Notice, 2 device affected</span>
+                            <div
+                                style="background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; padding: 10px;">
+                                <strong>Notice:</strong> <span>There are 5 Notices, 2 devices affected</span>
                                 <span style="color: blue;">🔔</span>
                             </div>
                         </section>
                     </div>
-                    
                 </div>
             </div>
+
+
 
         </div>
     </main>
@@ -461,6 +465,60 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        const ctx = document.getElementById('alertSummaryChart').getContext('2d');
+        const alertSummaryChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Outage Time', 'Uptime', 'MTTR', 'Event-Free %', 'Affected Devices'],
+                datasets: [{
+                    label: 'Entity',
+                    data: [30, 70, 5, 90, 20], // Sample data values
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)', // Outage Time - Red
+                        'rgba(54, 162, 235, 0.6)', // Uptime - Blue
+                        'rgba(255, 206, 86, 0.6)', // MTTR - Yellow
+                        'rgba(75, 192, 192, 0.6)', // Event-Free % - Teal
+                        'rgba(153, 102, 255, 0.6)' // Affected Devices - Purple
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)', // Outage Time border
+                        'rgba(54, 162, 235, 1)', // Uptime border
+                        'rgba(255, 206, 86, 1)', // MTTR border
+                        'rgba(75, 192, 192, 1)', // Event-Free % border
+                        'rgba(153, 102, 255, 1)' // Affected Devices border
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true, // Keep the aspect ratio
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Duration/Count'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Duration in minute'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                    }
+                }
+            }
+        });
+
+
+    </script>
 </body>
 
 </html>
