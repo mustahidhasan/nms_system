@@ -236,105 +236,152 @@
     <main class="container mt-4">
         <div class="row">
             <div class="col-md-4">
-                <section class="favorite-reports">
+                <section class="favorite-reports" style="position: relative; padding-bottom: 50px;">
                     <h2 style="margin-top: 10px;">Favorite Reports</h2>
-                    <div class="d-flex">
-                        <button class="btn btn-primary me-2">Manage</button>
-                        <button class="btn btn-secondary">Create Report</button>
+                    <img src="{% static 'images/favourite.png' %}" alt="favourite"
+                        style="width: 100px; height: 100px; vertical-align: middle;">
+
+                    <!-- Button container with absolute positioning to the bottom-right corner -->
+                    <div class="d-flex"
+                        style="position: absolute; bottom: 0; right: 0; margin-right: 10px; margin-bottom: 10px;">
+                        <button class="btn btn-info me-2">Manage</button>
+                        <button class="btn btn-success">Create Report</button>
                     </div>
                 </section>
 
 
 
-                <section class="discovery-status">
-                    <h2>Discovery Status</h2>
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <span> to access the Discovery Manager, where you view discovery information.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the Device Manager, where you view device information.</span>
-                        </li>
-                    </ul>
+
+                <section class="discovery-status" style="padding-bottom: 50px;">
+                    <h2 style="margin-bottom: 10px;">Discovery Status</h2>
+                    <div style="display: flex; align-items: flex-start;">
+                        <div style="margin-right: 20px;">
+                            <img src="{% static 'images/server.png' %}" alt="Discovery Status"
+                                style="width: 100px; height: 100px;">
+                        </div>
+
+                        <!-- List positioned on the right side -->
+                        <ul class="list-group" style="list-style: none; padding-left: 0;">
+                            <li class="list-group-item">
+                                <span>0 Device in queue for <a href="#">discovery</a></span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>0 Device in <a href="#">discovery</a></span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>0 new Device found during <a href="#">discovery</a></span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>0 new Device <a href="#">can not be discovered due to capacity
+                                        restraints</a></span>
+                            </li>
+                        </ul>
+                    </div>
                 </section>
 
-                <section class="manage-events">
-                    <h2>Manage Events</h2>
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <span> to access the Alerts page, where you view and acknowledge current active
-                                alerts.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the Alert Summary page, where you view active alerts and archived
-                                alerts.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the Policy Browser, where you manage policies, which are thresholds that
-                                apply to an entire device group.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the Threshold Browser, where you manage the thresholds that trigger events
-                                such as alerts and traps for a specific device.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the Status Map Manager, where you manage status maps that can depict the
-                                physical or geographic location of devices and objects.</span>
-                        </li>
-                    </ul>
+
+
+
+
+
+                <section class="manage-events" style="padding-bottom: 50px;">
+                    <h2 style="margin-bottom: 10px;">Manage Events</h2>
+                    <div style="display: flex; align-items: flex-start;">
+                        <div style="margin-right: 20px;">
+                            <img src="{% static 'images/server_s.png' %}" alt="Manage Events"
+                                style="width: 100px; height: 100px;">
+                        </div>
+
+                        <!-- List positioned on the right side -->
+                        <ul class="list-group" style="list-style: none; padding-left: 0;">
+                            <li class="list-group-item">
+                                <span>View and acknowledge <a href="#">Alerts</a></span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>Create <a href="#">Alert Summary</a> Reports</span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>Manage <a href="#">policies</a> and <a href="#">Threshold</a></span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>Manage <a href="#">Status Maps</a></span>
+                            </li>
+                        </ul>
+                    </div>
                 </section>
 
-                <section class="analyze-application-traffic">
-                    <h2>Analyze Application Traffic</h2>
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <span> to access the FlowFalcon Reports page, where you create flow technology
-                                reports.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the NBAR Reports page, where you create Network-Based Application
-                                Recognition (NBAR) reports.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the Probe Manager, where you manage Internet Protocol Service Level
-                                Agreement (IP SLA) data.</span>
-                        </li>
-                    </ul>
+
+                <section class="analyze-application-traffic" style="padding-bottom: 50px;">
+                    <h2 style="margin-bottom: 10px;">Analyze Application Traffic</h2>
+                    <div style="display: flex; align-items: flex-start;">
+                        <div style="margin-right: 20px;">
+                            <img src="{% static 'images/graph-report.png' %}" alt="Analyze Application Traffic"
+                                style="width: 100px; height: 100px;">
+                        </div>
+
+                        <!-- List positioned on the right side -->
+                        <ul class="list-group" style="list-style: none; padding-left: 0;">
+                            <li class="list-group-item">
+                                <span>Create <a href="#">FlowFalcon</a> Reports</span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>Create <a href="#">NBAR</a> Reports</span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>Manage <a href="#">Responses Probes</a></span>
+                            </li>
+                        </ul>
+                    </div>
                 </section>
 
-                <section class="reporting-tools">
-                    <h2>Utilize Reporting Tools</h2>
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <span> to access the Report Manager, where you view and edit reports.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the TopN Reports page, where you create reports for projections and the top
-                                <n> devices.
-                            </span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the Instant Graphs page, where you create performance metrics
-                                graphs.</span>
-                        </li>
-                    </ul>
+
+                <section class="reporting-tools" style="padding-bottom: 50px;">
+                    <h2 style="margin-bottom: 10px;">Utilize Reporting Tools</h2>
+                    <div style="display: flex; align-items: flex-start;">
+                        <div style="margin-right: 20px;">
+                            <img src="{% static 'images/pie-chart.png' %}" alt="Utilize Reporting Tools"
+                                style="width: 100px; height: 100px;">
+                        </div>
+
+                        <!-- List positioned on the right side -->
+                        <ul class="list-group" style="list-style: none; padding-left: 0;">
+                            <li class="list-group-item">
+                                <span>Manage <a href="#">Reports</a></span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>Create <a href="#">TopN</a></span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>Create <a href="#">Graphs</a></span>
+                            </li>
+                        </ul>
+                    </div>
                 </section>
 
-                <section class="manage-devices-users">
-                    <h2>Manage Devices and Users</h2>
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <span> to access the New Device page, where you add a device to SevOne NMS.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the Device Manager, where you manage the devices SevOne NMS
-                                monitors.</span>
-                        </li>
-                        <li class="list-group-item">
-                            <span> to access the User Manager, where you manage users.</span>
-                        </li>
-                    </ul>
+
+                <section class="manage-devices-users" style="padding-bottom: 50px;">
+                    <h2 style="margin-bottom: 10px;">Manage Devices and Users</h2>
+                    <div style="display: flex; align-items: flex-start;">
+                        <div style="margin-right: 20px;">
+                            <img src="{% static 'images/server-management.png' %}" alt="Manage Devices and Users"
+                                style="width: 100px; height: 100px;">
+                        </div>
+
+                        <!-- List positioned on the right side -->
+                        <ul class="list-group" style="list-style: none; padding-left: 0;">
+                            <li class="list-group-item">
+                                <span><a href="#">Add a Device</a></span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>View and Edit <a href="#">Devices</a></span>
+                            </li>
+                            <li class="list-group-item">
+                                <span>Manage <a href="#">Users</a></span>
+                            </li>
+                        </ul>
+                    </div>
                 </section>
+
             </div>
 
             <div class="col-md-8">
