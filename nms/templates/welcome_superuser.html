@@ -4,10 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome Superuser</title>
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        /* Section styles */
+        section {
+            height: 100vh;
+            padding: 20px;
+        }
+
+        section h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        /* Style for the sticky navigation */
+        .sidebar {
+            position: sticky;
+            top: 50px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            height: 100vh;
+        }
+
+        .sidebar a {
+            text-decoration: none;
+            color: #333;
+            font-size: 18px;
+            padding: 10px 0;
+            display: block;
+            transition: color 0.3s;
+        }
+
+        .sidebar a:hover {
+            color: #007BFF;
+        }
+
+        /* Active link */
+        .active {
+            color: #007BFF;
+            font-weight: bold;
+        }
+
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Section background colors */
+        .section-1 { background-color: #e3f2fd; }
+        .section-2 { background-color: #f8bbd0; }
+        .section-3 { background-color: #c8e6c9; }
+        .section-4 { background-color: #fff9c4; }
+        .section-5 { background-color: #d1c4e9; }
+    </style>
 </head>
 <body>
-    <h1>Welcome, Superuser!</h1>
-    <p>Thank you for logging in, admin. You have full access to the system.</p>
-    <a href="{% url 'dashboard' %}">Go to Dashboard</a>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left Sidebar (Navigation) -->
+            <div class="col-3">
+                <nav class="sidebar">
+                    <a href="#section1" class="nav-link">Welcome</a>
+                    <a href="#section2" class="nav-link">Scan Subnets</a>
+                    <a href="#section3" class="nav-link">Technologies Page</a>
+                    <a href="#section4" class="nav-link">Discovery</a>
+                    <a href="#section5" class="nav-link">User Access</a>
+                    <button class="btn btn-success"><a style="height: 40px; color:white;"  href="#">Finish</a></button>
+                    <button class="btn btn-info"><a style="height: 40px;" href="{% url 'dashboard' %}">Dashboard</a></button>
+                </nav>
+            </div>
+
+            <!-- Right Content (Sections) -->
+            <div class="col-9">
+                <section id="section1" class="section-1">
+                    <h1>Welcome</h1>
+                    <p>Welcome to the Superuser dashboard. You have full access to the system.</p>
+                </section>
+                <section id="section2" class="section-2">
+                    <h1>Scan Subnets</h1>
+                    <p>Section overview information goes here.</p>
+                </section>
+                <section id="section3" class="section-3">
+                    <h1>Technologies Page</h1>
+                    <p>Here you will find various system statistics.</p>
+                </section>
+                <section id="section4" class="section-4">
+                    <h1>Discovery</h1>
+                    <p>Manage the system settings from this section.</p>
+                </section>
+                <section id="section5" class="section-5">
+                    <h1>User Access</h1>
+                    <p>Manage users and their roles here.</p>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Script to handle active link on scroll
+        document.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            let current = '';
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 50) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
