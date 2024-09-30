@@ -88,39 +88,78 @@
                 <form action="{% url 'submit_form' %}" method="post">
                     {% csrf_token %}
                     <section id="section1" class="section-1">
-                        <h1>Welcome</h1>
-                        <label for="input_one_1">Input One 1:</label>
-                        <input type="text" id="input_one_1" name="input_one_1" required><br><br>
-
-                        <label for="input_two_1">Input Two 1:</label>
-                        <input type="text" id="input_two_1" name="input_two_1" required><br><br>
+                        <h1>Welcome to NMS</h1>
+                        <p>
+                            Welcome to NMS - Your Comprehensive Network Management System
+                            <br><br>
+                            We are excited to have you onboard! NMS is designed to provide you with the tools and insights you need to effectively monitor, manage, and optimize your network infrastructure. Whether you are overseeing a small network or a large-scale enterprise system, NMS delivers real-time analytics, robust reporting, and automated solutions to streamline your workflow.
+                            <br><br>
+                            What You Can Do:
+                            <ul>
+                                <li>Monitor network performance and availability</li>
+                                <li>Track network usage and device health</li>
+                                <li>Set alerts for potential issues before they escalate</li>
+                                <li>Access detailed reports and insights</li>
+                                <li>Optimize network configurations and traffic</li>
+                            </ul>
+                            If you're new here, feel free to explore our Getting Started Guide or reach out to support for any assistance.
+                            <br><br>
+                            Let’s take your network to the next level with NMS!
+                        </p>
+                        <input type="radio" id="input_one_1_option1" name="appliance_action" value="make_new_appliance" required>
+                        <label style="font-weight: bold;" for="input_one_1_option1">Make a new appliance</label><br>
+                
+                        <input type="radio" id="input_one_1_option2" name="appliance_action" value="update_existing_appliance" required>
+                        <label style="font-weight: bold;" for="input_one_1_option2">Update existing appliances</label><br>
                     </section>
+                
                     <section id="section2" class="section-2">
                         <h1>Scan Subnets</h1>
-                        <label for="input_one_2">Input One 2:</label>
-                        <input type="text" id="input_one_2" name="input_one_2" required><br><br>
+                        <label for="subnet_name">Subnet Name:</label>
+                        <input type="text" id="subnet_name" name="subnet_name" required><br><br>
                     
-                        <label for="input_two_2">Input Two 2:</label>
-                        <input type="text" id="input_two_2" name="input_two_2" required><br><br>
+                        <label for="start_ip_address">Start IP Address:</label>
+                        <input type="text" id="start_ip_address" name="start_ip_address" required><br><br>
+                
+                        <label for="end_ip_address">End IP Address:</label>
+                        <input type="text" id="end_ip_address" name="end_ip_address" required><br><br>
                     </section>
+                
                     <section id="section3" class="section-3">
                         <h1>Technologies Page</h1>
-                        <label for="input_one_3">Input One 3:</label>
-                        <input type="text" id="input_one_3" name="input_one_3" required><br><br>
-
-                        <label for="input_two_3">Input Two 3:</label>
-                        <input type="text" id="input_two_3" name="input_two_3" required><br><br>
+                        <p>
+                            What email server should NMS use to send performance alerts?
+                        </p>
+                        <label for="email_server">Email Server:</label>
+                        <input type="text" id="email_server" name="email_server" required><br><br>
+                
+                        <label for="email_username">User Name:</label>
+                        <input type="text" id="email_username" name="email_username" required><br><br>
+                
+                        <label for="email_password">Password:</label>
+                        <input type="password" id="email_password" name="email_password" required><br><br>
+                
+                        <label for="connection_security">Connection Security:</label>
+                        <input type="text" id="connection_security" name="connection_security" required><br><br>
+                        
+                        <label for="email_port">Port:</label>
+                        <input type="text" id="email_port" name="email_port" required><br><br>
                     </section>
+                
                     <section id="section4" class="section-4">
                         <h1>Discovery</h1>
-                        <label for="input_one_4">Input One 4:</label>
-                        <input type="text" id="input_one_4" name="input_one_4" required><br><br>
-
-                        <label for="input_two_4">Input Two 4:</label>
-                        <input type="text" id="input_two_4" name="input_two_4" required><br><br>
+                        <label for="user_dropdown">Select an NMS Admin:</label>
+                        <select id="user_dropdown" name="user" required>
+                            <option value="" disabled selected>Select an NMS Admin</option> <!-- Default option -->
+                            {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
                     </section>
+                    
                     <button class="btn btn-success w-100 mt-2" type="submit">Finish</button>
                 </form>
+                
             </div>
         </div>
     </div>

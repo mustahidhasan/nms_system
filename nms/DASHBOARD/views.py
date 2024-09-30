@@ -6,7 +6,8 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from .models import GettingStartedA  # Import your model here
 from django.urls import reverse
-
+from USER.models import CustomUser
+from django.contrib.auth.models import AbstractUser
 @login_required
 def dashboard_view(request):
     # Check if the user is a superuser and if they haven't disabled the modal for this session
@@ -24,13 +25,13 @@ def logout_view(request):
 @login_required
 def welcome_superuser(request):
     if request.user.is_superuser:
+        users = CustomUser.objects.all()  # Fetch all users
         return render(
-            request, "welcome_superuser.html"
-        )  # Replace with your welcome template
+            request, "welcome_superuser.html", {'users': users}  # Pass users to the template
+        )
     else:
-        return redirect(
-            "dashboard"
-        )  # Redirect non-superusers to the dashboard or another page
+        return redirect("dashboard")  # Redirect non-superusers to the dashboard or another page
+
 
 
 @login_required
