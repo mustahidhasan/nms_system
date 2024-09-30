@@ -1,22 +1,23 @@
-# DASHBOARD/admin.py
-
 from django.contrib import admin
 from .models import GettingStartedA
 
 class GettingStartedAdmin(admin.ModelAdmin):
     list_display = [
         'user',
-        'input_one_1',
-        'input_two_1',
-        'input_one_2',
-        'input_two_2',
-        'input_one_3',
-        'input_two_3',
-        'input_one_4',
-        'input_two_4',
-        'created_at',  # You can keep this in list_display to show it in the change list
+        'appliance_action',  # Added field for appliance action
+        'subnet_name',       # Added field for subnet name
+        'start_ip_address',  # Added field for start IP address
+        'end_ip_address',    # Added field for end IP address
+        'email_server',      # Added field for email server
+        'email_username',    # Added field for email username
+        'email_password',    # Added field for email password
+        'connection_security', # Added field for connection security
+        'email_port',        # Added field for email port
+        'selected_user',     # Added field for selected NMS Admin
+        'created_at',        # Keep this to show the creation time
     ]
+    
     # Exclude created_at from the add form
-    exclude = ('created_at',)  # Add this line
+    exclude = ('created_at',)  # Keep this line to exclude created_at from the add form
 
 admin.site.register(GettingStartedA, GettingStartedAdmin)
