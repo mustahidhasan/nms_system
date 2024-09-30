@@ -1,10 +1,11 @@
 # dashboard/views.py
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
 from django.contrib.auth import logout
-from django.shortcuts import redirect
-
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from .models import GettingStartedA  # Import your model here
+from django.urls import reverse
 
 @login_required
 def dashboard_view(request):
@@ -37,3 +38,38 @@ def disable_modal(request):
     # This view will set the session to not show the modal again
     request.session["dont_show_modal"] = True
     return redirect("dashboard")
+
+
+# Form submission view
+@login_required
+def submit_form(request):
+    if request.method == 'POST':
+        # Get form data from POST request
+        input_one_1 = request.POST.get('input_one_1')
+        input_two_1 = request.POST.get('input_two_1')
+        input_one_2 = request.POST.get('input_one_2')
+        input_two_2 = request.POST.get('input_two_2')
+        input_one_3 = request.POST.get('input_one_3')
+        input_two_3 = request.POST.get('input_two_3')
+        input_one_4 = request.POST.get('input_one_4')
+        input_two_4 = request.POST.get('input_two_4')
+
+        # Save data to the GettingStartedA model
+        GettingStartedA.objects.create(
+            user=request.user,  # Assuming user is logged in
+            input_one_1=input_one_1,
+            input_two_1=input_two_1,
+            input_one_2=input_one_2,
+            input_two_2=input_two_2,
+            input_one_3=input_one_3,
+            input_two_3=input_two_3,
+            input_one_4=input_one_4,
+            input_two_4=input_two_4,
+        )
+
+        # Redirect after successful form submission
+        return redirect(reverse('dashboard'))  # Replace 'dashboard' with your actual URL name
+
+    else:
+        # Render an empty form if the request method is GET
+        return render(request, 'DASHBOARD/submit_form.html')

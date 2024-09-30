@@ -75,33 +75,52 @@
                     <a href="#section3" class="nav-link">Technologies Page</a>
                     <a href="#section4" class="nav-link">Discovery</a>
                     <a href="#section5" class="nav-link">User Access</a>
-                    <button class="btn btn-success"><a style="height: 40px; color:white;"  href="#">Finish</a></button>
-                    <button class="btn btn-info"><a style="height: 40px;" href="{% url 'dashboard' %}">Dashboard</a></button>
+                    
+
+                    <button class="btn btn-info w-100 mt-2">
+                        <a style="color:black;" href="{% url 'dashboard' %}">Dashboard</a>
+                    </button>
                 </nav>
             </div>
 
             <!-- Right Content (Sections) -->
             <div class="col-9">
-                <section id="section1" class="section-1">
-                    <h1>Welcome</h1>
-                    <p>Welcome to the Superuser dashboard. You have full access to the system.</p>
-                </section>
-                <section id="section2" class="section-2">
-                    <h1>Scan Subnets</h1>
-                    <p>Section overview information goes here.</p>
-                </section>
-                <section id="section3" class="section-3">
-                    <h1>Technologies Page</h1>
-                    <p>Here you will find various system statistics.</p>
-                </section>
-                <section id="section4" class="section-4">
-                    <h1>Discovery</h1>
-                    <p>Manage the system settings from this section.</p>
-                </section>
-                <section id="section5" class="section-5">
-                    <h1>User Access</h1>
-                    <p>Manage users and their roles here.</p>
-                </section>
+                <form action="{% url 'submit_form' %}" method="post">
+                    {% csrf_token %}
+                    <section id="section1" class="section-1">
+                        <h1>Welcome</h1>
+                        <label for="input_one_1">Input One 1:</label>
+                        <input type="text" id="input_one_1" name="input_one_1" required><br><br>
+
+                        <label for="input_two_1">Input Two 1:</label>
+                        <input type="text" id="input_two_1" name="input_two_1" required><br><br>
+                    </section>
+                    <section id="section2" class="section-2">
+                        <h1>Scan Subnets</h1>
+                        <label for="input_one_2">Input One 2:</label>
+                        <input type="text" id="input_one_2" name="input_one_2" required><br><br>
+                    
+                        <label for="input_two_2">Input Two 2:</label>
+                        <input type="text" id="input_two_2" name="input_two_2" required><br><br>
+                    </section>
+                    <section id="section3" class="section-3">
+                        <h1>Technologies Page</h1>
+                        <label for="input_one_3">Input One 3:</label>
+                        <input type="text" id="input_one_3" name="input_one_3" required><br><br>
+
+                        <label for="input_two_3">Input Two 3:</label>
+                        <input type="text" id="input_two_3" name="input_two_3" required><br><br>
+                    </section>
+                    <section id="section4" class="section-4">
+                        <h1>Discovery</h1>
+                        <label for="input_one_4">Input One 4:</label>
+                        <input type="text" id="input_one_4" name="input_one_4" required><br><br>
+
+                        <label for="input_two_4">Input Two 4:</label>
+                        <input type="text" id="input_two_4" name="input_two_4" required><br><br>
+                    </section>
+                    <button class="btn btn-success w-100 mt-2" type="submit">Finish</button>
+                </form>
             </div>
         </div>
     </div>
