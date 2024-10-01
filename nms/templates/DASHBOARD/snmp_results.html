@@ -8,10 +8,15 @@
 </head>
 <body>
     <h1>SNMP Walk Results</h1>
-    <div class="container">
-        <h2>SNMP Walk Results</h2>
-        <pre>{{ result }}</pre>
-        <a href="{% url 'snmp_walk' %}" class="btn btn-secondary">Perform Another Walk</a>
-    </div>
+
+    <h2>Results:</h2>
+    <pre>
+    {% for line in result %}
+    {{ line }}
+    {% endfor %}
+    </pre>
+
+    <a href="{% url 'snmp_walk' %}">Back to SNMP Walk</a>
+
 </body>
 </html>

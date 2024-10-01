@@ -9,11 +9,12 @@
 <body>
     <h1>SNMP Walk</h1>
     <div class="container">
-        <h2>SNMP Walk / Traceroute</h2>
-        <form method="post">
+        <h1>SNMP Walk</h1>
+
+        <form method="POST" action="">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">Perform SNMP Walk</button>
+            <button type="submit">Walk OID</button>
         </form>
     </div>
 </body>

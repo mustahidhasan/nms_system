@@ -10,7 +10,6 @@ from USER.models import CustomUser
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from .forms import SNMPWalkForm
-import subprocess
 
 @login_required
 def dashboard_view(request):
@@ -82,19 +81,38 @@ def submit_form(request):
         # Render an empty form if the request method is GET
         return render(request, 'DASHBOARD/submit_form.html')
 
-def snmp_walk(request):
-    return render(request, 'DASHBOARD/snmp_walk.html')
 
+
+
+from django.shortcuts import render
+from .forms import SNMPWalkForm
+
+# Import necessary modules from pysnmp
+from pysnmp.hlapi import (
+    SnmpEngine,
+    CommunityData,
+    UdpTransportTarget,
+    ContextData,
+    ObjectType,
+    ObjectIdentity,
+    nextCmd,
+    UsmUserData,
+    usmNoAuthProtocol,
+    usmNoPrivProtocol,
+    usmHMACMD5AuthProtocol,
+    usmHMACSHAAuthProtocol,
+    usmAesCfb128Protocol,
+    usmDESPrivProtocol,
+)
 
 def snmp_walk(request):
     if request.method == 'POST':
         form = SNMPWalkForm(request.POST)
         if form.is_valid():
-            # Here you'd typically perform the SNMP Walk using the form data
             ip_address = form.cleaned_data['ip_address']
             snmp_port = form.cleaned_data['snmp_port']
             snmp_version = form.cleaned_data['snmp_version']
-            read_community_string = form.cleaned_data.get('read_community_string', '')
+            read_community_string = form.cleaned_data.get('read_community_string', 'public')
             username = form.cleaned_data.get('username', '')
             password = form.cleaned_data.get('password', '')
             authentication_type = form.cleaned_data.get('authentication_type', '')
@@ -106,13 +124,64 @@ def snmp_walk(request):
             output_format = form.cleaned_data['output_format']
             source_peer = form.cleaned_data['source_peer']
 
-            # Simulate an SNMP Walk command execution (replace with actual SNMP library call)
-            command = f'snmpwalk -v {snmp_version} -c {read_community_string} {ip_address} {oid}'
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            # SNMP Version Handling
+            if snmp_version in ['1', '2c']:
+                # Use SNMP v1 or v2c
+                result = []
+                for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+                    SnmpEngine(),
+                    CommunityData(read_community_string, mpModel=0 if snmp_version == '1' else 1),
+                    UdpTransportTarget((ip_address, snmp_port)),
+                    ContextData(),
+                    ObjectType(ObjectIdentity(oid)),
+                    lexicographicMode=False
+                ):
+                    if errorIndication:
+                        result.append(f'Error: {errorIndication}')
+                        break
+                    elif errorStatus:
+                        result.append(f'Error: {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or "?"}')
+                        break
+                    else:
+                        for varBind in varBinds:
+                            result.append(f'{varBind[0]} = {varBind[1]}')
 
-            # Render results or download as .txt
-            return render(request, 'DASHBOARD/snmp_results.html', {'form': form, 'result': result.stdout})
+            elif snmp_version == '3':
+                # Use SNMP v3 with optional authentication and encryption
+                auth_protocol = usmNoAuthProtocol
+                priv_protocol = usmNoPrivProtocol
 
+                if authentication_type == 'MD5':
+                    auth_protocol = usmHMACMD5AuthProtocol
+                elif authentication_type == 'SHA':
+                    auth_protocol = usmHMACSHAAuthProtocol
+
+                if encryption_type == 'AES':
+                    priv_protocol = usmAesCfb128Protocol
+                elif encryption_type == 'DES':
+                    priv_protocol = usmDESPrivProtocol
+
+                result = []
+                for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+                    SnmpEngine(),
+                    UsmUserData(username, password, encryption_key, authProtocol=auth_protocol, privProtocol=priv_protocol),
+                    UdpTransportTarget((ip_address, snmp_port)),
+                    ContextData(context_name),
+                    ObjectType(ObjectIdentity(oid)),
+                    lexicographicMode=False
+                ):
+                    if errorIndication:
+                        result.append(f'Error: {errorIndication}')
+                        break
+                    elif errorStatus:
+                        result.append(f'Error: {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or "?"}')
+                        break
+                    else:
+                        for varBind in varBinds:
+                            result.append(f'{varBind[0]} = {varBind[1]}')
+
+            # Render results in the result page
+            return render(request, 'DASHBOARD/snmp_results.html', {'form': form, 'result': '\n'.join(result)})
     else:
         form = SNMPWalkForm()
 
