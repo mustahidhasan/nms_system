@@ -1,0 +1,20 @@
+<!-- DASHBOARD/templates/DASHBOARD/snmp_walk.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNMP Walk</title>
+</head>
+<body>
+    <h1>SNMP Walk</h1>
+    <div class="container">
+        <h2>SNMP Walk / Traceroute</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Perform SNMP Walk</button>
+        </form>
+    </div>
+</body>
+</html>
