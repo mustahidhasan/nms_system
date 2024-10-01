@@ -30,7 +30,8 @@ class SNMPWalkAdmin(admin.ModelAdmin):
         'snmp_command', 
         'oid', 
         'output_format', 
-        'source_peer'
+        'source_peer',
+        "created_at",
     )
     search_fields = ('ip_address', 'oid', 'username', 'snmp_command')
     list_filter = ('snmp_version', 'snmp_command', 'output_format')

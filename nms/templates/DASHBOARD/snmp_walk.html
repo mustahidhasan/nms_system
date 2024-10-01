@@ -35,7 +35,18 @@
                 <div class="card">
                     <div class="card-body">
                         <h1>SNMP Walk Results</h1>
-                        <pre>{{ result|join:", " }}</pre>
+                        
+                        <li class="list-group-item">
+                            <h5>IP Address: {{ result.ip_address }}</h5>
+                            <p>SNMP Command: {{ result.snmp_command }}</p>
+                            <p>OID: {{ result.oid }}</p>
+                            <p>Output Format: {{ result.output_format }}</p>
+                            <p>Date and Time: {{ result.created_at|date:"Y-m-d H:i:s" }}</p>
+                            <h5 style="font-weight: bold;">Result: {{result.result}}</h5>
+                            <!-- Add any additional fields here -->
+                        </li>
+                        
+                        
                         
                     </div>
                 </div>

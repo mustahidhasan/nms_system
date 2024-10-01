@@ -194,7 +194,8 @@ def snmp_walk(request):
             )
             snmp_walk.save()
             # Render results in the result page
-            return render(request, 'DASHBOARD/snmp_walk.html', {'form': form, 'result': '\n'.join(result)})
+            all_data = SNMPWalk.objects.last()
+            return render(request, 'DASHBOARD/snmp_walk.html', {'form': form, 'result':all_data})
     else:
         form = SNMPWalkForm()
 

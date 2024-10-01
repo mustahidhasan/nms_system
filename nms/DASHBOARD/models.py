@@ -75,6 +75,7 @@ class SNMPWalk(models.Model):
     output_format = models.CharField(max_length=15, choices=OUTPUT_FORMAT_CHOICES)
     source_peer = models.CharField(max_length=100)
     result = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"SNMP Walk for {self.ip_address} - {self.snmp_command}"
