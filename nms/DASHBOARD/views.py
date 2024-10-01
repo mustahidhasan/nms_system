@@ -10,7 +10,24 @@ from USER.models import CustomUser
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from .forms import SNMPWalkForm
-
+from .models import SNMPWalk
+# Import necessary modules from pysnmp
+from pysnmp.hlapi import (
+    SnmpEngine,
+    CommunityData,
+    UdpTransportTarget,
+    ContextData,
+    ObjectType,
+    ObjectIdentity,
+    nextCmd,
+    UsmUserData,
+    usmNoAuthProtocol,
+    usmNoPrivProtocol,
+    usmHMACMD5AuthProtocol,
+    usmHMACSHAAuthProtocol,
+    usmAesCfb128Protocol,
+    usmDESPrivProtocol,
+)
 @login_required
 def dashboard_view(request):
     # Check if the user is a superuser and if they haven't disabled the modal for this session
@@ -84,27 +101,6 @@ def submit_form(request):
 
 
 
-from django.shortcuts import render
-from .forms import SNMPWalkForm
-
-# Import necessary modules from pysnmp
-from pysnmp.hlapi import (
-    SnmpEngine,
-    CommunityData,
-    UdpTransportTarget,
-    ContextData,
-    ObjectType,
-    ObjectIdentity,
-    nextCmd,
-    UsmUserData,
-    usmNoAuthProtocol,
-    usmNoPrivProtocol,
-    usmHMACMD5AuthProtocol,
-    usmHMACSHAAuthProtocol,
-    usmAesCfb128Protocol,
-    usmDESPrivProtocol,
-)
-
 def snmp_walk(request):
     if request.method == 'POST':
         form = SNMPWalkForm(request.POST)
@@ -123,7 +119,7 @@ def snmp_walk(request):
             oid = form.cleaned_data['oid']
             output_format = form.cleaned_data['output_format']
             source_peer = form.cleaned_data['source_peer']
-
+            
             # SNMP Version Handling
             if snmp_version in ['1', '2c']:
                 # Use SNMP v1 or v2c
@@ -179,7 +175,23 @@ def snmp_walk(request):
                     else:
                         for varBind in varBinds:
                             result.append(f'{varBind[0]} = {varBind[1]}')
-
+            snmp_walk = SNMPWalk(
+                ip_address=form.cleaned_data['ip_address'],
+                snmp_port=form.cleaned_data['snmp_port'],
+                snmp_version=form.cleaned_data['snmp_version'],
+                read_community_string=form.cleaned_data.get('read_community_string', ''),
+                username=form.cleaned_data.get('username', ''),
+                password=form.cleaned_data.get('password', ''),
+                authentication_type=form.cleaned_data.get('authentication_type', ''),
+                encryption_type=form.cleaned_data.get('encryption_type', ''),
+                encryption_key=form.cleaned_data.get('encryption_key', ''),
+                context_name=form.cleaned_data.get('context_name', ''),
+                snmp_command=form.cleaned_data['snmp_command'],
+                oid=form.cleaned_data['oid'],
+                output_format=form.cleaned_data['output_format'],
+                source_peer=form.cleaned_data['source_peer'],
+            )
+            snmp_walk.save()
             # Render results in the result page
             return render(request, 'DASHBOARD/snmp_walk.html', {'form': form, 'result': '\n'.join(result)})
     else:

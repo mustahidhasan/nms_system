@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GettingStartedA
+from .models import GettingStartedA, SNMPWalk
 
 class GettingStartedAdmin(admin.ModelAdmin):
     list_display = [
@@ -21,3 +21,18 @@ class GettingStartedAdmin(admin.ModelAdmin):
     exclude = ('created_at',)  # Keep this line to exclude created_at from the add form
 
 admin.site.register(GettingStartedA, GettingStartedAdmin)
+
+class SNMPWalkAdmin(admin.ModelAdmin):
+    list_display = (
+        'ip_address', 
+        'snmp_port', 
+        'snmp_version', 
+        'snmp_command', 
+        'oid', 
+        'output_format', 
+        'source_peer'
+    )
+    search_fields = ('ip_address', 'oid', 'username', 'snmp_command')
+    list_filter = ('snmp_version', 'snmp_command', 'output_format')
+
+admin.site.register(SNMPWalk, SNMPWalkAdmin)
