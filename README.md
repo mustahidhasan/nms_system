@@ -1,7 +1,16 @@
-# nms
-admin credentials
-user: admin
-pass:1234
+# steps to run this project
+1. pip install -r requirements.txt
+2. cd nms
+3. python3 manage.py makemigrations
+4. python3 manage.py migrate
+5. python3 manage.py createsuperuser
+   a. give the crediantials for creating the admin
+6. login and browse from http://127.0.0.1:8000/
+7. admin panel: http://127.0.0.1:8000/admin/
 
-for creating new super user
-# python manage.py createsuperuser
+to use the current data base do not delete the db.sqlite3 file
+to create a fresh db delete this file and follow 1 to 5 you will have a fresh project
+
+right now the demo account is
+username: admin
+password: 1234
