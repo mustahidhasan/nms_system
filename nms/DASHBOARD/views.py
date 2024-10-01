@@ -190,6 +190,7 @@ def snmp_walk(request):
                 oid=form.cleaned_data['oid'],
                 output_format=form.cleaned_data['output_format'],
                 source_peer=form.cleaned_data['source_peer'],
+                result=result
             )
             snmp_walk.save()
             # Render results in the result page

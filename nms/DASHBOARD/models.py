@@ -27,7 +27,7 @@ class GettingStartedA(models.Model):
     def __str__(self):
         return f"GettingStarted by {self.user.username}"
 
-from django.db import models
+
 
 class SNMPWalk(models.Model):
     SNMP_VERSION_CHOICES = [
@@ -74,6 +74,7 @@ class SNMPWalk(models.Model):
     oid = models.CharField(max_length=100)
     output_format = models.CharField(max_length=15, choices=OUTPUT_FORMAT_CHOICES)
     source_peer = models.CharField(max_length=100)
+    result = models.TextField()
 
     def __str__(self):
         return f"SNMP Walk for {self.ip_address} - {self.snmp_command}"
