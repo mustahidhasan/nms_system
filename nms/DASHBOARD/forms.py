@@ -42,7 +42,7 @@ class SNMPWalkForm(forms.Form):
     encryption_key = forms.CharField(label='Encryption Key', max_length=100, required=False)
     context_name = forms.CharField(label='Context Name', max_length=100, required=False)
     snmp_command = forms.ChoiceField(label='SNMP Command', choices=SNMP_COMMAND_CHOICES, required=True)
-    oid = forms.CharField(label='OID', max_length=100, required=True, initial='.1.3')
+    oid = forms.CharField(label='OID', max_length=100, required=True,)
     output_format = forms.ChoiceField(label='Output Format', choices=OUTPUT_FORMAT_CHOICES, required=True)
     source_peer = forms.CharField(label='Source Peer', max_length=100, required=True)
 
