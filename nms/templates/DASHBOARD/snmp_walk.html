@@ -17,6 +17,7 @@
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="card">
+                    <a href="{% url 'dashboard' %}" class="back-link" style="font-weight: bold; color:brown">Back to Dashboard</a>
                     <div class="card-body">
                         <h1 class="card-title text-center">SNMP WALK</h1>
 
@@ -26,8 +27,15 @@
                             <button class="btn btn-primary w-100" type="submit">Walk OID</button>
                         </form>
                         <br>
-                        <a href="{% url 'dashboard' %}" class="back-link" style="font-weight: bold; color:brown">Back to Dashboard</a>
-
+                        
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h1>SNMP Walk Results</h1>
+                        <pre>{{ result|join:", " }}</pre>
                         
                     </div>
                 </div>

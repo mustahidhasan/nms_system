@@ -181,7 +181,7 @@ def snmp_walk(request):
                             result.append(f'{varBind[0]} = {varBind[1]}')
 
             # Render results in the result page
-            return render(request, 'DASHBOARD/snmp_results.html', {'form': form, 'result': '\n'.join(result)})
+            return render(request, 'DASHBOARD/snmp_walk.html', {'form': form, 'result': '\n'.join(result)})
     else:
         form = SNMPWalkForm()
 
