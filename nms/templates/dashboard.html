@@ -23,15 +23,20 @@
             <div class="col-md-6">
                 <div class="card mb-3">
                     <div class="text-center">
-                        <button class="btn btn-primary w-50" style="background-color: red;">
-                            <a href="{% url 'logout' %}" class="back-link"
-                                style="font-weight: bold; color:white; text-decoration: none;">Log out</a>
+                        <button class="btn btn-primary w-50" style="background-color: red; display: inline-flex; align-items: center;">
+                            <a href="{% url 'logout' %}" class="back-link" style="font-weight: bold; color:white; text-decoration: none;">
+                                <img src="{% static 'images/logout.png' %}" alt="Logout" style="width: 20px; height: 20px; margin-right: 5px;">
+                                Log out
+                            </a>
                         </button>
-                        <button class="btn btn-primary w-50" style="background-color: green;">
-                            <a href="{% url 'dashboard' %}" class="back-link"
-                                style="font-weight: bold; color:white; text-decoration: none;">Refresh</a>
+                        <button class="btn btn-primary w-50" style="background-color: green; display: inline-flex; align-items: center;">
+                            <a href="{% url 'dashboard' %}" class="back-link" style="font-weight: bold; color:white; text-decoration: none;">
+                                <img src="{% static 'images/refresh-option.png' %}" alt="Refresh" style="width: 20px; height: 20px; margin-right: 5px;">
+                                Refresh
+                            </a>
                         </button>
                     </div>
+                    
 
                     <div class="card-body">
                         <h1 class="card-title text-center">SNMP WALK</h1>
