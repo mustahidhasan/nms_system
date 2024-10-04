@@ -19,15 +19,15 @@
 <body>
     <div class="container mt-5">
         <div class="row justify-content-center">
+            <!-- Left Column: SNMP Walk Form -->
             <div class="col-md-6">
-                <div class="card">
+                <div class="card mb-3">
                     <div class="text-center">
                         <button class="btn btn-primary w-50" style="background-color: red;">
                             <a href="{% url 'logout' %}" class="back-link"
                                 style="font-weight: bold; color:white; text-decoration: none;">Log out</a>
                         </button>
                     </div>
-
 
                     <div class="card-body">
                         <h1 class="card-title text-center">SNMP WALK</h1>
@@ -37,14 +37,17 @@
                             {{ form.as_p }}
                             <button class="btn btn-primary w-100" type="submit">Walk OID</button>
                         </form>
-                        <br>
                     </div>
                 </div>
             </div>
+
+            <!-- Right Column: SNMP Results and Ping Operation -->
             <div class="col-md-6">
-                <div class="card">
+                <!-- SNMP Walk Results -->
+                <div class="card mb-3">
                     <div class="card-body" id="contentToPrint">
                         <h1>SNMP Walk Results</h1>
+                        {% if result %}
                         <li class="list-group-item">
                             <h5>IP Address: {{ result.ip_address }}</h5>
                             <p>SNMP Command: {{ result.snmp_command }}</p>
@@ -54,6 +57,38 @@
                             <h5 style="font-weight: bold;">Result: {{ result.result }}</h5>
                         </li>
                         <button id="save-pdf" class="btn btn-primary">Save as PDF</button>
+                        {% else %}
+                        <p>No SNMP results to display. Perform an SNMP Walk to see the results here.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Ping Operation -->
+                <div class="card">
+                    <div class="card-body">
+                        <h1 class="card-title text-center">Ping Operation</h1>
+
+                        <form method="POST" action="{% url 'ping_operation' %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="ipAddress" class="form-label">Enter IP Address or Hostname</label>
+                                <input type="text" class="form-control" id="ipAddress" name="ip_address" placeholder="Enter IP address or hostname" required>
+                            </div>
+                            <button class="btn btn-primary w-100" type="submit">Ping</button>
+                        </form>
+
+                        <br>
+                        {% if ping_result %}
+                        <div class="alert alert-success" role="alert">
+                            <strong>Ping Result:</strong><br>
+                            {{ ping_result }}
+                        </div>
+                        {% elif error_message %}
+                        <div class="alert alert-danger" role="alert">
+                            <strong>Error:</strong><br>
+                            {{ error_message }}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

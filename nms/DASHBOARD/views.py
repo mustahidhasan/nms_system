@@ -5,6 +5,7 @@ from django.contrib.auth import logout
 from django.shortcuts import render, redirect
 from .forms import SNMPWalkForm
 from .models import SNMPWalk
+import subprocess
 # Import necessary modules from pysnmp
 from pysnmp.hlapi import (
     SnmpEngine,
@@ -31,7 +32,26 @@ def logout_view(request):
     return redirect("login")  # Replace 'login' with the name of your login URL
 
 
+def ping_operation(request):
+    ping_result = None
+    error_message = None
 
+    if request.method == 'POST':
+        ip_address = request.POST.get('ip_address')
+        try:
+            # Use subprocess to run the ping command
+            ping_output = subprocess.run(
+                ['ping', '-c', '4', ip_address],  # Run 'ping' command with 4 packets
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
+            if ping_output.returncode == 0:
+                ping_result = ping_output.stdout  # Capture the ping output
+            else:
+                error_message = f"Ping failed: {ping_output.stderr}"
+        except Exception as e:
+            error_message = f"An error occurred: {str(e)}"
+
+    return render(request, 'dashboard.html', {'ping_result': ping_result, 'error_message': error_message})
 
 @login_required
 def dashboard_view(request):
