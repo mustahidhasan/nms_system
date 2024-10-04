@@ -1,596 +1,89 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <title>Dashboard</title>
+    <title>SNMP WALK</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/user.css' %}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.0/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
-
 <body>
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light"
-            style="position: fixed; top: 0; left: 0; width: 100%; z-index: 1030;">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="#">Dashboard</a>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <div class="nav-left me-auto">
-                        <ul class="navbar-nav">
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    Reports
-                                </a>
-                                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                    <a class="dropdown-item" href="#">Create Report</a>
-                                    <a class="dropdown-item" href="#">Report Manager</a>
-                                    <a class="dropdown-item" href="#">Instant Graphs</a>
-                                    <a class="dropdown-item" href="#">TopN Reports</a>
-                                </div>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    Events
-                                </a>
-                                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                    <a class="dropdown-item" href="#">Alerts</a>
-                                    <a class="dropdown-item" href="#">Alert Summary</a>
-
-                                    <div class="dropdown-item dropdown-submenu">
-                                        <a class="dropdown-toggle" href="#">Archives</a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#">Alert Archive</a>
-                                            <a class="dropdown-item" href="#">Logged Traps</a>
-                                            <a class="dropdown-item" href="#">Unknown Traps</a>
-                                        </div>
-                                    </div>
-                                    <div class="dropdown-item dropdown-submenu">
-                                        <a class="dropdown-toggle" href="#">Configuration</a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#">Policy Browser</a>
-                                            <a class="dropdown-item" href="#">Threshold Browser</a>
-                                            <a class="dropdown-item" href="#">Trap Destinations</a>
-                                            <a class="dropdown-item" href="#">Trap Destination Associations</a>
-                                            <a class="dropdown-item" href="#">Trap Event Editor</a>
-                                            <a class="dropdown-item" href="#">Trap v3 Receiver</a>
-                                        </div>
-                                    </div>
-                                    <a class="dropdown-item" href="#">Instant Status </a>
-                                    <a class="dropdown-item" href="#">Status Map Manager </a>
-                                </div>
-                            </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    Applications
-                                </a>
-                                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                    <a class="dropdown-item" href="#">FlowFalcon Reports</a>
-                                    <a class="dropdown-item" href="#">NBAR Reports</a>
-                                    <a class="dropdown-item" href="#">Probe Manager </a>
-                                </div>
-                            </li>
-
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    Devices
-                                </a>
-                                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                    <a class="dropdown-item" href="#">Device Manager</a>
-                                    <a class="dropdown-item" href="#">Object Manager</a>
-                                    <a class="dropdown-item" href="#">Device Mover</a>
-                                    <a class="dropdown-item" href="#">Discovery Manager</a>
-
-                                    <div class="dropdown-item dropdown-submenu">
-                                        <a class="dropdown-toggle" href="#">Grouping</a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#">Device Groups</a>
-                                            <a class="dropdown-item" href="#">Object Groups</a>
-                                        </div>
-                                    </div>
-                                    <a class="dropdown-item" href="{% url 'snmp_walk' %}">SNMP Walk</a>
-                                    <a class="dropdown-item" href="#">VMware Browser </a>
-                                </div>
-                            </li>
-
-
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    Administration
-                                </a>
-                                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                    <a class="dropdown-item" href="#">About</a>
-
-                                    <div class="dropdown-item dropdown-submenu">
-                                        <a class="dropdown-toggle" href="#"> Access Configuration</a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#"> Authentication Settings</a>
-                                            <a class="dropdown-item" href="#">User Manager</a>
-                                            <a class="dropdown-item" href="#">User Role Manager</a>
-                                            <a class="dropdown-item" href="#">Session Manager</a>
-
-                                        </div>
-                                    </div>
-
-                                    <div class="dropdown-item dropdown-submenu">
-                                        <a class="dropdown-toggle" href="#">API Docs</a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#">Version 2 </a>
-                                            <a class="dropdown-item" href="#"> Version 3</a>
-
-                                        </div>
-                                    </div>
-                                    <a class="dropdown-item" href="#">Baseline Manager </a>
-                                    <a class="dropdown-item" href="#">Cluster Manager </a>
-
-                                    <div class="dropdown-item dropdown-submenu">
-                                        <a class="dropdown-toggle" href="#">Flow Configuration </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#">Flow Rules</a>
-                                            <a class="dropdown-item" href="#"> Flow Interface Manager</a>
-                                            <a class="dropdown-item" href="#">FlowFalcon View Editor</a>
-                                            <a class="dropdown-item" href="#">MPLS Flow Mapping</a>
-                                            <a class="dropdown-item" href="#">Network Segment Manager</a>
-                                            <a class="dropdown-item" href="#"> Object Mapping</a>
-                                            <a class="dropdown-item" href="#"> Device Mapping</a>
-                                            <a class="dropdown-item" href="#"> Protocols and Services</a>
-
-                                        </div>
-                                    </div>
-                                    <div class="dropdown-item dropdown-submenu">
-                                        <a class="dropdown-toggle" href="#">Monitoring Configuration </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#">Calculation Editor</a>
-                                            <a class="dropdown-item" href="#"> Device Types</a>
-                                            <a class="dropdown-item" href="#">MIB Manager</a>
-                                            <a class="dropdown-item" href="#">Object Rules</a>
-                                            <a class="dropdown-item" href="#">Object Subtype Manager</a>
-                                            <a class="dropdown-item" href="#">Object Types</a>
-                                            <a class="dropdown-item" href="#">xStats Log Viewer</a>
-                                            <a class="dropdown-item" href="#"> xStats Source Manager</a>
-
-                                        </div>
-                                    </div>
-
-                                    <a class="dropdown-item" href="#">Maintenance Windows </a>
-                                    <a class="dropdown-item" href="#">Metadata Schema </a>
-
-
-
-                                    <a class="dropdown-item" href="#">My Preferences </a>
-                                    <a class="dropdown-item" href="#">Startup Wizard </a>
-                                    <a class="dropdown-item" href="#">Work Hours </a>
-
-
-                                </div>
-                            </li>
-
-
-
-
-
-
-
-
-                        </ul>
-                    </div>
-                    <div class="nav-right ms-auto">
-                        <input type="text" class="form-control" placeholder="Search..." style="margin-right: 15px;" />
-
-                        <button
-                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;font-weight: bold; margin-right: 10px; vertical-align: middle; color: black;">
-                            {{ user.username }}
-                        </button>
-
-                        <button onclick="window.location.href='{% url 'logout' %}'"
-                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
-                            <img src="{% static 'images/logout.png' %}" alt="Logout"
-                                style="width: 24px; height: 24px; vertical-align: middle;">
-                        </button>
-
-                        <button
-                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
-                            <img src="{% static 'images/add-button.png' %}" alt="Add"
-                                style="width: 24px; height: 24px; vertical-align: middle;">
-                        </button>
-
-                        <button
-                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
-                            <img src="{% static 'images/refresh-option.png' %}" alt="Refresh"
-                                style="width: 24px; height: 24px; vertical-align: middle;">
-                        </button>
-
-                        <button
-                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
-                            <img src="{% static 'images/home.png' %}" alt="Home"
-                                style="width: 24px; height: 24px; vertical-align: middle;">
-                        </button>
-
-                        <button
-                            style="background: none; border: none; padding: 0; margin-right: 15px; cursor: pointer;">
-                            <img src="{% static 'images/ask-for-help.png' %}" alt="Help"
-                                style="width: 24px; height: 24px; vertical-align: middle;">
-                        </button>
-                    </div>
-
-                </div>
-            </div>
-        </nav>
-    </header>
-    <main class="container mt-4">
-        <div class="row">
-            <div class="col-md-4">
-                <!-- Superuser Modal -->
-                {% if is_superuser %}
-                <div class="modal" tabindex="-1" role="dialog" id="superuserModal">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Welcome Superuser!</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <p>Do you want to get started as a new superuser?</p>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" value="" id="dontAskAgainCheckbox">
-                                    <label class="form-check-label" for="dontAskAgainCheckbox">
-                                        Do not ask again
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-primary" id="getStartedBtn">Yes, Get
-                                    Started</button>
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="no_thanks">No,
-                                    Thanks</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                <section class="favorite-reports" style="position: relative; padding-bottom: 50px;">
-                    <h2 style="margin-top: 10px;">Favorite Reports</h2>
-                    <img src="{% static 'images/favourite.png' %}" alt="favourite"
-                        style="width: 100px; height: 100px; vertical-align: middle;">
-
-                    <!-- Button container with absolute positioning to the bottom-right corner -->
-                    <div class="d-flex"
-                        style="position: absolute; bottom: 0; right: 0; margin-right: 10px; margin-bottom: 10px;">
-                        <button class="btn btn-info me-2">Manage</button>
-                        <button class="btn btn-success">Create Report</button>
-                    </div>
-                </section>
-
-
-
-
-                <section class="discovery-status" style="padding-bottom: 50px;">
-                    <h2 style="margin-bottom: 10px;">Discovery Status</h2>
-                    <div style="display: flex; align-items: flex-start;">
-                        <div style="margin-right: 20px;">
-                            <img src="{% static 'images/server.png' %}" alt="Discovery Status"
-                                style="width: 100px; height: 100px;">
-                        </div>
-
-                        <!-- List positioned on the right side -->
-                        <ul class="list-group" style="list-style: none; padding-left: 0;">
-                            <li class="list-group-item">
-                                <span>0 Device in queue for <a href="#">discovery</a></span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>0 Device in <a href="#">discovery</a></span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>0 new Device found during <a href="#">discovery</a></span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>0 new Device <a href="#">can not be discovered due to capacity
-                                        restraints</a></span>
-                            </li>
-                        </ul>
-                    </div>
-                </section>
-
-
-
-
-
-
-                <section class="manage-events" style="padding-bottom: 50px;">
-                    <h2 style="margin-bottom: 10px;">Manage Events</h2>
-                    <div style="display: flex; align-items: flex-start;">
-                        <div style="margin-right: 20px;">
-                            <img src="{% static 'images/server_s.png' %}" alt="Manage Events"
-                                style="width: 100px; height: 100px;">
-                        </div>
-
-                        <!-- List positioned on the right side -->
-                        <ul class="list-group" style="list-style: none; padding-left: 0;">
-                            <li class="list-group-item">
-                                <span>View and acknowledge <a href="#">Alerts</a></span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>Create <a href="#">Alert Summary</a> Reports</span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>Manage <a href="#">policies</a> and <a href="#">Threshold</a></span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>Manage <a href="#">Status Maps</a></span>
-                            </li>
-                        </ul>
-                    </div>
-                </section>
-
-
-                <section class="analyze-application-traffic" style="padding-bottom: 50px;">
-                    <h2 style="margin-bottom: 10px;">Analyze Application Traffic</h2>
-                    <div style="display: flex; align-items: flex-start;">
-                        <div style="margin-right: 20px;">
-                            <img src="{% static 'images/graph-report.png' %}" alt="Analyze Application Traffic"
-                                style="width: 100px; height: 100px;">
-                        </div>
-
-                        <!-- List positioned on the right side -->
-                        <ul class="list-group" style="list-style: none; padding-left: 0;">
-                            <li class="list-group-item">
-                                <span>Create <a href="#">FlowFalcon</a> Reports</span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>Create <a href="#">NBAR</a> Reports</span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>Manage <a href="#">Responses Probes</a></span>
-                            </li>
-                        </ul>
-                    </div>
-                </section>
-
-
-                <section class="reporting-tools" style="padding-bottom: 50px;">
-                    <h2 style="margin-bottom: 10px;">Utilize Reporting Tools</h2>
-                    <div style="display: flex; align-items: flex-start;">
-                        <div style="margin-right: 20px;">
-                            <img src="{% static 'images/pie-chart.png' %}" alt="Utilize Reporting Tools"
-                                style="width: 100px; height: 100px;">
-                        </div>
-
-                        <!-- List positioned on the right side -->
-                        <ul class="list-group" style="list-style: none; padding-left: 0;">
-                            <li class="list-group-item">
-                                <span>Manage <a href="#">Reports</a></span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>Create <a href="#">TopN</a></span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>Create <a href="#">Graphs</a></span>
-                            </li>
-                        </ul>
-                    </div>
-                </section>
-
-
-                <section class="manage-devices-users" style="padding-bottom: 50px;">
-                    <h2 style="margin-bottom: 10px;">Manage Devices and Users</h2>
-                    <div style="display: flex; align-items: flex-start;">
-                        <div style="margin-right: 20px;">
-                            <img src="{% static 'images/server-management.png' %}" alt="Manage Devices and Users"
-                                style="width: 100px; height: 100px;">
-                        </div>
-
-                        <!-- List positioned on the right side -->
-                        <ul class="list-group" style="list-style: none; padding-left: 0;">
-                            <li class="list-group-item">
-                                <span><a href="#">Add a Device</a></span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>View and Edit <a href="#">Devices</a></span>
-                            </li>
-                            <li class="list-group-item">
-                                <span>Manage <a href="#">Users</a></span>
-                            </li>
-                        </ul>
-                    </div>
-                </section>
-
-            </div>
-
-            <div class="col-md-8">
-                <section>
-                    <span style="color: white;"></span>
-                </section>
-
-                <div class="row">
-                    <div class="col-md-12" style="height: 400px; position: relative;">
-                        <!-- Fixed height for the column -->
-                        <section class="instant-status" style="height: 100%;">
-                            <h2>Alert Summary</h2>
-                            <p>Instant status details here</p>
-                            <canvas id="alertSummaryChart" style="width: 100%; height: 100%;"></canvas>
-                            <!-- Full-width and height canvas -->
-                        </section>
-                    </div>
-                </div>
-
-                <div class="row" style="margin-top: 100px;"> <!-- Added margin to create space between sections -->
-                    <div class="col-md-6" style="height: 300px;"> <!-- Fixed height for the instant status -->
-                        <section class="instant-status" style="overflow-y: auto; height: 100%;">
-                            <h2>Instant Status</h2>
-                            <ul style="list-style: none; padding-left: 0;">
-                                <!-- Red Status -->
-                                <li style="display: flex; align-items: center; margin-bottom: 10px;">
-                                    <span
-                                        style="display: inline-block; width: 20px; height: 20px; background-color: red; border-radius: 50%; margin-right: 10px;"></span>
-                                    <span>Critical Alert</span>
-                                </li>
-                                <!-- Green Status -->
-                                <li style="display: flex; align-items: center; margin-bottom: 10px;">
-                                    <span
-                                        style="display: inline-block; width: 20px; height: 20px; background-color: green; border-radius: 50%; margin-right: 10px;"></span>
-                                    <span>All Systems Operational</span>
-                                </li>
-                                <!-- White Status -->
-                                <li style="display: flex; align-items: center; margin-bottom: 10px;">
-                                    <span
-                                        style="display: inline-block; width: 20px; height: 20px; background-color: white; border: 1px solid #ccc; border-radius: 50%; margin-right: 10px;"></span>
-                                    <span>Pending Review</span>
-                                </li>
-                            </ul>
-                        </section>
-                    </div>
-
-                    <div class="col-md-6" style="height: 300px;"> <!-- Fixed height for the alerts -->
-                        <section class="alerts" style="overflow-y: auto; height: 100%;">
-                            <h2>Alerts</h2>
-                            <!-- Emergency Alert -->
-                            <div
-                                style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; margin-bottom: 10px;">
-                                <strong>Emergency:</strong> <span>There are 3 alerts of Severity Emergency. 2 devices
-                                    affected</span>
-                                <span style="color: red;">🚨</span>
-                            </div>
-                            <!-- Warning Alert -->
-                            <div
-                                style="background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 10px; margin-bottom: 10px;">
-                                <strong>Warning:</strong> <span>There are 2 alerts of Warning. 1 Device affected</span>
-                                <span style="color: orange;">⚠️</span>
-                            </div>
-                            <!-- Notice Alert -->
-                            <div
-                                style="background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; padding: 10px;">
-                                <strong>Notice:</strong> <span>There are 5 Notices, 2 devices affected</span>
-                                <span style="color: blue;">🔔</span>
-                            </div>
-                        </section>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <a href="{% url 'dashboard' %}" class="back-link" style="font-weight: bold; color:brown">Back to Dashboard</a>
+                    <div class="card-body">
+                        <h1 class="card-title text-center">SNMP WALK</h1>
+
+                        <form method="POST" action="">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button class="btn btn-primary w-100" type="submit">Walk OID</button>
+                        </form>
+                        <br>
                     </div>
                 </div>
             </div>
-
-
-
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body" id="contentToPrint">
+                        <h1>SNMP Walk Results</h1>
+                        <li class="list-group-item">
+                            <h5>IP Address: {{ result.ip_address }}</h5>
+                            <p>SNMP Command: {{ result.snmp_command }}</p>
+                            <p>OID: {{ result.oid }}</p>
+                            <p>Output Format: {{ result.output_format }}</p>
+                            <p>Date and Time: {{ result.created_at|date:"Y-m-d H:i:s" }}</p>
+                            <h5 style="font-weight: bold;">Result: {{ result.result }}</h5>
+                        </li>
+                        <button id="save-pdf" class="btn btn-primary">Save as PDF</button>
+                    </div>
+                </div>
+            </div>
         </div>
-    </main>
+    </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const ctx = document.getElementById('alertSummaryChart').getContext('2d');
-        const alertSummaryChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Outage Time', 'Uptime', 'MTTR', 'Event-Free %', 'Affected Devices'],
-                datasets: [{
-                    label: 'Entity',
-                    data: [30, 70, 5, 90, 20], // Sample data values
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.6)', // Outage Time - Red
-                        'rgba(54, 162, 235, 0.6)', // Uptime - Blue
-                        'rgba(255, 206, 86, 0.6)', // MTTR - Yellow
-                        'rgba(75, 192, 192, 0.6)', // Event-Free % - Teal
-                        'rgba(153, 102, 255, 0.6)' // Affected Devices - Purple
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)', // Outage Time border
-                        'rgba(54, 162, 235, 1)', // Uptime border
-                        'rgba(255, 206, 86, 1)', // MTTR border
-                        'rgba(75, 192, 192, 1)', // Event-Free % border
-                        'rgba(153, 102, 255, 1)' // Affected Devices border
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true, // Keep the aspect ratio
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Duration/Count'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Duration in minute'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                    }
+        document.getElementById('save-pdf').addEventListener('click', function () {
+            const content = document.getElementById('contentToPrint');
+
+            // Use html2canvas to render the HTML as an image
+            html2canvas(content).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                const imgWidth = 190; // Adjust width as needed
+                const pageHeight = pdf.internal.pageSize.height;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
                 }
-            }
-        });
 
-
-    </script>
-    <script>
-        // Automatically show the modal if the user is a superuser
-        $(document).ready(function () {
-            {% if is_superuser %}
-            $('#superuserModal').modal('show');
-            console.log("enabled")
-            {% endif %}
-
-            // Handle the checkbox click for "Do not ask again"
-            $('#getStartedBtn').click(function () {
-                const dontAskAgain = $('#dontAskAgainCheckbox').is(':checked');
-                console.log(dontAskAgain)
-
-                if (dontAskAgain) {
-                    // If "Do not ask again" is checked, make a request to disable the modal
-                    window.location.href = "{% url 'disable_modal' %}";
-                    console.log("disabled")
-                    window.location.href = "{% url 'welcome_superuser' %}";
-                } else {
-                    // Redirect to the welcome page if "Yes" is clicked
-                    window.location.href = "{% url 'welcome_superuser' %}";
-                }
-            });
-            $('#no_thanks').click(function () {
-                const dontAskAgain = $('#dontAskAgainCheckbox').is(':checked');
-                console.log(dontAskAgain)
-
-                if (dontAskAgain) {
-                    // If "Do not ask again" is checked, make a request to disable the modal
-                    window.location.href = "{% url 'disable_modal' %}";
-                    console.log("disabled")
-                } else {
-                    // Redirect to the welcome page if "Yes" is clicked
-                    window.location.href = "{% url 'dashboard' %}";
-                }
+                // Save the PDF with a filename
+                pdf.save('snmp_walk_results.pdf');
             });
         });
     </script>
 </body>
-
 </html>
