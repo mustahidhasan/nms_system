@@ -35,6 +35,42 @@ def logout_view(request):
     logout(request)
     return redirect("login")  # Replace 'login' with the name of your login URL
 
+def dns_lookup_operation(request):
+    if request.method == 'POST':
+        domain_name = request.POST.get('domain_name')
+        if not domain_name:
+            return render(request, 'dashboard.html', {'error_message': 'Please provide a domain name.'})
+
+        # Detect the operating system
+        os_name = platform.system()
+
+        try:
+            # Adjust DNS lookup command based on OS
+            if os_name == 'Windows':
+                command = ['nslookup', domain_name]
+            else:
+                command = ['dig', domain_name]  # Use dig for Linux
+
+            logger.info(f"Performing DNS lookup for {domain_name} using command: {command}")
+
+            # Run the DNS command
+            response = subprocess.run(command, capture_output=True, text=True)
+
+            # Log and handle response
+            logger.info(f"DNS lookup response: {response.stdout}")
+            if response.returncode == 0:
+                dns_result = response.stdout
+                return render(request, 'dashboard.html', {'dns_result': dns_result})
+            else:
+                error_message = 'DNS lookup failed. Check the domain name or network connectivity.'
+                return render(request, 'dashboard.html', {'error_message': error_message})
+
+        except Exception as e:
+            error_message = f'An error occurred: {str(e)}'
+            logger.error(f"DNS lookup error: {str(e)}")
+            return render(request, 'dashboard.html', {'error_message': error_message})
+
+    return render(request, 'dashboard.html')
 
 def ping_operation(request):
     if request.method == "POST":

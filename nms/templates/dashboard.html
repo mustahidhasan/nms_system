@@ -23,20 +23,26 @@
             <div class="col-md-6">
                 <div class="card mb-3">
                     <div class="text-center">
-                        <button class="btn btn-primary w-50" style="background-color: red; display: inline-flex; align-items: center;">
-                            <a href="{% url 'logout' %}" class="back-link" style="font-weight: bold; color:white; text-decoration: none;">
-                                <img src="{% static 'images/logout.png' %}" alt="Logout" style="width: 20px; height: 20px; margin-right: 5px;">
+                        <button class="btn btn-primary w-50"
+                            style="background-color: red; display: inline-flex; align-items: center;">
+                            <a href="{% url 'logout' %}" class="back-link"
+                                style="font-weight: bold; color:white; text-decoration: none;">
+                                <img src="{% static 'images/logout.png' %}" alt="Logout"
+                                    style="width: 20px; height: 20px; margin-right: 5px;">
                                 Log out
                             </a>
                         </button>
-                        <button class="btn btn-primary w-50" style="background-color: green; display: inline-flex; align-items: center;">
-                            <a href="{% url 'dashboard' %}" class="back-link" style="font-weight: bold; color:white; text-decoration: none;">
-                                <img src="{% static 'images/refresh-option.png' %}" alt="Refresh" style="width: 20px; height: 20px; margin-right: 5px;">
+                        <button class="btn btn-primary w-50"
+                            style="background-color: green; display: inline-flex; align-items: center;">
+                            <a href="{% url 'dashboard' %}" class="back-link"
+                                style="font-weight: bold; color:white; text-decoration: none;">
+                                <img src="{% static 'images/refresh-option.png' %}" alt="Refresh"
+                                    style="width: 20px; height: 20px; margin-right: 5px;">
                                 Refresh
                             </a>
                         </button>
                     </div>
-                    
+
 
                     <div class="card-body">
                         <h1 class="card-title text-center">SNMP WALK</h1>
@@ -81,7 +87,8 @@
                             {% csrf_token %}
                             <div class="mb-3">
                                 <label for="ipAddress" class="form-label">Enter IP Address or Hostname</label>
-                                <input type="text" class="form-control" id="ipAddress" name="ip_address" placeholder="Enter IP address or hostname" required>
+                                <input type="text" class="form-control" id="ipAddress" name="ip_address"
+                                    placeholder="Enter IP address or hostname" required>
                             </div>
                             <button class="btn btn-primary w-100" type="submit">Ping</button>
                         </form>
@@ -98,6 +105,37 @@
                             {{ error_message }}
                         </div>
                         {% endif %}
+                    </div>
+                </div>
+
+                <!-- DNS Operation -->
+                <div class="card">
+                    <div class="card-body">
+                        <h1 class="card-title text-center">DNS Lock up Operation</h1>
+
+                        <!-- Add a form for DNS lookup -->
+                        <form method="POST" action="{% url 'dns_lookup_operation' %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="domainName" class="form-label">Enter Domain Name</label>
+                                <input type="text" class="form-control" id="domainName" name="domain_name"
+                                    placeholder="Enter domain name" required>
+                            </div>
+                            <button class="btn btn-primary w-100" type="submit">DNS Lookup</button>
+                        </form>
+
+                        {% if dns_result %}
+                        <div class="alert alert-success" role="alert">
+                            <strong>DNS Lookup Result:</strong><br>
+                            <pre>{{ dns_result }}</pre> <!-- Use <pre> for preserving formatting -->
+                        </div>
+                        {% elif error_message %}
+                        <div class="alert alert-danger" role="alert">
+                            <strong>Error:</strong><br>
+                            {{ error_message }}
+                        </div>
+                        {% endif %}
+
                     </div>
                 </div>
             </div>
