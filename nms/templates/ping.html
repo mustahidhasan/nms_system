@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PING</title>
+    <title>Network Operations</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -19,6 +19,7 @@
 
 <body>
     <div class="container col-md-8">
+        <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
               <span class="navbar-toggler-icon"></span>
@@ -27,10 +28,10 @@
               <a class="navbar-brand" href="#">NMS</a>
               <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
                 <li class="nav-item active">
-                  <a class="nav-link" href="{% url 'dashboard' %}">Home</a>
+                  <a class="nav-link" href="{% url 'dashboard' %}">Home</span></a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link" href="">Ping <span class="sr-only">(current)</span></a>
+                  <a class="nav-link" href="{% url 'ping_operation' %}">Ping <span class="sr-only">(current)</a>
                 </li>
               
               </ul>
@@ -38,128 +39,73 @@
             </div>
           </nav>
           <br>
+        
+        <br>
+        
         <div class="row justify-content-center">
-
-            <!-- Right Column: SNMP Results and Ping Operation -->
-            <div class="col-md-6">
-                <!-- SNMP Walk Results -->
-                <div class="card mb-3">
-                    <div class="card-body" id="contentToPrint">
-                        <h1>SNMP Walk Results</h1>
-                        {% if result %}
-                        <li class="list-group-item">
-                            <h5>IP Address: {{ result.ip_address }}</h5>
-                            <p>SNMP Command: {{ result.snmp_command }}</p>
-                            <p>OID: {{ result.oid }}</p>
-                            <p>Output Format: {{ result.output_format }}</p>
-                            <p>Date and Time: {{ result.created_at|date:"Y-m-d H:i:s" }}</p>
-                            <h5 style="font-weight: bold;">Result: {{ result.result }}</h5>
-                        </li>
-                        <button id="save-pdf" class="btn btn-primary">Save as PDF</button>
-                        {% else %}
-                        <p>No SNMP results to display. Perform an SNMP Walk to see the results here.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Ping Operation -->
+            <!-- Network Operations Form -->
+            <div class="col-md-8">
                 <div class="card">
                     <div class="card-body">
-                        <h1 class="card-title text-center">Ping Operation</h1>
-
+                        <h1 class="card-title text-center">Network Operations</h1>
                         <form method="POST" action="{% url 'ping_operation' %}">
                             {% csrf_token %}
+                            
+                            <!-- Input for IP/Hostname -->
                             <div class="mb-3">
-                                <label for="ipAddress" class="form-label">Enter IP Address or Hostname</label>
+                                <label for="ipAddress" class="form-label">Enter IP Address or Domain Name</label>
                                 <input type="text" class="form-control" id="ipAddress" name="ip_address"
-                                    placeholder="Enter IP address or hostname" required>
+                                    placeholder="Enter IP address or domain name" required>
                             </div>
-                            <button class="btn btn-primary w-100" type="submit">Ping</button>
+
+                            <!-- Checkboxes for Operations -->
+                            <div class="mb-3">
+                                <label class="form-label">Select Operations</label><br>
+                                <div class="form-check form-check-inline custom-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="enable_ping" name="enable_ping" value="1">
+                                    <label class="form-check-label" for="enable_ping">Enable Ping</label>
+                                </div>
+                                <div class="form-check form-check-inline custom-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="verbose_ping" name="verbose_ping" value="1">
+                                    <label class="form-check-label" for="verbose_ping">Verbose Ping</label>
+                                </div>
+                                <div class="form-check form-check-inline custom-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="traceroute" name="traceroute" value="1">
+                                    <label class="form-check-label" for="traceroute">Traceroute</label>
+                                </div>
+                                <div class="form-check form-check-inline custom-checkbox">
+                                    <input class="form-check-input" type="checkbox" id="dns_lookup" name="dns_lookup" value="1">
+                                    <label class="form-check-label" for="dns_lookup">DNS Lookup</label>
+                                </div>
+                            </div>
+                            
+                            
+
+                            <button class="btn btn-primary w-100" type="submit">Run Network Operations</button>
                         </form>
 
                         <br>
-                        {% if ping_result %}
-                        <div class="alert alert-success" role="alert">
-                            <strong>Ping Result:</strong><br>
-                            {{ ping_result }}
-                        </div>
-                        {% elif error_message %}
-                        <div class="alert alert-danger" role="alert">
-                            <strong>Error:</strong><br>
-                            {{ error_message }}
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
 
-                <!-- DNS Operation -->
-                <div class="card">
-                    <div class="card-body">
-                        <h1 class="card-title text-center">DNS Lock up Operation</h1>
-
-                        <!-- Add a form for DNS lookup -->
-                        <form method="POST" action="{% url 'dns_lookup_operation' %}">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="domainName" class="form-label">Enter Domain Name</label>
-                                <input type="text" class="form-control" id="domainName" name="domain_name"
-                                    placeholder="Enter domain name" required>
+                        <!-- Results section -->
+                        {% if results %}
+                            <div class="alert alert-success" role="alert">
+                                <strong>Results:</strong><br>
+                                <pre>{{ results }}</pre>
                             </div>
-                            <button class="btn btn-primary w-100" type="submit">DNS Lookup</button>
-                        </form>
-
-                        {% if dns_result %}
-                        <div class="alert alert-success" role="alert">
-                            <strong>DNS Lookup Result:</strong><br>
-                            <pre>{{ dns_result }}</pre> <!-- Use <pre> for preserving formatting -->
-                        </div>
                         {% elif error_message %}
-                        <div class="alert alert-danger" role="alert">
-                            <strong>Error:</strong><br>
-                            {{ error_message }}
-                        </div>
+                            <div class="alert alert-danger" role="alert">
+                                <strong>Error:</strong><br>
+                                {{ error_message }}
+                            </div>
                         {% endif %}
-
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        document.getElementById('save-pdf').addEventListener('click', function () {
-            const content = document.getElementById('contentToPrint');
-
-            // Use html2canvas to render the HTML as an image
-            html2canvas(content).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF();
-                const imgWidth = 190; // Adjust width as needed
-                const pageHeight = pdf.internal.pageSize.height;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                let heightLeft = imgHeight;
-
-                let position = 0;
-
-                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                }
-
-                // Save the PDF with a filename
-                pdf.save('snmp_walk_results.pdf');
-            });
-        });
-    </script>
 </body>
 
 </html>

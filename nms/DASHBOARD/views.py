@@ -35,84 +35,74 @@ def logout_view(request):
     logout(request)
     return redirect("login")  # Replace 'login' with the name of your login URL
 
-def dns_lookup_operation(request):
-    if request.method == 'POST':
-        domain_name = request.POST.get('domain_name')
-        if not domain_name:
-            return render(request, 'ping.html', {'error_message': 'Please provide a domain name.'})
-
-        # Detect the operating system
-        os_name = platform.system()
-
-        try:
-            # Adjust DNS lookup command based on OS
-            if os_name == 'Windows':
-                command = ['nslookup', domain_name]
-            else:
-                command = ['dig', domain_name]  # Use dig for Linux
-
-            logger.info(f"Performing DNS lookup for {domain_name} using command: {command}")
-
-            # Run the DNS command
-            response = subprocess.run(command, capture_output=True, text=True)
-
-            # Log and handle response
-            logger.info(f"DNS lookup response: {response.stdout}")
-            if response.returncode == 0:
-                dns_result = response.stdout
-                return render(request, 'ping.html', {'dns_result': dns_result})
-            else:
-                error_message = 'DNS lookup failed. Check the domain name or network connectivity.'
-                return render(request, 'ping.html', {'error_message': error_message})
-
-        except Exception as e:
-            error_message = f'An error occurred: {str(e)}'
-            logger.error(f"DNS lookup error: {str(e)}")
-            return render(request, 'ping.html', {'error_message': error_message})
-
-    return render(request, 'ping.html')
-
 def ping_operation(request):
     if request.method == "POST":
         ip_address = request.POST.get("ip_address")
+        enable_ping = request.POST.get("enable_ping")
+        verbose_ping = request.POST.get("verbose_ping")
+        traceroute = request.POST.get("traceroute")
+        dns_lookup = request.POST.get("dns_lookup")
+
         if not ip_address:
-            return render(
-                request,
-                "ping.html",
-                {"error_message": "Please provide an IP address."},
-            )
+            return render(request, "ping.html", {"error_message": "Please provide an IP address or domain name."})
 
         # Detect the operating system
         os_name = platform.system()
+        results = ""
 
         try:
-            # Adjust ping command based on OS
-            if os_name == "Windows":
-                command = ["ping", "-n", "4", ip_address]  # Windows uses -n
-            else:
-                command = ["ping", "-c", "4", ip_address]  # Linux/Unix uses -c
+            # Perform Enable Ping
+            if enable_ping:
+                if os_name == "Windows":
+                    command = ["ping", "-n", "1", ip_address]
+                else:
+                    command = ["ping", "-c", "1", ip_address]
 
-            logger.info(f"Pinging {ip_address} using command: {command}")
+                logger.info(f"Pinging {ip_address} with basic ping.")
+                response = subprocess.run(command, capture_output=True, text=True)
+                if response.returncode == 0:
+                    results += f"Enable Ping: Device is alive\n"
+                else:
+                    results += f"Enable Ping: Device is unreachable\n"
 
-            # Run the ping command
-            response = subprocess.run(command, capture_output=True, text=True)
+            # Perform Verbose Ping
+            if verbose_ping:
+                if os_name == "Windows":
+                    command = ["ping", "-n", "4", ip_address]
+                else:
+                    command = ["ping", "-c", "4", ip_address]
 
-            # Log and handle response
-            logger.info(f"Ping response: {response.stdout}")
-            if response.returncode == 0:
-                ping_result = response.stdout
-                return render(request, "ping.html", {"ping_result": ping_result})
-            else:
-                error_message = (
-                    "Ping failed. Check the IP address or network connectivity."
-                )
-                return render(
-                    request, "ping.html", {"error_message": error_message}
-                )
+                logger.info(f"Pinging {ip_address} with verbose ping.")
+                response = subprocess.run(command, capture_output=True, text=True)
+                results += f"Verbose Ping Result:\n{response.stdout}\n" if response.returncode == 0 else "Verbose Ping failed.\n"
+
+            # Perform Traceroute
+            if traceroute:
+                if os_name == "Windows":
+                    command = ["tracert", ip_address]
+                else:
+                    command = ["traceroute", ip_address]
+
+                logger.info(f"Running traceroute for {ip_address}.")
+                response = subprocess.run(command, capture_output=True, text=True)
+                results += f"Traceroute Result:\n{response.stdout}\n" if response.returncode == 0 else "Traceroute failed.\n"
+
+            # Perform DNS Lookup
+            if dns_lookup:
+                if os_name == "Windows":
+                    command = ["nslookup", ip_address]
+                else:
+                    command = ["dig", ip_address]
+
+                logger.info(f"Performing DNS lookup for {ip_address}.")
+                response = subprocess.run(command, capture_output=True, text=True)
+                results += f"DNS Lookup Result:\n{response.stdout}\n" if response.returncode == 0 else "DNS Lookup failed.\n"
+
+            return render(request, "ping.html", {"results": results})
 
         except Exception as e:
             error_message = f"An error occurred: {str(e)}"
-            logger.error(f"Ping error: {str(e)}")
+            logger.error(f"Network operation error: {str(e)}")
             return render(request, "ping.html", {"error_message": error_message})
 
     return render(request, "ping.html")
