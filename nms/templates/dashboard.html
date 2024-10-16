@@ -24,14 +24,18 @@
               <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-              <a class="navbar-brand" href="#">NMS</a>
+              <a class="navbar-brand" href="{% url 'ping_operation' %}">NMS</a>
               <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-                <li class="nav-item active">
-                    <a class="nav-link" href="{% url 'ping_operation' %}">Home  <span class="sr-only">(current)</a>
+                <li class="nav-item ">
+                    <a class="nav-link" href="{% url 'ping_operation' %}">Home</a>
                   
                 </li>
-                <li class="nav-item">
+                <li class="nav-item active" >
                     <a class="nav-link" href="{% url 'dashboard' %}"></span>SNMP WALK</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}"></span>Log out</a>
                 </li>
               
               </ul>
@@ -46,28 +50,6 @@
             <!-- Left Column: SNMP Walk Form -->
             <div class="col-md-6">
                 <div class="card mb-3">
-                    <div class="text-center">
-                        <button class="btn btn-primary w-50"
-                            style="background-color: red; display: inline-flex; align-items: center;">
-                            <a href="{% url 'logout' %}" class="back-link"
-                                style="font-weight: bold; color:white; text-decoration: none;">
-                                <img src="{% static 'images/logout.png' %}" alt="Logout"
-                                    style="width: 20px; height: 20px; margin-right: 5px;">
-                                Log out
-                            </a>
-                        </button>
-                        <button class="btn btn-primary w-50"
-                            style="background-color: green; display: inline-flex; align-items: center;">
-                            <a href="{% url 'dashboard' %}" class="back-link"
-                                style="font-weight: bold; color:white; text-decoration: none;">
-                                <img src="{% static 'images/refresh-option.png' %}" alt="Refresh"
-                                    style="width: 20px; height: 20px; margin-right: 5px;">
-                                Refresh
-                            </a>
-                        </button>
-                    </div>
-
-
                     <div class="card-body">
                         <h1 class="card-title text-center">SNMP WALK</h1>
 
