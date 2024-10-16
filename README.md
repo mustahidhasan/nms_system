@@ -1,9 +1,12 @@
 # steps to run this project
+python3 -m venv env
+source env/bin/activate
+
 1. pip install -r requirements.txt
 2. cd nms
-3. python3 manage.py makemigrations
-4. python3 manage.py migrate
-5. python3 manage.py createsuperuser
+3. python manage.py makemigrations
+4. python manage.py migrate
+5. python manage.py createsuperuser
    a. give the crediantials for creating the admin
 6. login and browse from http://127.0.0.1:8000/
 7. admin panel: http://127.0.0.1:8000/admin/
