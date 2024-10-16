@@ -27,7 +27,7 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect("dashboard")  # Redirect to the dashboard
+                return redirect("ping_operation")  # Redirect to the dashboard
     else:
         form = LoginForm()
     return render(request, "login.html", {"form": form})

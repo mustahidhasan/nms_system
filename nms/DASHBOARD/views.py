@@ -43,6 +43,7 @@ def ping_operation(request):
         traceroute = request.POST.get("traceroute")
         dns_lookup = request.POST.get("dns_lookup")
 
+        # Check if IP address or domain name is provided
         if not ip_address:
             return render(request, "ping.html", {"error_message": "Please provide an IP address or domain name."})
 
@@ -106,7 +107,6 @@ def ping_operation(request):
             return render(request, "ping.html", {"error_message": error_message})
 
     return render(request, "ping.html")
-
 
 @login_required
 def dashboard_view(request):
