@@ -116,21 +116,19 @@ def ping_operation(request):
                     if response.returncode == 0
                     else "DNS Lookup failed.\n"
                 )
+
+            # Perform SNMP Walk
             if snmp_walk:
-                ip_address = request.POST.get("ip_address")
                 snmp_port = request.POST.get("snmp_port")
                 snmp_version = request.POST.get("snmp_version")
                 read_community_string = request.POST.get("read_community_string")
                 username = request.POST.get("username")
                 password = request.POST.get("password")
                 authentication_type = request.POST.get("authentication_type")
-                encryption_type =request.POST.get("encryption_type")
+                encryption_type = request.POST.get("encryption_type")
                 encryption_key = request.POST.get("encryption_key")
                 context_name = request.POST.get("context_name")
-                snmp_command = request.POST.get("snmp_command")
                 oid = request.POST.get("oid")
-                output_format = request.POST.get("output_format")
-                source_peer = request.POST.get("source_peer")
 
                 # SNMP Version Handling
                 if snmp_version in ["1", "2c"]:
@@ -200,6 +198,9 @@ def ping_operation(request):
                         else:
                             for varBind in varBinds:
                                 result.append(f"{varBind[0]} = {varBind[1]}")
+
+                # Append SNMP results to the main results
+                results += "\nSNMP Walk Result:\n" + "\n".join(result) + "\n"
 
             return render(request, "ping.html", {"results": results})
 
