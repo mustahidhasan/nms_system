@@ -3,7 +3,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.shortcuts import render, redirect
-from .forms import SNMPWalkForm
 from .models import SNMPWalk
 import subprocess
 import platform
@@ -118,22 +117,20 @@ def ping_operation(request):
                     else "DNS Lookup failed.\n"
                 )
             if snmp_walk:
-                ip_address = form.cleaned_data["ip_address"]
-                snmp_port = form.cleaned_data["snmp_port"]
-                snmp_version = form.cleaned_data["snmp_version"]
-                read_community_string = form.cleaned_data.get(
-                    "read_community_string", "public"
-                )
-                username = form.cleaned_data.get("username", "")
-                password = form.cleaned_data.get("password", "")
-                authentication_type = form.cleaned_data.get("authentication_type", "")
-                encryption_type = form.cleaned_data.get("encryption_type", "")
-                encryption_key = form.cleaned_data.get("encryption_key", "")
-                context_name = form.cleaned_data.get("context_name", "")
-                snmp_command = form.cleaned_data["snmp_command"]
-                oid = form.cleaned_data["oid"]
-                output_format = form.cleaned_data["output_format"]
-                source_peer = form.cleaned_data["source_peer"]
+                ip_address = request.POST.get("ip_address")
+                snmp_port = request.POST.get("snmp_port")
+                snmp_version = request.POST.get("snmp_version")
+                read_community_string = request.POST.get("read_community_string")
+                username = request.POST.get("username")
+                password = request.POST.get("password")
+                authentication_type = request.POST.get("authentication_type")
+                encryption_type =request.POST.get("encryption_type")
+                encryption_key = request.POST.get("encryption_key")
+                context_name = request.POST.get("context_name")
+                snmp_command = request.POST.get("snmp_command")
+                oid = request.POST.get("oid")
+                output_format = request.POST.get("output_format")
+                source_peer = request.POST.get("source_peer")
 
                 # SNMP Version Handling
                 if snmp_version in ["1", "2c"]:
@@ -206,7 +203,7 @@ def ping_operation(request):
 
                 # Render results in the result page
                 all_data = SNMPWalk.objects.last()
-                return render(request, "ping.html", {"result": all_data})
+                return render(request, "ping.html", {"snmp_res": all_data})
 
             return render(request, "ping.html", {"results": results})
 

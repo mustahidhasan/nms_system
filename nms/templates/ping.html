@@ -160,11 +160,17 @@
                                 <strong>Results:</strong><br>
                                 <pre>{{ results }}</pre>
                             </div>
+                        {% elif snmp_res%}
+                            <div class="alert alert-success" role="alert">
+                                <strong>Results:</strong><br>
+                                <pre>{{ snmp_res }}</pre>
+                            </div>
                         {% elif error_message %}
                             <div class="alert alert-danger" role="alert">
                                 <strong>Error:</strong><br>
                                 {{ error_message }}
                             </div>
+                        
                         {% endif %}
                         
                     </div>
