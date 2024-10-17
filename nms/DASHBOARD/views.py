@@ -35,6 +35,8 @@ def logout_view(request):
     logout(request)
     return redirect("login")  # Replace 'login' with the name of your login URL
 
+
+@login_required
 def ping_operation(request):
     if request.method == "POST":
         ip_address = request.POST.get("ip_address")
@@ -42,10 +44,15 @@ def ping_operation(request):
         verbose_ping = request.POST.get("verbose_ping")
         traceroute = request.POST.get("traceroute")
         dns_lookup = request.POST.get("dns_lookup")
+        snmp_walk = request.POST.get("snmp_walk")
 
         # Check if IP address or domain name is provided
         if not ip_address:
-            return render(request, "ping.html", {"error_message": "Please provide an IP address or domain name."})
+            return render(
+                request,
+                "ping.html",
+                {"error_message": "Please provide an IP address or domain name."},
+            )
 
         # Detect the operating system
         os_name = platform.system()
@@ -75,7 +82,11 @@ def ping_operation(request):
 
                 logger.info(f"Pinging {ip_address} with verbose ping.")
                 response = subprocess.run(command, capture_output=True, text=True)
-                results += f"Verbose Ping Result:\n{response.stdout}\n" if response.returncode == 0 else "Verbose Ping failed.\n"
+                results += (
+                    f"Verbose Ping Result:\n{response.stdout}\n"
+                    if response.returncode == 0
+                    else "Verbose Ping failed.\n"
+                )
 
             # Perform Traceroute
             if traceroute:
@@ -86,7 +97,11 @@ def ping_operation(request):
 
                 logger.info(f"Running traceroute for {ip_address}.")
                 response = subprocess.run(command, capture_output=True, text=True)
-                results += f"Traceroute Result:\n{response.stdout}\n" if response.returncode == 0 else "Traceroute failed.\n"
+                results += (
+                    f"Traceroute Result:\n{response.stdout}\n"
+                    if response.returncode == 0
+                    else "Traceroute failed.\n"
+                )
 
             # Perform DNS Lookup
             if dns_lookup:
@@ -97,7 +112,101 @@ def ping_operation(request):
 
                 logger.info(f"Performing DNS lookup for {ip_address}.")
                 response = subprocess.run(command, capture_output=True, text=True)
-                results += f"DNS Lookup Result:\n{response.stdout}\n" if response.returncode == 0 else "DNS Lookup failed.\n"
+                results += (
+                    f"DNS Lookup Result:\n{response.stdout}\n"
+                    if response.returncode == 0
+                    else "DNS Lookup failed.\n"
+                )
+            if snmp_walk:
+                ip_address = form.cleaned_data["ip_address"]
+                snmp_port = form.cleaned_data["snmp_port"]
+                snmp_version = form.cleaned_data["snmp_version"]
+                read_community_string = form.cleaned_data.get(
+                    "read_community_string", "public"
+                )
+                username = form.cleaned_data.get("username", "")
+                password = form.cleaned_data.get("password", "")
+                authentication_type = form.cleaned_data.get("authentication_type", "")
+                encryption_type = form.cleaned_data.get("encryption_type", "")
+                encryption_key = form.cleaned_data.get("encryption_key", "")
+                context_name = form.cleaned_data.get("context_name", "")
+                snmp_command = form.cleaned_data["snmp_command"]
+                oid = form.cleaned_data["oid"]
+                output_format = form.cleaned_data["output_format"]
+                source_peer = form.cleaned_data["source_peer"]
+
+                # SNMP Version Handling
+                if snmp_version in ["1", "2c"]:
+                    # Use SNMP v1 or v2c
+                    result = []
+                    for errorIndication, errorStatus, errorIndex, varBinds in nextCmd(
+                        SnmpEngine(),
+                        CommunityData(
+                            read_community_string,
+                            mpModel=0 if snmp_version == "1" else 1,
+                        ),
+                        UdpTransportTarget((ip_address, snmp_port)),
+                        ContextData(),
+                        ObjectType(ObjectIdentity(oid)),
+                        lexicographicMode=False,
+                    ):
+                        if errorIndication:
+                            result.append(f"Error: {errorIndication}")
+                            break
+                        elif errorStatus:
+                            result.append(
+                                f'Error: {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or "?"}'
+                            )
+                            break
+                        else:
+                            for varBind in varBinds:
+                                result.append(f"{varBind[0]} = {varBind[1]}")
+
+                elif snmp_version == "3":
+                    # Use SNMP v3 with optional authentication and encryption
+                    auth_protocol = usmNoAuthProtocol
+                    priv_protocol = usmNoPrivProtocol
+
+                    if authentication_type == "MD5":
+                        auth_protocol = usmHMACMD5AuthProtocol
+                    elif authentication_type == "SHA":
+                        auth_protocol = usmHMACSHAAuthProtocol
+
+                    if encryption_type == "AES":
+                        priv_protocol = usmAesCfb128Protocol
+                    elif encryption_type == "DES":
+                        priv_protocol = usmDESPrivProtocol
+
+                    result = []
+                    for errorIndication, errorStatus, errorIndex, varBinds in nextCmd(
+                        SnmpEngine(),
+                        UsmUserData(
+                            username,
+                            password,
+                            encryption_key,
+                            authProtocol=auth_protocol,
+                            privProtocol=priv_protocol,
+                        ),
+                        UdpTransportTarget((ip_address, snmp_port)),
+                        ContextData(context_name),
+                        ObjectType(ObjectIdentity(oid)),
+                        lexicographicMode=False,
+                    ):
+                        if errorIndication:
+                            result.append(f"Error: {errorIndication}")
+                            break
+                        elif errorStatus:
+                            result.append(
+                                f'Error: {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or "?"}'
+                            )
+                            break
+                        else:
+                            for varBind in varBinds:
+                                result.append(f"{varBind[0]} = {varBind[1]}")
+
+                # Render results in the result page
+                all_data = SNMPWalk.objects.last()
+                return render(request, "ping.html", {"result": all_data})
 
             return render(request, "ping.html", {"results": results})
 
@@ -108,7 +217,7 @@ def ping_operation(request):
 
     return render(request, "ping.html")
 
-@login_required
+
 def dashboard_view(request):
     if request.method == "POST":
         form = SNMPWalkForm(request.POST)
@@ -223,4 +332,4 @@ def dashboard_view(request):
     else:
         form = SNMPWalkForm()
 
-    return render(request, "ping.html", {"form": form})
+    # return render(request, "ping.html", {"form": form})
