@@ -3,7 +3,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.shortcuts import render, redirect
-from .models import SNMPWalk
 import subprocess
 import platform
 import logging
