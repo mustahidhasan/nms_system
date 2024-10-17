@@ -219,8 +219,8 @@ def dashboard_view(request):
             snmp_walk.save()
             # Render results in the result page
             all_data = SNMPWalk.objects.last()
-            return render(request, "dashboard.html", {"form": form, "result": all_data})
+            return render(request, "ping.html", {"form": form, "result": all_data})
     else:
         form = SNMPWalkForm()
 
-    return render(request, "dashboard.html", {"form": form})
+    return render(request, "ping.html", {"form": form})
