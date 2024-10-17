@@ -120,18 +120,13 @@ USE_TZ = True
 # This is where Django will store the collected static files
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Optional: For development only (you may not need this in production)
+# This is where Django looks for static files during development
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'static'),  # Make sure 'static' is a folder in your project root
 ]
 
-# Add this if not present
+# URL prefix for static files
 STATIC_URL = '/static/'
-
-# This ensures Django knows where to find your static files
-STATICFILES_DIRS = [
-    BASE_DIR / "static",  # This assumes your static files are in a folder named 'static' at the project root
-]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
