@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-x2--wh#=1^e7n^k*kttuey@wt%a$a7@)2()c=$_7ybu31v&yg0"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["13.60.255.109"]
 
 
 # Application definition
@@ -117,6 +117,13 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
+# This is where Django will store the collected static files
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Optional: For development only (you may not need this in production)
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 # Add this if not present
 STATIC_URL = '/static/'
