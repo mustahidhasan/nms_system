@@ -2,6 +2,16 @@
 - python3 -m venv env
 - source env/bin/activate
 
+# configure the email server
+nms/example.env
+- Here configure the email credentials
+- Keep the SMTP_server as it is to use gmail
+- to get your app password
+   - go to google security
+   - search for app password
+   - Generate one and use it here
+
+# run the main project 
 1. pip install -r requirements.txt
 2. cd nms
 3. python manage.py makemigrations
