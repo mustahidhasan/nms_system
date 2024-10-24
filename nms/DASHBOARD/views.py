@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect
 import subprocess
 import platform
 import logging
-from netmiko import ConnectHandler
+from netmiko import ConnectHandler, NetmikoTimeoutException, NetmikoAuthenticationException
 import ipaddress  # Importing the ipaddress module
 
 logger = logging.getLogger(__name__)
@@ -120,18 +120,40 @@ def perform_snmp_walk(ip_address, snmp_port, snmp_version, read_community_string
     return result
 
 def run_netmiko_command(ip_address, username, password, command):
+    # Define a generic connection with the provided parameters
     device = {
-        'device_type': 'cisco_ios',  # Change this based on your device
         'host': ip_address,
         'username': username,
         'password': password,
+        'device_type': 'autodetect',  # Use autodetect for device type
     }
-    
+
     try:
+        # Establish connection
         connection = ConnectHandler(**device)
+
+        # Get device type from the connection
+        device_type = connection.device_type
+        
+        # Retrieve the software version
+        device_info_output = connection.send_command("show version")
+        
+        # Extract the software version
+        version_line = next(line for line in device_info_output.splitlines() if "Version" in line or "Cisco IOS" in line)
+
+        # Prepare a human-readable output for software version
+        software_version = version_line.split(":")[-1].strip() if version_line else "Unknown"
+
+        # Execute the provided command
         output = connection.send_command(command)
+
+        # Disconnect from the device
         connection.disconnect()
-        return output
+
+        # Return device type and version along with command output
+        return f"Device Type: {device_type}\nSoftware Version: {software_version}", output
+    except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
+        return f"Connection Error: {str(e)}"
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -217,10 +239,11 @@ def ping_operation(request):
                     )
                     results += f"\nSNMP Walk Result {ip}:\n" + "\n".join(result) + "\n"
 
-                # Perform SSH Command using Netmiko
-                if command:
-                    ssh_output = run_netmiko_command(ip, ssh_username, ssh_password, command)
-                    results += f"SSH Command Result {ip}:\n{ssh_output}\n"
+                 # Perform SSH Command using Netmiko to get device type and software version
+                if ssh_username and ssh_password:  # Check if SSH credentials are provided
+                    device_info, command_output = run_netmiko_command(ip, ssh_username, ssh_password, command)
+                    results += f"Device Info {ip}:\n{device_info}\n"
+                    results += f"Command Output {ip}:\n{command_output}\n"
 
             return render(request, "ping.html", {"results": results})
 
