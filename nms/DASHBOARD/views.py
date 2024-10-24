@@ -8,6 +8,7 @@ import platform
 import logging
 from netmiko import ConnectHandler, NetmikoTimeoutException, NetmikoAuthenticationException
 import ipaddress  # Importing the ipaddress module
+from send_emails import SendEmail
 
 logger = logging.getLogger(__name__)
 
@@ -238,8 +239,9 @@ def ping_operation(request):
                         context_name=request.POST.get("context_name"),
                     )
                     results += f"\nSNMP Walk Result {ip}:\n" + "\n".join(result) + "\n"
-
-                 # Perform SSH Command using Netmiko to get device type and software version
+                    # send emails for snmp
+                    send_emails(f"SNMP of Port {snmp_port}", results)
+                # Perform SSH Command using Netmiko to get device type and software version
                 if ssh_username and ssh_password:  # Check if SSH credentials are provided
                     device_info, command_output = run_netmiko_command(ip, ssh_username, ssh_password, command)
                     results += f"Device Info {ip}:\n{device_info}\n"
@@ -252,3 +254,13 @@ def ping_operation(request):
             logger.error(f"Network operation error: {str(e)}")
             return render(request, "ping.html", {"error_message": error_message})
     return render(request, "ping.html")
+
+def send_emails(subject, body):
+    email = SendEmail()
+    
+    # Set subject and body
+    email.set_subject(subject)
+    email.set_body(body)
+    
+    # Send the email
+    email.send_email()
