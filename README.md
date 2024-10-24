@@ -4,6 +4,7 @@
 
 # configure the email server
 nms/example.env
+- rename the file to .env
 - Here configure the email credentials
 - Keep the SMTP_server as it is to use gmail
 - to get your app password
