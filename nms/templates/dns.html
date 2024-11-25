@@ -95,7 +95,17 @@
                                             <td>{{ forloop.counter }}</td>
                                             <td>{{ dns.dns_name }}</td>
                                             <td>{{ dns.dns_created_at }}</td>
-                                            
+                                            <td>
+                                                {% if dns.dns_name %}
+                                                    <!-- Delete button -->
+                                                    <form method="POST" action="{% url 'delete_dns' dns.dns_name %}" style="display:inline;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                                    </form>
+                                                {% else %}
+                                                    <p>Error: DNS ID is missing</p>
+                                                {% endif %}
+                                            </td>
                                         </tr>
                                     {% endfor %}
                                 {% else %}
@@ -104,6 +114,8 @@
                                     </tr>
                                 {% endif %}
                             </tbody>
+                            
+                            
                             
                         </table>
                     </div>

@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import DNS
 import logging
 
@@ -20,6 +20,16 @@ def add_dns(request):
         DNS.objects.create(
             dns_name = get_dns_id
         )
+    return redirect('dns_view')
+
+def delete_dns(request, dns_id):
+    # Fetch the DNS object by its ID
+    dns = get_object_or_404(DNS, dns_name=dns_id)
+
+    # Delete the DNS record
+    dns.delete()
+
+    # Redirect back to the DNS page
     return redirect('dns_view')
 
 
