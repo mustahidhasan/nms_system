@@ -154,16 +154,24 @@
 
                         <br>
 
-                       <!-- Results section -->
+                        <!-- Results section -->
                         {% if results %}
                         <div class="alert alert-success" role="alert">
                             <strong>Results:</strong><br>
-                            <div>{{ results|safe|linebreaksbr }}</div>
+                            <ul>
+                                {% for result in results %}
+                                <li>{{ result|safe|linebreaksbr }}</li>
+                                {% endfor %}
+                            </ul>
                         </div>
                         {% elif snmp_res %}
                         <div class="alert alert-success" role="alert">
                             <strong>Results:</strong><br>
-                            <pre>{{ snmp_res|safe|linebreaksbr }}</pre>
+                            <ul>
+                                {% for res in snmp_res %}
+                                <li>{{ res|safe|linebreaksbr }}</li>
+                                {% endfor %}
+                            </ul>
                         </div>
                         {% elif error_message %}
                         <div class="alert alert-danger" role="alert">
@@ -171,6 +179,7 @@
                             {{ error_message }}
                         </div>
                         {% endif %}
+
 
                         
                     </div>
