@@ -155,30 +155,25 @@
                         <br>
 
                         <!-- Results section -->
-                        {% if results %}
-                        <div class="alert alert-success" role="alert">
-                            <strong>Results:</strong><br>
-                            <ul>
-                                {% for result in results %}
-                                <li>{{ result|safe|linebreaksbr }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% elif snmp_res %}
-                        <div class="alert alert-success" role="alert">
-                            <strong>Results:</strong><br>
-                            <ul>
-                                {% for res in snmp_res %}
-                                <li>{{ res|safe|linebreaksbr }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% elif error_message %}
-                        <div class="alert alert-danger" role="alert">
-                            <strong>Error:</strong><br>
-                            {{ error_message }}
-                        </div>
+                        {% if table %}
+                            <table border="1">
+                                <thead>
+                                    <tr>
+                                        <th>Operation</th>
+                                        <th>Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in table.rows %}
+                                        <tr>
+                                            <td>{{ row.0 }}</td>
+                                            <td><pre>{{ row.1 }}</pre></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         {% endif %}
+
 
 
                         
