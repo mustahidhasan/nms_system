@@ -71,10 +71,7 @@ def ping_operation(request):
 
                 logger.info(f"Pinging {ip_address} with basic ping.")
                 response = subprocess.run(command, capture_output=True, text=True)
-                if response.returncode == 0:
-                    results.append(f"Enable Ping: Device is alive")
-                else:
-                    results.append(f"Enable Ping: Device is unreachable")
+                results.append(f"<b>Enable Ping:</b> {'Device is alive' if response.returncode == 0 else 'Device is unreachable'}<br>")
 
             # Perform Verbose Ping
             if verbose_ping:
@@ -86,9 +83,7 @@ def ping_operation(request):
                 logger.info(f"Pinging {ip_address} with verbose ping.")
                 response = subprocess.run(command, capture_output=True, text=True)
                 results.append(
-                    f"Verbose Ping Result:\n{response.stdout}\n"
-                    if response.returncode == 0
-                    else "Verbose Ping failed.\n"
+                    f"<b>Verbose Ping Result:</b><pre>{response.stdout}</pre>" if response.returncode == 0 else "<b>Verbose Ping failed.</b><br>"
                 )
 
             # Perform Traceroute
@@ -101,9 +96,7 @@ def ping_operation(request):
                 logger.info(f"Running traceroute for {ip_address}.")
                 response = subprocess.run(command, capture_output=True, text=True)
                 results.append(
-                    f"Traceroute Result:\n{response.stdout}\n"
-                    if response.returncode == 0
-                    else "Traceroute failed.\n"
+                    f"<b>Traceroute Result:</b><pre>{response.stdout}</pre>" if response.returncode == 0 else "<b>Traceroute failed.</b><br>"
                 )
 
             # Perform DNS Lookup
@@ -117,11 +110,11 @@ def ping_operation(request):
                         command = ["dig", ip_address]
                     response = subprocess.run(command, capture_output=True, text=True)
                     if response.returncode == 0:
-                        results.append(f"DNS Lookup Result:\n{response.stdout}\n")
+                        results.append(f"<b>DNS Lookup Result:</b><pre>{response.stdout}</pre>")
                     else:
-                        results.append("DNS Lookup failed.\n")
+                        results.append("<b>DNS Lookup failed.</b><br>")
                 else:
-                    results.append("DNS Lookup Result:\nDNS IP did not match the record.")
+                    results.append("<b>DNS Lookup Result:</b> DNS IP did not match the record.<br>")
 
             # Perform SNMP Walk
             if snmp_walk:
@@ -157,7 +150,7 @@ def ping_operation(request):
                             else:
                                 for varBind in varBinds:
                                     result.append(f"{varBind[0]} = {varBind[1]}")
-                        results.append("\n".join(result))
+                        results.append(f"<b>SNMP Walk Result:</b><pre>{' '.join(result)}</pre>")
 
                     elif snmp_version == "3":
                         auth_protocol = usmNoAuthProtocol
@@ -189,15 +182,15 @@ def ping_operation(request):
                             else:
                                 for varBind in varBinds:
                                     result.append(f"{varBind[0]} = {varBind[1]}")
-                        results.append("\n".join(result))
+                        results.append(f"<b>SNMP Walk Result:</b><pre>{' '.join(result)}</pre>")
 
                     else:
-                        results.append(f"Unsupported SNMP version: {snmp_version}")
+                        results.append(f"<b>Unsupported SNMP version:</b> {snmp_version}<br>")
 
                 except Exception as e:
                     logging.error(f"An error occurred while performing SNMP walk: {str(e)}")
-                    results.append(f"Error: {str(e)}")
-
+                    results.append(f"<b>Error:</b> {str(e)}<br>")
+            results = [result.replace('\n', '<br>') for result in results]
             return render(request, "ping.html", {"results": results})
 
         except Exception as e:

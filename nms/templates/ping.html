@@ -154,23 +154,24 @@
 
                         <br>
 
-                        <!-- Results section -->
+                       <!-- Results section -->
                         {% if results %}
-                            <div class="alert alert-success" role="alert">
-                                <strong>Results:</strong><br>
-                                <pre>{{ results }}</pre>
-                            </div>
+                        <div class="alert alert-success" role="alert">
+                            <strong>Results:</strong><br>
+                            <div>{{ results|safe|linebreaksbr }}</div>
+                        </div>
                         {% elif snmp_res %}
-                            <div class="alert alert-success" role="alert">
-                                <strong>Results:</strong><br>
-                                <pre>{{ snmp_res }}</pre>
-                            </div>
+                        <div class="alert alert-success" role="alert">
+                            <strong>Results:</strong><br>
+                            <pre>{{ snmp_res|safe|linebreaksbr }}</pre>
+                        </div>
                         {% elif error_message %}
-                            <div class="alert alert-danger" role="alert">
-                                <strong>Error:</strong><br>
-                                {{ error_message }}
-                            </div>
+                        <div class="alert alert-danger" role="alert">
+                            <strong>Error:</strong><br>
+                            {{ error_message }}
+                        </div>
                         {% endif %}
+
                         
                     </div>
                 </div>
