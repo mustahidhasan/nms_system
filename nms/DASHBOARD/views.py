@@ -6,6 +6,8 @@ from django.shortcuts import render, redirect
 import subprocess
 import platform
 import logging
+import socket
+
 from DNS.models import DNS
 logger = logging.getLogger(__name__)
 
@@ -105,28 +107,32 @@ def ping_operation(request):
 
             # Perform DNS Lookup
             if dns_lookup:
-                # Check if ip_address is in dns_names
-                if ip_address in dns_names:
-                    # IP address is found in DNS names
+                # Perform DNS lookup to get the IP address
+                ip_address_d = socket.gethostbyname(ip_address)
+                # print("line 112", ip_address_d)
+                # Check if the resolved IP address is in the list of DNS names
+                if ip_address_d in dns_names:
                     print("IP address exists in DNS records.")
+                    
+                    # Determine the command to run based on the OS
                     if os_name == "Windows":
                         command = ["nslookup", ip_address]
                     else:
                         command = ["dig", ip_address]
 
+                    # Perform the DNS lookup using subprocess
                     logger.info(f"Performing DNS lookup for {ip_address}.")
                     response = subprocess.run(command, capture_output=True, text=True)
-                    results += (
-                        f"DNS Lookup Result:\n{response.stdout}\n"
-                        if response.returncode == 0
-                        else "DNS Lookup failed.\n"
-                    )
+
+                    # Check if the command was successful and append the result
+                    if response.returncode == 0:
+                        results += f"DNS Lookup Result:\n{response.stdout}\n"
+                    else:
+                        results += "DNS Lookup failed.\n"
                 else:
-                    # IP address is not found in DNS names
+                    # IP address is not found in DNS records
                     print("IP address does not exist in DNS records.")
-                    results += (
-                        f"DNS Lookup Result:\nDNS ip did not matched the record"
-                    )
+                    results += "DNS Lookup Result:\nDNS IP did not match the record."
 
             # Perform SNMP Walk
             if snmp_walk:
