@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect
 import subprocess
 import platform
 import logging
-
+from DNS.models import DNS
 logger = logging.getLogger(__name__)
 
 # Import necessary modules from pysnmp
@@ -43,7 +43,9 @@ def ping_operation(request):
         traceroute = request.POST.get("traceroute")
         dns_lookup = request.POST.get("dns_lookup")
         snmp_walk = request.POST.get("snmp_walk")
-
+        # Get all DNS names as a list
+        dns_names = list(DNS.objects.values_list('dns_name', flat=True))
+        
         # Check if IP address or domain name is provided
         if not ip_address:
             return render(
@@ -103,18 +105,28 @@ def ping_operation(request):
 
             # Perform DNS Lookup
             if dns_lookup:
-                if os_name == "Windows":
-                    command = ["nslookup", ip_address]
-                else:
-                    command = ["dig", ip_address]
+                # Check if ip_address is in dns_names
+                if ip_address in dns_names:
+                    # IP address is found in DNS names
+                    print("IP address exists in DNS records.")
+                    if os_name == "Windows":
+                        command = ["nslookup", ip_address]
+                    else:
+                        command = ["dig", ip_address]
 
-                logger.info(f"Performing DNS lookup for {ip_address}.")
-                response = subprocess.run(command, capture_output=True, text=True)
-                results += (
-                    f"DNS Lookup Result:\n{response.stdout}\n"
-                    if response.returncode == 0
-                    else "DNS Lookup failed.\n"
-                )
+                    logger.info(f"Performing DNS lookup for {ip_address}.")
+                    response = subprocess.run(command, capture_output=True, text=True)
+                    results += (
+                        f"DNS Lookup Result:\n{response.stdout}\n"
+                        if response.returncode == 0
+                        else "DNS Lookup failed.\n"
+                    )
+                else:
+                    # IP address is not found in DNS names
+                    print("IP address does not exist in DNS records.")
+                    results += (
+                        f"DNS Lookup Result:\nDNS ip did not matched the record"
+                    )
 
             # Perform SNMP Walk
             if snmp_walk:
