@@ -9,6 +9,7 @@ import logging
 import socket
 
 from DNS.models import DNS
+
 logger = logging.getLogger(__name__)
 
 # Import necessary modules from pysnmp
@@ -46,8 +47,8 @@ def ping_operation(request):
         dns_lookup = request.POST.get("dns_lookup")
         snmp_walk = request.POST.get("snmp_walk")
         # Get all DNS names as a list
-        dns_names = list(DNS.objects.values_list('dns_name', flat=True))
-        
+        dns_names = list(DNS.objects.values_list("dns_name", flat=True))
+
         # Check if IP address or domain name is provided
         if not ip_address:
             return render(
@@ -113,7 +114,7 @@ def ping_operation(request):
                 # Check if the resolved IP address is in the list of DNS names
                 if ip_address_d in dns_names:
                     print("IP address exists in DNS records.")
-                    
+
                     # Determine the command to run based on the OS
                     if os_name == "Windows":
                         command = ["nslookup", ip_address]

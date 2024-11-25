@@ -1,5 +1,6 @@
 from django.db import models
 
+
 # Create your models here.
 class DNS(models.Model):
     dns_name = models.CharField(max_length=50, blank=True)
