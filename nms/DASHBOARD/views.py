@@ -71,7 +71,9 @@ def ping_operation(request):
 
                 logger.info(f"Pinging {ip_address} with basic ping.")
                 response = subprocess.run(command, capture_output=True, text=True)
-                results.append(f"<b>Enable Ping:</b> {'Device is alive' if response.returncode == 0 else 'Device is unreachable'}<br>")
+                results.append(
+                    f"<b>Enable Ping:</b> {'Device is alive' if response.returncode == 0 else 'Device is unreachable'}<br>"
+                )
 
             # Perform Verbose Ping
             if verbose_ping:
@@ -83,7 +85,9 @@ def ping_operation(request):
                 logger.info(f"Pinging {ip_address} with verbose ping.")
                 response = subprocess.run(command, capture_output=True, text=True)
                 results.append(
-                    f"<b>Verbose Ping Result:</b><pre>{response.stdout}</pre>" if response.returncode == 0 else "<b>Verbose Ping failed.</b><br>"
+                    f"<b>Verbose Ping Result:</b><pre>{response.stdout}</pre>"
+                    if response.returncode == 0
+                    else "<b>Verbose Ping failed.</b><br>"
                 )
 
             # Perform Traceroute
@@ -96,7 +100,9 @@ def ping_operation(request):
                 logger.info(f"Running traceroute for {ip_address}.")
                 response = subprocess.run(command, capture_output=True, text=True)
                 results.append(
-                    f"<b>Traceroute Result:</b><pre>{response.stdout}</pre>" if response.returncode == 0 else "<b>Traceroute failed.</b><br>"
+                    f"<b>Traceroute Result:</b><pre>{response.stdout}</pre>"
+                    if response.returncode == 0
+                    else "<b>Traceroute failed.</b><br>"
                 )
 
             # Perform DNS Lookup
@@ -110,17 +116,23 @@ def ping_operation(request):
                         command = ["dig", ip_address]
                     response = subprocess.run(command, capture_output=True, text=True)
                     if response.returncode == 0:
-                        results.append(f"<b>DNS Lookup Result:</b><pre>{response.stdout}</pre>")
+                        results.append(
+                            f"<b>DNS Lookup Result:</b><pre>{response.stdout}</pre>"
+                        )
                     else:
                         results.append("<b>DNS Lookup failed.</b><br>")
                 else:
-                    results.append("<b>DNS Lookup Result:</b> DNS IP did not match the record.<br>")
+                    results.append(
+                        "<b>DNS Lookup Result:</b> DNS IP did not match the record.<br>"
+                    )
 
             # Perform SNMP Walk
             if snmp_walk:
                 snmp_port = request.POST.get("snmp_port", 161)
                 snmp_version = request.POST.get("snmp_version")
-                read_community_string = request.POST.get("read_community_string", "public")
+                read_community_string = request.POST.get(
+                    "read_community_string", "public"
+                )
                 username = request.POST.get("username")
                 password = request.POST.get("password")
                 authentication_type = request.POST.get("authentication_type", "SHA")
@@ -128,29 +140,41 @@ def ping_operation(request):
                 encryption_key = request.POST.get("encryption_key")
                 context_name = request.POST.get("context_name", "")
                 oid = request.POST.get("oid", "1.3.6.1")
-                
+
                 try:
                     # Handle SNMP Version and append results
                     if snmp_version in ["1", "2c"]:
                         result = []
-                        for errorIndication, errorStatus, errorIndex, varBinds in nextCmd(
+                        for (
+                            errorIndication,
+                            errorStatus,
+                            errorIndex,
+                            varBinds,
+                        ) in nextCmd(
                             SnmpEngine(),
-                            CommunityData(read_community_string, mpModel=0 if snmp_version == "1" else 1),
+                            CommunityData(
+                                read_community_string,
+                                mpModel=0 if snmp_version == "1" else 1,
+                            ),
                             UdpTransportTarget((ip_address, int(snmp_port))),
                             ContextData(),
                             ObjectType(ObjectIdentity(oid)),
-                            lexicographicMode=False
+                            lexicographicMode=False,
                         ):
                             if errorIndication:
                                 result.append(f"Error: {errorIndication}")
                                 break
                             elif errorStatus:
-                                result.append(f'Error: {errorStatus.prettyPrint()} at {errorIndex}')
+                                result.append(
+                                    f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
+                                )
                                 break
                             else:
                                 for varBind in varBinds:
                                     result.append(f"{varBind[0]} = {varBind[1]}")
-                        results.append(f"<b>SNMP Walk Result:</b><pre>{' '.join(result)}</pre>")
+                        results.append(
+                            f"<b>SNMP Walk Result:</b><pre>{' '.join(result)}</pre>"
+                        )
 
                     elif snmp_version == "3":
                         auth_protocol = usmNoAuthProtocol
@@ -165,39 +189,56 @@ def ping_operation(request):
                             priv_protocol = usmDESPrivProtocol
 
                         result = []
-                        for errorIndication, errorStatus, errorIndex, varBinds in nextCmd(
+                        for (
+                            errorIndication,
+                            errorStatus,
+                            errorIndex,
+                            varBinds,
+                        ) in nextCmd(
                             SnmpEngine(),
-                            UsmUserData(username, password, encryption_key, authProtocol=auth_protocol, privProtocol=priv_protocol),
+                            UsmUserData(
+                                username,
+                                password,
+                                encryption_key,
+                                authProtocol=auth_protocol,
+                                privProtocol=priv_protocol,
+                            ),
                             UdpTransportTarget((ip_address, int(snmp_port))),
                             ContextData(context_name),
                             ObjectType(ObjectIdentity(oid)),
-                            lexicographicMode=False
+                            lexicographicMode=False,
                         ):
                             if errorIndication:
                                 result.append(f"Error: {errorIndication}")
                                 break
                             elif errorStatus:
-                                result.append(f'Error: {errorStatus.prettyPrint()} at {errorIndex}')
+                                result.append(
+                                    f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
+                                )
                                 break
                             else:
                                 for varBind in varBinds:
                                     result.append(f"{varBind[0]} = {varBind[1]}")
-                        results.append(f"<b>SNMP Walk Result:</b><pre>{' '.join(result)}</pre>")
+                        results.append(
+                            f"<b>SNMP Walk Result:</b><pre>{' '.join(result)}</pre>"
+                        )
 
                     else:
-                        results.append(f"<b>Unsupported SNMP version:</b> {snmp_version}<br>")
+                        results.append(
+                            f"<b>Unsupported SNMP version:</b> {snmp_version}<br>"
+                        )
 
                 except Exception as e:
-                    logging.error(f"An error occurred while performing SNMP walk: {str(e)}")
+                    logging.error(
+                        f"An error occurred while performing SNMP walk: {str(e)}"
+                    )
                     results.append(f"<b>Error:</b> {str(e)}<br>")
-            results = [result.replace('\n', '<br>') for result in results]
+            results = [result.replace("\n", "<br>") for result in results]
             return render(request, "ping.html", {"results": results})
 
         except Exception as e:
             error_message = f"An error occurred: {str(e)}"
             logger.error(f"Network operation failed: {error_message}")
-            return render(
-                request, "ping.html", {"error_message": error_message}
-            )
+            return render(request, "ping.html", {"error_message": error_message})
     else:
         return render(request, "ping.html")
