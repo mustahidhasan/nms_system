@@ -74,7 +74,11 @@ def ping_operation(request):
 
                 logger.info(f"Pinging {ip_address} with basic ping.")
                 response = subprocess.run(command, capture_output=True, text=True)
-                ping_result = "Device is alive" if response.returncode == 0 else "Device is unreachable"
+                ping_result = (
+                    "Device is alive"
+                    if response.returncode == 0
+                    else "Device is unreachable"
+                )
                 table.add_row(["Enable Ping", ping_result])
 
             # Perform Verbose Ping
@@ -86,7 +90,11 @@ def ping_operation(request):
 
                 logger.info(f"Pinging {ip_address} with verbose ping.")
                 response = subprocess.run(command, capture_output=True, text=True)
-                verbose_result = response.stdout if response.returncode == 0 else "Verbose Ping failed."
+                verbose_result = (
+                    response.stdout
+                    if response.returncode == 0
+                    else "Verbose Ping failed."
+                )
                 table.add_row(["Verbose Ping Result", verbose_result])
 
             # Perform Traceroute
@@ -98,7 +106,11 @@ def ping_operation(request):
 
                 logger.info(f"Running traceroute for {ip_address}.")
                 response = subprocess.run(command, capture_output=True, text=True)
-                traceroute_result = response.stdout if response.returncode == 0 else "Traceroute failed."
+                traceroute_result = (
+                    response.stdout
+                    if response.returncode == 0
+                    else "Traceroute failed."
+                )
                 table.add_row(["Traceroute Result", traceroute_result])
 
             # Perform DNS Lookup
@@ -111,10 +123,16 @@ def ping_operation(request):
                     else:
                         command = ["dig", ip_address]
                     response = subprocess.run(command, capture_output=True, text=True)
-                    dns_result = response.stdout if response.returncode == 0 else "DNS Lookup failed."
+                    dns_result = (
+                        response.stdout
+                        if response.returncode == 0
+                        else "DNS Lookup failed."
+                    )
                     table.add_row(["DNS Lookup Result", dns_result])
                 else:
-                    table.add_row(["DNS Lookup Result", "DNS IP did not match the record."])
+                    table.add_row(
+                        ["DNS Lookup Result", "DNS IP did not match the record."]
+                    )
 
             # Perform SNMP Walk
             if snmp_walk:
@@ -162,7 +180,7 @@ def ping_operation(request):
                             else:
                                 for varBind in varBinds:
                                     snmp_result.append(f"{varBind[0]} = {varBind[1]}")
-                        table.add_row(["SNMP Walk Result", '\n'.join(snmp_result)])
+                        table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
 
                     elif snmp_version == "3":
                         auth_protocol = usmNoAuthProtocol
@@ -207,13 +225,20 @@ def ping_operation(request):
                             else:
                                 for varBind in varBinds:
                                     result.append(f"{varBind[0]} = {varBind[1]}")
-                        table.add_row(["SNMP Walk Result", '\n'.join(result)])
+                        table.add_row(["SNMP Walk Result", "\n".join(result)])
 
                     else:
-                        table.add_row(["SNMP Walk Result", f"Unsupported SNMP version: {snmp_version}"])
+                        table.add_row(
+                            [
+                                "SNMP Walk Result",
+                                f"Unsupported SNMP version: {snmp_version}",
+                            ]
+                        )
 
                 except Exception as e:
-                    logging.error(f"An error occurred while performing SNMP walk: {str(e)}")
+                    logging.error(
+                        f"An error occurred while performing SNMP walk: {str(e)}"
+                    )
                     table.add_row(["SNMP Walk Result", f"Error: {str(e)}"])
 
             return render(request, "ping.html", {"table": table})
