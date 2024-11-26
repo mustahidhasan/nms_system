@@ -136,7 +136,7 @@ def ping_operation(request):
 
             # Perform SNMP Walk
             if snmp_walk:
-                snmp_port = request.POST.get("snmp_port", 161)
+                snmp_port = 161  # default port for snmp
                 snmp_version = request.POST.get("snmp_version")
                 read_community_string = request.POST.get(
                     "read_community_string", "public"
@@ -146,13 +146,12 @@ def ping_operation(request):
                 authentication_type = request.POST.get("authentication_type", "SHA")
                 encryption_type = request.POST.get("encryption_type", "AES")
                 encryption_key = request.POST.get("encryption_key")
-                context_name = request.POST.get("context_name", "")
                 oid = request.POST.get("oid", "1.3.6.1")
 
                 try:
                     # Handle SNMP Version and append results
                     snmp_result = []
-                    if snmp_version in ["1", "2c"]:
+                    if snmp_version == "2c":
                         for (
                             errorIndication,
                             errorStatus,
@@ -210,7 +209,6 @@ def ping_operation(request):
                                 privProtocol=priv_protocol,
                             ),
                             UdpTransportTarget((ip_address, int(snmp_port))),
-                            ContextData(context_name),
                             ObjectType(ObjectIdentity(oid)),
                             lexicographicMode=False,
                         ):
