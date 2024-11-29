@@ -160,32 +160,37 @@
                 </div>
             </div>
 
-            <!-- network Results -->
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <!-- Results section -->
-                        {% if table %}
-                            <table class="table table-bordered table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Operation</th>
-                                        <th>Result</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for row in table.rows %}
-                                        <tr>
-                                            <td>{{ row.0 }}</td>
-                                            <td><pre>{{ row.1 }}</pre></td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+            <!-- Network Results -->
+<div class="col-md-12">
+    <div class="card">
+        <div class="card-body">
+            <!-- Results section -->
+            {% if table %}
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in table.rows %}
+                            <tr>
+                                <td>{{ row.0 }}</td>
+                                <td>
+                                    <div style="max-height: 200px; overflow-y: auto;">
+                                        <pre>{{ row.1 }}</pre>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 
         </div>
     </div>
