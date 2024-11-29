@@ -39,7 +39,7 @@ def logout_view(request):
 @login_required
 def ping_operation(request):
     if request.method == "POST":
-        ip_address = request.POST.get("ip_address")
+        get_ip_address = request.POST.get("ip_address")
         enable_ping = request.POST.get("enable_ping")
         verbose_ping = request.POST.get("verbose_ping")
         traceroute = request.POST.get("traceroute")
@@ -47,7 +47,8 @@ def ping_operation(request):
         snmp_walk = request.POST.get("snmp_walk")
         # Get all DNS names as a list
         dns_names = list(DNS.objects.values_list("dns_name", flat=True))
-
+        ip_address = socket.gethostbyname(get_ip_address)
+        print("line 51", ip_address)
         # Check if IP address or domain name is provided
         if not ip_address:
             return render(
