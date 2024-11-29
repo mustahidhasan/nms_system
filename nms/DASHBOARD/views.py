@@ -145,8 +145,6 @@ def ping_operation(request):
                         table.add_row(["DNS Lookup Result", "DNS query failed."])
                 except Exception as e:
                     table.add_row(["Unexpected Error", f"{str(e)}"])
-            else:
-                table.add_row(["DNS Lookup Disabled", "DNS lookup was skipped."])
 
             # Perform SNMP Walk
             if snmp_walk:
