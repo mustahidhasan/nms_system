@@ -115,24 +115,38 @@ def ping_operation(request):
 
             # Perform DNS Lookup
             if dns_lookup:
-                ip_address_d = socket.gethostbyname(ip_address)
-                if ip_address_d in dns_names:
-                    logger.info("IP address exists in DNS records.")
+                try:
+                    # Determine the command based on OS
                     if os_name == "Windows":
                         command = ["nslookup", ip_address]
                     else:
                         command = ["dig", ip_address]
+
+                    # Execute the DNS query
                     response = subprocess.run(command, capture_output=True, text=True)
-                    dns_result = (
-                        response.stdout
-                        if response.returncode == 0
-                        else "DNS Lookup failed."
-                    )
-                    table.add_row(["DNS Lookup Result", dns_result])
-                else:
-                    table.add_row(
-                        ["DNS Lookup Result", "DNS IP did not match the record."]
-                    )
+
+                    if response.returncode == 0:
+                        # Extract the resolved IP from the output
+                        dns_result = response.stdout
+                        print("line 131", dns_result)
+                        logger.info("DNS query executed successfully.")
+
+                        # Check if any resolved IP matches DNS records
+                        if any(dns_ip in dns_result for dns_ip in dns_names):
+                            table.add_row(["DNS Lookup Result", dns_result])
+                        else:
+                            table.add_row(
+                                [
+                                    "DNS Lookup Result",
+                                    "Resolved IP does not match DNS records.",
+                                ]
+                            )
+                    else:
+                        table.add_row(["DNS Lookup Result", "DNS query failed."])
+                except Exception as e:
+                    table.add_row(["Unexpected Error", f"{str(e)}"])
+            else:
+                table.add_row(["DNS Lookup Disabled", "DNS lookup was skipped."])
 
             # Perform SNMP Walk
             if snmp_walk:
