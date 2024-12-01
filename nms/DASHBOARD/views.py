@@ -47,15 +47,25 @@ def ping_operation(request):
         snmp_walk = request.POST.get("snmp_walk")
         # Get all DNS names as a list
         dns_names = list(DNS.objects.values_list("dns_name", flat=True))
-        ip_address = socket.gethostbyname(get_ip_address)
-        print("line 51", ip_address)
-        # Check if IP address or domain name is provided
-        if not ip_address:
-            return render(
-                request,
-                "ping.html",
-                {"error_message": "Please provide an IP address or domain name."},
-            )
+
+        # Resolve the input (IP or hostname)
+        try:
+            # If it's an IP address, validate it
+            socket.inet_aton(get_ip_address)
+            ip_address = get_ip_address  # Use directly if valid IP
+        except socket.error:
+            try:
+                # Resolve the hostname to an IP
+                ip_address = socket.gethostbyname(get_ip_address)
+            except socket.gaierror:
+                logger.error(f"Failed to resolve hostname: {get_ip_address}")
+                return render(
+                    request,
+                    "ping.html",
+                    {"error_message": "Invalid IP address or hostname provided."},
+                )
+
+        print("Resolved IP Address:", ip_address)
 
         # Detect the operating system
         os_name = platform.system()
@@ -129,7 +139,6 @@ def ping_operation(request):
                     if response.returncode == 0:
                         # Extract the resolved IP from the output
                         dns_result = response.stdout
-                        print("line 131", dns_result)
                         logger.info("DNS query executed successfully.")
 
                         # Check if any resolved IP matches DNS records
@@ -149,7 +158,7 @@ def ping_operation(request):
 
             # Perform SNMP Walk
             if snmp_walk:
-                snmp_port = 161  # default port for snmp
+                snmp_port = 161  # default port for SNMP
                 snmp_version = request.POST.get("snmp_version")
                 read_community_string = request.POST.get(
                     "read_community_string", "public"
@@ -247,7 +256,7 @@ def ping_operation(request):
                         )
 
                 except Exception as e:
-                    logging.error(
+                    logger.error(
                         f"An error occurred while performing SNMP walk: {str(e)}"
                     )
                     table.add_row(["SNMP Walk Result", f"Error: {str(e)}"])
