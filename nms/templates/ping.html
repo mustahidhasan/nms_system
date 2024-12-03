@@ -100,156 +100,162 @@
     <br>
     <div class="container col-12">
         <div class="row justify-content-center">
-            <!-- Network Operations Form -->
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-body">
-                        <h1 class="card-title text-center">Network Operations</h1>
-                        <form method="POST" action="{% url 'ping_operation' %}">
-                            {% csrf_token %}
-
-                            <!-- Input for IP/Hostname -->
-                            <div class="mb-3">
-                                <label for="ipAddress" class="form-label">Enter IP Address or Domain Name</label>
-                                <input type="text" class="form-control" id="ipAddress" name="ip_address"
-                                    placeholder="Enter IP address or domain name">
-                            </div>
-
-                            <div id="snmp_fields" style="display: none;">
-                                <h3>SNMP Configuration</h3>
-
-                                <label for="snmp_version">SNMP Version:</label>
-                                <select name="snmp_version" id="snmp_version" onchange="toggleSNMPVersionFields()">
-                                    <option value="">Select a version</option>
-                                    <option value="2c">SNMPv2c</option>
-                                    <option value="3">SNMPv3</option>
-                                </select><br>
-
-                                <!-- Div to be shown when SNMPv2c is selected -->
-                                <div id="v2c" style="display: none;">
-                                    <label for="read_community_string">Read Community String:</label>
-                                    <input type="text" name="read_community_string" id="read_community_string">
-                                </div>
-
-                                <div id="v3" style="display: none;">
-                                    <label for="username">Username:</label>
-                                    <input type="text" name="username" id="username">
-
-                                    <label for="password">Password:</label>
-                                    <input type="password" name="password" id="password">
-
-                                    <label for="authentication_type">Authentication Type:</label>
-                                    <select name="authentication_type" id="authentication_type">
-                                        <option value="None">None</option>
-                                        <option value="MD5">MD5</option>
-                                        <option value="SHA">SHA</option>
-                                    </select><br>
-
-                                    <label for="encryption_type">Encryption Type:</label>
-                                    <select name="encryption_type" id="encryption_type">
-                                        <option value="None">None</option>
-                                        <option value="AES">AES</option>
-                                        <option value="DES">DES</option>
-                                    </select><br>
-
-                                    <label for="encryption_key">Encryption Key:</label>
-                                    <input type="text" name="encryption_key" id="encryption_key">
-
-                                    <label for="snmp_command">SNMP Command:</label>
-                                    <select name="snmp_command" id="snmp_command">
-                                        <option value="snmpwalk">SNMP Walk</option>
-                                        <option value="snmpget">SNMP Get</option>
-                                    </select><br>
-
-                                    <label for="oid">Numeric OID:</label>
-                                    <input type="text" name="oid" id="oid" value="1.3.6.1.2.1.1.5">
-
-                                    <label for="output_format">Output Format:</label>
-                                    <select name="output_format" id="output_format">
-                                        <option value="default">Default</option>
-                                        <option value="numeric">Numeric OIDs</option>
-                                        <option value="certification">Certification Walk</option>
-                                        <option value="hex">Hex String</option>
-                                    </select><br>
-
-                                </div>
-
-
-                            </div><br><br>
-
-                            <!-- Checkboxes for Operations -->
-                            <div class="mb-3">
-                                <label class="form-label">Select Operations</label><br>
-                                <div class="form-check form-check-inline custom-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="enable_ping" name="enable_ping"
-                                        value="1">
-                                    <label class="form-check-label" for="enable_ping">Enable Ping</label>
-                                </div>
-                                <div class="form-check form-check-inline custom-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="verbose_ping"
-                                        name="verbose_ping" value="1">
-                                    <label class="form-check-label" for="verbose_ping">Verbose Ping</label>
-                                </div>
-                                <div class="form-check form-check-inline custom-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="traceroute" name="traceroute"
-                                        value="1">
-                                    <label class="form-check-label" for="traceroute">Traceroute</label>
-                                </div>
-                                <div class="form-check form-check-inline custom-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="dns_lookup" name="dns_lookup"
-                                        value="1">
-                                    <label class="form-check-label" for="dns_lookup">DNS Lookup</label>
-                                </div>
-                                <br><br>
-                                <div class="form-check form-check-inline custom-checkbox">
-                                    <input class="form-check-input" type="checkbox" id="snmp_walk" name="snmp_walk"
-                                        value="1" onclick="toggleSNMPFields()">
-                                    <label class="form-check-label" for="snmp_walk">SNMP Walk</label>
-                                </div>
-                            </div>
-
-                            <button class="btn btn-primary w-100" type="submit">Run Network Operations</button>
-                        </form>
-
-                        <br>
+          <!-- Network Operations Form -->
+          <div class="col-md-8">
+            <div class="card shadow-lg">
+              <div class="card-body">
+                <h1 class="card-title text-center mb-4">Network Operations</h1>
+                <form method="POST" action="{% url 'ping_operation' %}">
+                  {% csrf_token %}
+      
+                  <!-- Input for IP/Hostname -->
+                  <div class="form-group">
+                    <label for="ipAddress" class="form-label">Enter IP Address or Domain Name</label>
+                    <input type="text" class="form-control" id="ipAddress" name="ip_address" placeholder="Enter IP address or domain name">
+                  </div>
+      
+                  <!-- SNMP Fields -->
+                  <div id="snmp_fields" class="p-3 border rounded bg-light" style="display: none;">
+                    <h5 class="mb-3">SNMP Configuration</h5>
+      
+                    <label for="snmp_version" class="form-label">SNMP Version:</label>
+                    <select class="form-control mb-3" name="snmp_version" id="snmp_version" onchange="toggleSNMPVersionFields()">
+                      <option value="">Select a version</option>
+                      <option value="2c">SNMPv2c</option>
+                      <option value="3">SNMPv3</option>
+                    </select>
+      
+                    <!-- SNMPv2c Fields -->
+                    <div id="v2c" style="display: none;">
+                      <label for="read_community_string" class="form-label">Read Community String:</label>
+                      <input type="text" class="form-control mb-3" name="read_community_string" id="read_community_string">
+                    </div>
+      
+                    <!-- SNMPv3 Fields -->
+                    <div id="v3" style="display: none;">
+                      <label for="username" class="form-label">Username:</label>
+                      <input type="text" class="form-control mb-3" name="username" id="username">
+      
+                      <label for="password" class="form-label">Password:</label>
+                      <input type="password" class="form-control mb-3" name="password" id="password">
+      
+                      <label for="authentication_type" class="form-label">Authentication Type:</label>
+                      <select class="form-control mb-3" name="authentication_type" id="authentication_type">
+                        <option value="None">None</option>
+                        <option value="MD5">MD5</option>
+                        <option value="SHA">SHA</option>
+                      </select>
+      
+                      <label for="encryption_type" class="form-label">Encryption Type:</label>
+                      <select class="form-control mb-3" name="encryption_type" id="encryption_type">
+                        <option value="None">None</option>
+                        <option value="AES">AES</option>
+                        <option value="DES">DES</option>
+                      </select>
+      
+                      <label for="encryption_key" class="form-label">Encryption Key:</label>
+                      <input type="text" class="form-control mb-3" name="encryption_key" id="encryption_key">
+      
+                      <label for="snmp_command" class="form-label">SNMP Command:</label>
+                      <select class="form-control mb-3" name="snmp_command" id="snmp_command">
+                        <option value="snmpwalk">SNMP Walk</option>
+                        <option value="snmpget">SNMP Get</option>
+                      </select>
+      
+                      <label for="oid" class="form-label">Numeric OID:</label>
+                      <input type="text" class="form-control mb-3" name="oid" id="oid" value="1.3.6.1.2.1.1.5">
+      
+                      <label for="output_format" class="form-label">Output Format:</label>
+                      <select class="form-control mb-3" name="output_format" id="output_format">
+                        <option value="default">Default</option>
+                        <option value="numeric">Numeric OIDs</option>
+                        <option value="certification">Certification Walk</option>
+                        <option value="hex">Hex String</option>
+                      </select>
+                    </div>
+                  </div>
+      
+                  <!-- Checkboxes for Operations -->
+                <div class="form-group">
+                    <label class="form-label">Select Operations</label>
+                    <div class="row">
+                    <!-- First Row of Checkboxes -->
+                    <div class="col-md-3">
+                        <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="enable_ping" name="enable_ping" value="1">
+                        <label class="form-check-label" for="enable_ping">Enable Ping</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="verbose_ping" name="verbose_ping" value="1">
+                        <label class="form-check-label" for="verbose_ping">Verbose Ping</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="traceroute" name="traceroute" value="1">
+                        <label class="form-check-label" for="traceroute">Traceroute</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="dns_lookup" name="dns_lookup" value="1">
+                        <label class="form-check-label" for="dns_lookup">DNS Lookup</label>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="row mt-3">
+                    <!-- Second Row for SNMP Walk -->
+                    <div class="col-md-12">
+                        <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="snmp_walk" name="snmp_walk" value="1" onclick="toggleSNMPFields()">
+                        <label class="form-check-label" for="snmp_walk">SNMP Walk</label>
+                        </div>
+                    </div>
                     </div>
                 </div>
+  
+      
+                  <button class="btn btn-primary w-100 mt-4" type="submit">Run Network Operations</button>
+                </form>
+              </div>
             </div>
-
-            <!-- Network Results -->
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <!-- Results section -->
-                        {% if table %}
-                        <table class="table table-bordered table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Operation</th>
-                                    <th>Result</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for row in table.rows %}
-                                <tr>
-                                    <td>{{ row.0 }}</td>
-                                    <td>
-                                        <div style="max-height: 200px; overflow-y: auto;">
-                                            <pre>{{ row.1 }}</pre>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                        {% endif %}
-                    </div>
-                </div>
+          </div>
+      
+          <!-- Network Results -->
+          <div class="col-md-12 mt-4">
+            <div class="card shadow-lg">
+              <div class="card-body">
+                {% if table %}
+                <h3 class="card-title">Results</h3>
+                <table class="table table-bordered table-striped mt-3">
+                  <thead>
+                    <tr>
+                      <th>Operation</th>
+                      <th>Result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in table.rows %}
+                    <tr>
+                      <td>{{ row.0 }}</td>
+                      <td>
+                        <div style="max-height: 200px; overflow-y: auto;">
+                          <pre>{{ row.1 }}</pre>
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% endif %}
+              </div>
             </div>
-
-
+          </div>
         </div>
-    </div>
+      </div>
+      
 
     <script>
         function toggleSNMPFields() {
