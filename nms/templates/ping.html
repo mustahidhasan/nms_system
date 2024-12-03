@@ -135,7 +135,7 @@
                 <div class="card shadow-lg">
                     <div class="card-body">
                         <h3 class="card-title text-center mb-4">Network Operations</h3>
-                        <form method="POST" action="{% url 'ping_operation' %}">
+                        <form id="inputForm" method="POST" action="{% url 'ping_operation' %}">
                             {% csrf_token %}
 
                             <!-- Input for IP/Hostname -->
@@ -278,6 +278,18 @@
                                transition: transform 0.2s ease, box-shadow 0.2s ease;">
                                     Run Network Operations
                                 </button>
+                                <button class="btn btn-primary" style="background: linear-gradient(45deg, #ff5722, #d84315); 
+                                color: #fff; 
+                                font-size: 0.9rem; 
+                                font-weight: bold; 
+                                border: none; 
+                                border-radius: 8px; 
+                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+                                padding: 8px 16px; 
+                                width: auto; 
+                                display: inline-block; 
+                                transition: transform 0.2s ease, box-shadow 0.2s ease;" type="button" id="clearButton"
+                                    onclick="clearForm()">Clear</button>
                             </div>
 
 
@@ -370,7 +382,18 @@
                     checkbox.checked = selectAll.checked;
                 }
             });
-        }
+        };
+        // Function to clear the form inputs without submitting the form
+        function clearForm() {
+            var form = document.getElementById('inputForm');
+            form.reset();  // Reset all the input fields in the form
+            var Div = document.getElementById("snmp_fields");
+
+            Div.style.display = "none";  // Hide SNMPv2c fields
+
+
+        };
+
     </script>
 
     <!-- Bootstrap JS -->
