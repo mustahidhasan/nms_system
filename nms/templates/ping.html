@@ -88,6 +88,10 @@
             text-decoration: none;
             /* Ensure no underline on hover */
         }
+
+        .select_all {
+            text-decoration: underline;
+        }
     </style>
 
 </head>
@@ -136,7 +140,8 @@
 
                             <!-- Input for IP/Hostname -->
                             <div class="form-group">
-                                <label for="ipAddress" class="form-label active">Enter IP Address or Domain Name</label>
+                                <label for="ipAddress" class="form-label active">Enter IP Address or Hostname
+                                    Name</label>
                                 <input type="text" class="form-control" id="ipAddress" name="ip_address"
                                     placeholder="Enter IP address or domain name">
                             </div>
@@ -210,40 +215,45 @@
                             <!-- Checkboxes for Operations -->
                             <div class="form-group">
                                 <label class="form-label active">Select Operations</label>
-                                <div class="row">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll"
+                                        onclick="toggleSelectAll()">
+                                    <label class="form-check-label active select_all" for="selectAll">Select All</label>
+                                </div>
+                                <div class="row mt-1">
                                     <!-- First Row of Checkboxes -->
                                     <div class="col-md-3">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="enable_ping"
-                                                name="enable_ping" value="1">
+                                            <input class="form-check-input operation-checkbox" type="checkbox"
+                                                id="enable_ping" name="enable_ping" value="1">
                                             <label class="form-check-label" for="enable_ping">Enable Ping</label>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="verbose_ping"
-                                                name="verbose_ping" value="1">
+                                            <input class="form-check-input operation-checkbox" type="checkbox"
+                                                id="verbose_ping" name="verbose_ping" value="1">
                                             <label class="form-check-label" for="verbose_ping">Verbose Ping</label>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="traceroute"
-                                                name="traceroute" value="1">
+                                            <input class="form-check-input operation-checkbox" type="checkbox"
+                                                id="traceroute" name="traceroute" value="1">
                                             <label class="form-check-label" for="traceroute">Traceroute</label>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="dns_lookup"
-                                                name="dns_lookup" value="1">
+                                            <input class="form-check-input operation-checkbox" type="checkbox"
+                                                id="dns_lookup" name="dns_lookup" value="1">
                                             <label class="form-check-label" for="dns_lookup">DNS Lookup</label>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <!-- Second Row for SNMP Walk -->
-                                    <div class="col-md-12">
+                                    <div class="col-md-12 mt-2">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" id="snmp_walk"
                                                 name="snmp_walk" value="1" onclick="toggleSNMPFields()">
@@ -345,12 +355,22 @@
                 v3Div.style.display = "none";  // Hide SNMPv2c fields
             }
 
-        }
+        };
 
         // Ensure the correct fields are visible on page load
         window.onload = function () {
             toggleSNMPVersionFields();
         };
+        // JavaScript for the "Select All" checkbox functionality
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.operation-checkbox');
+            checkboxes.forEach(function (checkbox) {
+                if (checkbox !== selectAll) {
+                    checkbox.checked = selectAll.checked;
+                }
+            });
+        }
     </script>
 
     <!-- Bootstrap JS -->
