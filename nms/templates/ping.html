@@ -339,7 +339,8 @@
         function clearForm() {
             var form = document.getElementById('inputForm');
             form.reset();  // Reset all the input fields in the form
-            sessionStorage.removeItem('ipAddress');
+            sessionStorage.removeItem('ip_address');
+
             var Div = document.getElementById("snmp_fields");
             Div.style.display = "none";  // Hide SNMPv2c fields
 
@@ -358,6 +359,7 @@
         // Add a refresh button
         document.getElementById("refresh-item").addEventListener("click", function () {
             location.reload();
+            sessionStorage.removeItem('ip_address');
         });
         // Function to toggle SNMP version-specific fields
         function toggleSNMPVersionFields() {
@@ -399,15 +401,15 @@
         // save in local storage
         // Load form data from sessionStorage on page load
         window.onload = function () {
-            if (sessionStorage.getItem('ipAddress')) {
-                document.getElementById('ipAddress').value = sessionStorage.getItem('ipAddress');
+            if (sessionStorage.getItem('ip_address')) {
+                document.getElementById('ipAddress').value = sessionStorage.getItem('ip_address');
             }
 
         };
 
         // Save form data to sessionStorage when user types in the fields
         document.getElementById('inputForm').addEventListener('input', function () {
-            sessionStorage.setItem('ipAddress', document.getElementById('ipAddress').value);
+            sessionStorage.setItem('ip_address', document.getElementById('ipAddress').value);
         });
 
     </script>
