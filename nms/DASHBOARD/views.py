@@ -196,7 +196,7 @@ def ping_operation(request):
                 authentication_type = request.POST.get("authentication_type", "SHA")
                 encryption_type = request.POST.get("encryption_type", "AES")
                 encryption_key = request.POST.get("encryption_key")
-                oid = request.POST.get("oid", "1.3.6.1")
+                oid = request.POST.get("oid")
 
                 try:
                     # Handle SNMP Version and append results

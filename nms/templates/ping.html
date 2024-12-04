@@ -153,8 +153,7 @@
                                 <label for="snmp_version" class="form-label">SNMP Version:</label>
                                 <select class="form-control mb-3" name="snmp_version" id="snmp_version"
                                     onchange="toggleSNMPVersionFields()">
-                                    <option value="">Select a version</option>
-                                    <option value="2c">SNMPv2c</option>
+                                    <option value="2c" selected>SNMPv2c</option>
                                     <option value="3">SNMPv3</option>
                                 </select>
 
@@ -411,7 +410,8 @@
         window.onload = function () {
             if (sessionStorage.getItem('ip_address')) {
                 document.getElementById('ipAddress').value = sessionStorage.getItem('ip_address');
-            }
+            };
+            document.getElementById('snmp_version').dispatchEvent(new Event('change'));
 
         };
 
