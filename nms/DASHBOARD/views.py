@@ -44,6 +44,7 @@ def ping_operation(request):
         verbose_ping = request.POST.get("verbose_ping")
         traceroute = request.POST.get("traceroute")
         dns_lookup = request.POST.get("dns_lookup")
+        verbos_dns_lookup = request.POST.get("verbos_dns_lookup")
         snmp_walk = request.POST.get("snmp_walk")
         # Get all DNS names as a list
         dns_names = list(DNS.objects.values_list("dns_name", flat=True))
@@ -128,17 +129,16 @@ def ping_operation(request):
             if dns_lookup:
                 try:
                     # Determine the command based on OS
-                    if os_name == "Windows":
-                        command = ["nslookup", ip_address]
-                    else:
-                        command = ["dig", ip_address]
+                    command = ["nslookup", ip_address]
 
                     # Execute the DNS query
                     response = subprocess.run(command, capture_output=True, text=True)
 
                     if response.returncode == 0:
                         # Extract the resolved IP from the output
-                        dns_result = response.stdout
+                        dns_result = response.stdout.replace(
+                            "Authoritative answers can be found from:", ""
+                        )
                         logger.info("DNS query executed successfully.")
 
                         # Check if any resolved IP matches DNS records
@@ -155,7 +155,35 @@ def ping_operation(request):
                         table.add_row(["DNS Lookup Result", "DNS query failed."])
                 except Exception as e:
                     table.add_row(["Unexpected Error", f"{str(e)}"])
+            # perform verbos dns
+            if verbos_dns_lookup:
+                try:
+                    command = ["dig", ip_address]
 
+                    # Execute the DNS query
+                    response = subprocess.run(command, capture_output=True, text=True)
+
+                    if response.returncode == 0:
+                        # Extract the resolved IP from the output
+                        dns_result = response.stdout
+                        logger.info("Verbose DNS query executed successfully.")
+
+                        # Check if any resolved IP matches DNS records
+                        if any(dns_ip in dns_result for dns_ip in dns_names):
+                            table.add_row(["Verbose DNS Lookup Result", dns_result])
+                        else:
+                            table.add_row(
+                                [
+                                    "Verbose DNS Lookup Result",
+                                    "Resolved IP does not match Verbose DNS records.",
+                                ]
+                            )
+                    else:
+                        table.add_row(
+                            ["Verbose DNS Lookup Result", "DNS query failed."]
+                        )
+                except Exception as e:
+                    table.add_row(["Unexpected Error", f"{str(e)}"])
             # Perform SNMP Walk
             if snmp_walk:
                 snmp_port = 161  # default port for SNMP
