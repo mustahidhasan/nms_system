@@ -92,6 +92,26 @@
         .select_all {
             text-decoration: underline;
         }
+
+        .spinner-overlay {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            /* Semi-transparent background */
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
     </style>
 
 </head>
@@ -135,6 +155,12 @@
                 <div class="card shadow-lg">
                     <div class="card-body">
                         <h3 class="card-title text-center mb-4">Network Operations</h3>
+                        <!-- Spinner Element -->
+                        <div class="spinner-overlay" id="spinnerOverlay">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
                         <form id="inputForm" method="POST" action="{% url 'ping_operation' %}">
                             {% csrf_token %}
 
@@ -418,6 +444,18 @@
         // Save form data to sessionStorage when user types in the fields
         document.getElementById('inputForm').addEventListener('input', function () {
             sessionStorage.setItem('ip_address', document.getElementById('ipAddress').value);
+        });
+        // Get form and spinner elements
+        const form = document.getElementById('inputForm');
+        const spinnerOverlay = document.getElementById('spinnerOverlay');
+
+        // Add event listener for form submission
+        form.addEventListener('submit', function () {
+            // Show the spinner
+            spinnerOverlay.style.display = 'flex';
+
+            // Optional: Ensure the form is not resubmitted
+            form.querySelector('button[type="submit"]').disabled = true;
         });
 
     </script>
