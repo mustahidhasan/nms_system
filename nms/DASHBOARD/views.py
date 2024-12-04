@@ -199,8 +199,10 @@ def ping_operation(request):
                 oid = request.POST.get("oid")
 
                 try:
-                    # Handle SNMP Version and append results
+                    # Initialize result list
                     snmp_result = []
+
+                    # SNMP Version 2c
                     if snmp_version == "2c":
                         for (
                             errorIndication,
@@ -229,8 +231,8 @@ def ping_operation(request):
                             else:
                                 for varBind in varBinds:
                                     snmp_result.append(f"{varBind[0]} = {varBind[1]}")
-                        table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
 
+                    # SNMP Version 3
                     elif snmp_version == "3":
                         auth_protocol = usmNoAuthProtocol
                         priv_protocol = usmNoPrivProtocol
@@ -243,7 +245,6 @@ def ping_operation(request):
                         elif encryption_type == "DES":
                             priv_protocol = usmDESPrivProtocol
 
-                        result = []
                         for (
                             errorIndication,
                             errorStatus,
@@ -263,25 +264,35 @@ def ping_operation(request):
                             lexicographicMode=False,
                         ):
                             if errorIndication:
-                                result.append(f"Error: {errorIndication}")
+                                snmp_result.append(f"Error: {errorIndication}")
                                 break
                             elif errorStatus:
-                                result.append(
+                                snmp_result.append(
                                     f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
                                 )
                                 break
                             else:
                                 for varBind in varBinds:
-                                    result.append(f"{varBind[0]} = {varBind[1]}")
-                        table.add_row(["SNMP Walk Result", "\n".join(result)])
+                                    snmp_result.append(f"{varBind[0]} = {varBind[1]}")
 
+                    # Unsupported SNMP Version
                     else:
-                        table.add_row(
-                            [
-                                "SNMP Walk Result",
-                                f"Unsupported SNMP version: {snmp_version}",
-                            ]
+                        snmp_result.append(f"Unsupported SNMP version: {snmp_version}")
+
+                    # Check if the response contains valid results
+                    if snmp_result and not any(
+                        "Error" in result for result in snmp_result
+                    ):
+                        # Redirect to snmp_results.html with results
+                        table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
+                        return render(
+                            request,
+                            "snmp_results.html",
+                            {"table": table},
                         )
+                    else:
+                        # Append the error message to the table
+                        table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
 
                 except Exception as e:
                     logger.error(
@@ -289,6 +300,7 @@ def ping_operation(request):
                     )
                     table.add_row(["SNMP Walk Result", f"Error: {str(e)}"])
 
+            # If no valid SNMP response, render ping.html
             return render(request, "ping.html", {"table": table})
 
         except Exception as e:
@@ -297,3 +309,7 @@ def ping_operation(request):
             return render(request, "ping.html", {"error_message": error_message})
     else:
         return render(request, "ping.html")
+
+
+def snmp_results(request):
+    return render(request, "snmp_results.html")
