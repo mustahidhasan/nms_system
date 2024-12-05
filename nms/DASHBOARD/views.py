@@ -114,7 +114,7 @@ def ping_operation(request):
                 if os_name == "Windows":
                     command = ["tracert", ip_address]
                 else:
-                    command = ["traceroute", ip_address]
+                    command = ["traceroute","-I", ip_address]
 
                 logger.info(f"Running traceroute for {ip_address}.")
                 response = subprocess.run(command, capture_output=True, text=True)
