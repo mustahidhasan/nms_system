@@ -47,6 +47,7 @@ def ping_operation(request):
         dns_lookup = request.POST.get("dns_lookup")
         verbos_dns_lookup = request.POST.get("verbos_dns_lookup")
         snmp_walk = request.POST.get("snmp_walk")
+        simple_snmp_walk = request.POST.get("simple_snmp_walk")
         # Get all DNS names as a list
         dns_names = list(DNS.objects.values_list("dns_name", flat=True))
 
@@ -214,7 +215,7 @@ def ping_operation(request):
                     snmp_result = []
 
                     # SNMP Version 2c
-                    if snmp_version == "2c":
+                    if snmp_version == "1":
                         for (
                             errorIndication,
                             errorStatus,
@@ -289,6 +290,69 @@ def ping_operation(request):
                     # Unsupported SNMP Version
                     else:
                         snmp_result.append(f"Unsupported SNMP version: {snmp_version}")
+
+                    # Check if the response contains valid results
+                    if snmp_result and not any(
+                        "Error" in result for result in snmp_result
+                    ):
+                        # Redirect to snmp_results.html with results
+                        table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
+                    else:
+                        # Append the error message to the table
+                        table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
+
+                except Exception as e:
+                    logger.error(
+                        f"An error occurred while performing SNMP walk: {str(e)}"
+                    )
+                    table.add_row(["SNMP Walk Result", f"Error: {str(e)}"])
+            
+            if simple_snmp_walk:
+                snmp_port = 161  # default port for SNMP
+                snmp_version = request.POST.get("snmp_version")
+                read_community_string = request.POST.get(
+                    "read_community_string", "public"
+                )
+                username = request.POST.get("username")
+                password = request.POST.get("password")
+                authentication_type = request.POST.get("authentication_type", "SHA")
+                encryption_type = request.POST.get("encryption_type", "AES")
+                encryption_key = request.POST.get("encryption_key")
+                oid = request.POST.get("oid")
+
+                try:
+                    # Initialize result list
+                    snmp_result = []
+
+                    # SNMP Version 2c
+                    if snmp_version == "1":
+                        for (
+                            errorIndication,
+                            errorStatus,
+                            errorIndex,
+                            varBinds,
+                        ) in nextCmd(
+                            SnmpEngine(),
+                            CommunityData(
+                                "public",
+                                mpModel=0 if snmp_version == "1" else 1,
+                            ),
+                            UdpTransportTarget((ip_address, int(snmp_port))),
+                            ContextData(),
+                            ObjectType(ObjectIdentity(oid)),
+                            lexicographicMode=False,
+                        ):
+                            if errorIndication:
+                                snmp_result.append(f"Error: {errorIndication}")
+                                break
+                            elif errorStatus:
+                                snmp_result.append(
+                                    f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
+                                )
+                                break
+                            else:
+                                for varBind in varBinds:
+                                    snmp_result.append(f"{varBind[0]} = {varBind[1]}")
 
                     # Check if the response contains valid results
                     if snmp_result and not any(
