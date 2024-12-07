@@ -29,6 +29,7 @@ from pysnmp.hlapi import (
     usmDESPrivProtocol,
 )
 
+from django.contrib import messages
 
 @login_required
 def logout_view(request):
@@ -49,10 +50,19 @@ def ping_operation(request):
         # Get all DNS names as a list
         dns_names = list(DNS.objects.values_list("dns_name", flat=True))
 
-        # Resolve the input (IP or hostname)
+        # Validate that the IP address or hostname does not have invalid spaces
+        if " " in get_ip_address:
+            messages.error(request, "Valid IP Address or Hostname is required.")
+            return render(
+                request,
+                "ping.html",
+                {"error_message": "IP address or hostname cannot contain spaces."},
+            )
+
+        # Validate the IP address format (IPv4)
         try:
             # If it's an IP address, validate it
-            socket.inet_aton(get_ip_address)
+            socket.inet_aton(get_ip_address)  # This raises socket.error if the IP is invalid
             ip_address = get_ip_address  # Use directly if valid IP
         except socket.error:
             try:
@@ -60,6 +70,7 @@ def ping_operation(request):
                 ip_address = socket.gethostbyname(get_ip_address)
             except socket.gaierror:
                 logger.error(f"Failed to resolve hostname: {get_ip_address}")
+                messages.error(request, "Valid IP Address or Hostname is required.")
                 return render(
                     request,
                     "ping.html",
