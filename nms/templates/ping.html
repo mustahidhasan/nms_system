@@ -249,7 +249,7 @@
 
                                     <label for="oid" class="form-label">Numeric OID:</label>
                                     <input autocomplete="off" type="text" class="form-control mb-3" name="oid" id="oid"
-                                        value="1.3.6.1.2.1.1.5">
+                                        value="">
 
                                     <label for="output_format" class="form-label">Output Format:</label>
                                     <select class="form-control mb-3" name="output_format" id="output_format">
@@ -419,18 +419,9 @@
         // Function to toggle SNMP version-specific fields
         function toggleSNMPVersionFields() {
             var snmpVersion = document.getElementById("snmp_version").value;
-            var v2cDiv = document.getElementById("v2c");
             var v3Div = document.getElementById("v3");
 
-            // Show the v2c fields if SNMPv2c is selected, otherwise hide it
-            if (snmpVersion === "2c") {
-                v2cDiv.style.display = "block"; // Show SNMPv2c fields
-            } else {
-                v2cDiv.style.display = "none";  // Hide SNMPv2c fields
-            }
-
             if (snmpVersion === "3") {
-                v2cDiv.style.display = "block";
                 v3Div.style.display = "block"; // Show SNMPv2c fields
             } else {
                 v3Div.style.display = "none";  // Hide SNMPv2c fields
