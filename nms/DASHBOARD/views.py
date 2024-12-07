@@ -223,7 +223,7 @@ def ping_operation(request):
                         ) in nextCmd(
                             SnmpEngine(),
                             CommunityData(
-                                read_community_string,
+                                "public",
                                 mpModel=0 if snmp_version == "1" else 1,
                             ),
                             UdpTransportTarget((ip_address, int(snmp_port))),

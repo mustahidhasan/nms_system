@@ -204,19 +204,16 @@
                                 <label for="snmp_version" class="form-label">SNMP Version:</label>
                                 <select class="form-control mb-3" name="snmp_version" id="snmp_version"
                                     onchange="toggleSNMPVersionFields()">
-                                    <option value="2c" selected>SNMPv2c</option>
-                                    <option value="3">SNMPv3</option>
+                                    <option value="2c" selected>Simple SNMP Walk</option>
+                                    <option value="3">Advanced SNMP Walk</option>
                                 </select>
-
-                                <!-- SNMPv2c Fields -->
-                                <div id="v2c" style="display: none;">
+                                
+                                <!-- SNMPv3 Fields -->
+                                <div id="v3" style="display: none;">
                                     <label for="read_community_string" class="form-label">Read Community String:</label>
                                     <input autocomplete="off" type="text" class="form-control mb-3"
                                         name="read_community_string" id="read_community_string">
-                                </div>
 
-                                <!-- SNMPv3 Fields -->
-                                <div id="v3" style="display: none;">
                                     <label for="username" class="form-label">Username:</label>
                                     <input autocomplete="off" type="text" class="form-control mb-3" name="username"
                                         id="username">
