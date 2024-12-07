@@ -114,7 +114,7 @@ def ping_operation(request):
                 if os_name == "Windows":
                     command = ["tracert", ip_address]
                 else:
-                    command = ["traceroute","-I", ip_address]
+                    command = ["traceroute", "-I", ip_address]
 
                 logger.info(f"Running traceroute for {ip_address}.")
                 response = subprocess.run(command, capture_output=True, text=True)
@@ -285,11 +285,6 @@ def ping_operation(request):
                     ):
                         # Redirect to snmp_results.html with results
                         table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
-                        return render(
-                            request,
-                            "snmp_results.html",
-                            {"table": table},
-                        )
                     else:
                         # Append the error message to the table
                         table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
