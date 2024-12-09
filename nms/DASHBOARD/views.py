@@ -31,6 +31,7 @@ from pysnmp.hlapi import (
 
 from django.contrib import messages
 
+
 @login_required
 def logout_view(request):
     logout(request)
@@ -63,7 +64,9 @@ def ping_operation(request):
         # Validate the IP address format (IPv4)
         try:
             # If it's an IP address, validate it
-            socket.inet_aton(get_ip_address)  # This raises socket.error if the IP is invalid
+            socket.inet_aton(
+                get_ip_address
+            )  # This raises socket.error if the IP is invalid
             ip_address = get_ip_address  # Use directly if valid IP
         except socket.error:
             try:
@@ -196,13 +199,13 @@ def ping_operation(request):
                         )
                 except Exception as e:
                     table.add_row(["Unexpected Error", f"{str(e)}"])
-            # Perform SNMP Walk
+            # Advance SNMP Walk
             if snmp_walk:
-                snmp_port = 161  # default port for SNMP
+                snmp_port = 161  # Default port for SNMP
                 snmp_version = request.POST.get("snmp_version")
-                read_community_string = request.POST.get(
-                    "read_community_string", "public"
-                )
+                community_strings = request.POST.getlist(
+                    "community_strings", ["public", "private"]
+                )  # add more here
                 username = request.POST.get("username")
                 password = request.POST.get("password")
                 authentication_type = request.POST.get("authentication_type", "SHA")
@@ -214,91 +217,96 @@ def ping_operation(request):
                     # Initialize result list
                     snmp_result = []
 
-                    # SNMP Version 2c
-                    if snmp_version == "1":
-                        for (
-                            errorIndication,
-                            errorStatus,
-                            errorIndex,
-                            varBinds,
-                        ) in nextCmd(
-                            SnmpEngine(),
-                            CommunityData(
-                                "public",
-                                mpModel=0 if snmp_version == "1" else 1,
-                            ),
-                            UdpTransportTarget((ip_address, int(snmp_port))),
-                            ContextData(),
-                            ObjectType(ObjectIdentity(oid)),
-                            lexicographicMode=False,
-                        ):
-                            if errorIndication:
-                                snmp_result.append(f"Error: {errorIndication}")
-                                break
-                            elif errorStatus:
-                                snmp_result.append(
-                                    f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
-                                )
-                                break
-                            else:
-                                for varBind in varBinds:
-                                    snmp_result.append(f"{varBind[0]} = {varBind[1]}")
+                    for community_string in community_strings:
+                        # SNMP Version 1 or 2c
+                        if snmp_version in ["1", "2c"]:
+                            for (
+                                errorIndication,
+                                errorStatus,
+                                errorIndex,
+                                varBinds,
+                            ) in nextCmd(
+                                SnmpEngine(),
+                                CommunityData(
+                                    community_string,
+                                    mpModel=0 if snmp_version == "1" else 1,
+                                ),
+                                UdpTransportTarget((ip_address, int(snmp_port))),
+                                ContextData(),
+                                ObjectType(ObjectIdentity(oid)),
+                                lexicographicMode=False,
+                            ):
+                                if errorIndication:
+                                    snmp_result.append(f"Error: {errorIndication}")
+                                    break
+                                elif errorStatus:
+                                    snmp_result.append(
+                                        f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
+                                    )
+                                    break
+                                else:
+                                    for varBind in varBinds:
+                                        snmp_result.append(
+                                            f"{varBind[0]} = {varBind[1]}"
+                                        )
 
-                    # SNMP Version 3
-                    elif snmp_version == "3":
-                        auth_protocol = usmNoAuthProtocol
-                        priv_protocol = usmNoPrivProtocol
-                        if authentication_type == "MD5":
-                            auth_protocol = usmHMACMD5AuthProtocol
-                        elif authentication_type == "SHA":
-                            auth_protocol = usmHMACSHAAuthProtocol
-                        if encryption_type == "AES":
-                            priv_protocol = usmAesCfb128Protocol
-                        elif encryption_type == "DES":
-                            priv_protocol = usmDESPrivProtocol
+                        # SNMP Version 3
+                        elif snmp_version == "3":
+                            auth_protocol = usmNoAuthProtocol
+                            priv_protocol = usmNoPrivProtocol
+                            if authentication_type == "MD5":
+                                auth_protocol = usmHMACMD5AuthProtocol
+                            elif authentication_type == "SHA":
+                                auth_protocol = usmHMACSHAAuthProtocol
+                            if encryption_type == "AES":
+                                priv_protocol = usmAesCfb128Protocol
+                            elif encryption_type == "DES":
+                                priv_protocol = usmDESPrivProtocol
 
-                        for (
-                            errorIndication,
-                            errorStatus,
-                            errorIndex,
-                            varBinds,
-                        ) in nextCmd(
-                            SnmpEngine(),
-                            UsmUserData(
-                                username,
-                                password,
-                                encryption_key,
-                                authProtocol=auth_protocol,
-                                privProtocol=priv_protocol,
-                            ),
-                            UdpTransportTarget((ip_address, int(snmp_port))),
-                            ObjectType(ObjectIdentity(oid)),
-                            lexicographicMode=False,
-                        ):
-                            if errorIndication:
-                                snmp_result.append(f"Error: {errorIndication}")
-                                break
-                            elif errorStatus:
-                                snmp_result.append(
-                                    f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
-                                )
-                                break
-                            else:
-                                for varBind in varBinds:
-                                    snmp_result.append(f"{varBind[0]} = {varBind[1]}")
+                            for (
+                                errorIndication,
+                                errorStatus,
+                                errorIndex,
+                                varBinds,
+                            ) in nextCmd(
+                                SnmpEngine(),
+                                UsmUserData(
+                                    username,
+                                    password,
+                                    encryption_key,
+                                    authProtocol=auth_protocol,
+                                    privProtocol=priv_protocol,
+                                ),
+                                UdpTransportTarget((ip_address, int(snmp_port))),
+                                ObjectType(ObjectIdentity(oid)),
+                                lexicographicMode=False,
+                            ):
+                                if errorIndication:
+                                    snmp_result.append(f"Error: {errorIndication}")
+                                    break
+                                elif errorStatus:
+                                    snmp_result.append(
+                                        f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
+                                    )
+                                    break
+                                else:
+                                    for varBind in varBinds:
+                                        snmp_result.append(
+                                            f"{varBind[0]} = {varBind[1]}"
+                                        )
 
-                    # Unsupported SNMP Version
-                    else:
-                        snmp_result.append(f"Unsupported SNMP version: {snmp_version}")
+                        # Unsupported SNMP Version
+                        else:
+                            snmp_result.append(
+                                f"Unsupported SNMP version: {snmp_version}"
+                            )
 
                     # Check if the response contains valid results
                     if snmp_result and not any(
                         "Error" in result for result in snmp_result
                     ):
-                        # Redirect to snmp_results.html with results
                         table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
                     else:
-                        # Append the error message to the table
                         table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
 
                 except Exception as e:
@@ -306,26 +314,20 @@ def ping_operation(request):
                         f"An error occurred while performing SNMP walk: {str(e)}"
                     )
                     table.add_row(["SNMP Walk Result", f"Error: {str(e)}"])
-            
+            # simple snmp
             if simple_snmp_walk:
-                snmp_port = 161  # default port for SNMP
-                snmp_version = request.POST.get("snmp_version")
-                read_community_string = request.POST.get(
-                    "read_community_string", "public"
-                )
-                username = request.POST.get("username")
-                password = request.POST.get("password")
-                authentication_type = request.POST.get("authentication_type", "SHA")
-                encryption_type = request.POST.get("encryption_type", "AES")
-                encryption_key = request.POST.get("encryption_key")
-                oid = request.POST.get("oid")
+                snmp_port = 161  # Default port for SNMP
+                community_strings = [
+                    "public",
+                    "private",
+                ]  # Predefined community strings
+                hardcoded_oid = "1.3.6.1.2.1.1"  # Example OID for system information
 
                 try:
                     # Initialize result list
                     snmp_result = []
 
-                    # SNMP Version 2c
-                    if snmp_version == "1":
+                    for community_string in community_strings:
                         for (
                             errorIndication,
                             errorStatus,
@@ -333,13 +335,10 @@ def ping_operation(request):
                             varBinds,
                         ) in nextCmd(
                             SnmpEngine(),
-                            CommunityData(
-                                "public",
-                                mpModel=0 if snmp_version == "1" else 1,
-                            ),
+                            CommunityData(community_string, mpModel=1),
                             UdpTransportTarget((ip_address, int(snmp_port))),
                             ContextData(),
-                            ObjectType(ObjectIdentity(oid)),
+                            ObjectType(ObjectIdentity(hardcoded_oid)),
                             lexicographicMode=False,
                         ):
                             if errorIndication:
@@ -358,17 +357,17 @@ def ping_operation(request):
                     if snmp_result and not any(
                         "Error" in result for result in snmp_result
                     ):
-                        # Redirect to snmp_results.html with results
-                        table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
+                        table.add_row(
+                            ["Simple SNMP Walk Result", "\n".join(snmp_result)]
+                        )
                     else:
-                        # Append the error message to the table
-                        table.add_row(["SNMP Walk Result", "\n".join(snmp_result)])
+                        table.add_row(
+                            ["Simple SNMP Walk Result", "\n".join(snmp_result)]
+                        )
 
                 except Exception as e:
-                    logger.error(
-                        f"An error occurred while performing SNMP walk: {str(e)}"
-                    )
-                    table.add_row(["SNMP Walk Result", f"Error: {str(e)}"])
+                    logger.error(f"An error occurred during Simple SNMP Walk: {str(e)}")
+                    table.add_row(["Simple SNMP Walk Result", f"Error: {str(e)}"])
 
             # If no valid SNMP response, render ping.html
             return render(request, "ping.html", {"table": table})
