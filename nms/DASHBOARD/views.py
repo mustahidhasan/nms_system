@@ -237,18 +237,15 @@ def ping_operation(request):
                                 lexicographicMode=False,
                             ):
                                 if errorIndication:
-                                    snmp_result.append(f"Error: {errorIndication}")
                                     break
                                 elif errorStatus:
-                                    snmp_result.append(
-                                        f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
-                                    )
                                     break
                                 else:
                                     for varBind in varBinds:
                                         snmp_result.append(
                                             f"{varBind[0]} = {varBind[1]}"
                                         )
+                                print("line 252", snmp_result)
 
                         # SNMP Version 3
                         elif snmp_version == "3":
@@ -342,12 +339,8 @@ def ping_operation(request):
                             lexicographicMode=False,
                         ):
                             if errorIndication:
-                                snmp_result.append(f"Error: {errorIndication}")
                                 break
                             elif errorStatus:
-                                snmp_result.append(
-                                    f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
-                                )
                                 break
                             else:
                                 for varBind in varBinds:
