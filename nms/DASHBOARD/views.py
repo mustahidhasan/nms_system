@@ -35,6 +35,7 @@ from django.contrib import messages
 @login_required
 def logout_view(request):
     logout(request)
+    logger.error("log out failed")
     return redirect("login")  # Replace 'login' with the name of your login URL
 
 
@@ -55,6 +56,7 @@ def ping_operation(request):
         # Validate that the IP address or hostname does not have invalid spaces
         if " " in get_ip_address:
             messages.error(request, "Valid IP Address or Hostname is required.")
+            logger.error("Valid IP Address or Hostname is required.")
             return render(
                 request,
                 "ping.html",
@@ -75,6 +77,7 @@ def ping_operation(request):
             except socket.gaierror:
                 logger.error(f"Failed to resolve hostname: {get_ip_address}")
                 messages.error(request, "Valid IP Address or Hostname is required.")
+                logger.error("Invalid IP address or hostname provided.")
                 return render(
                     request,
                     "ping.html",
@@ -169,6 +172,7 @@ def ping_operation(request):
                     else:
                         table.add_row(["DNS Lookup Result", "DNS query failed."])
                 except Exception as e:
+                    logger.error("Unexpected Error", f"{str(e)}")
                     table.add_row(["Unexpected Error", f"{str(e)}"])
             # perform verbos dns
             if verbos_dns_lookup:
@@ -198,6 +202,7 @@ def ping_operation(request):
                             ["Verbose DNS Lookup Result", "DNS query failed."]
                         )
                 except Exception as e:
+                    logger.error("Unexpected Error", f"{str(e)}")
                     table.add_row(["Unexpected Error", f"{str(e)}"])
             # Advance SNMP Walk
             if snmp_walk:
@@ -245,8 +250,6 @@ def ping_operation(request):
                                         snmp_result.append(
                                             f"{varBind[0]} = {varBind[1]}"
                                         )
-                                print("line 252", snmp_result)
-
                         # SNMP Version 3
                         elif snmp_version == "3":
                             auth_protocol = usmNoAuthProtocol
@@ -279,12 +282,9 @@ def ping_operation(request):
                                 lexicographicMode=False,
                             ):
                                 if errorIndication:
-                                    snmp_result.append(f"Error: {errorIndication}")
                                     break
                                 elif errorStatus:
-                                    snmp_result.append(
-                                        f"Error: {errorStatus.prettyPrint()} at {errorIndex}"
-                                    )
+                                    snmp_result.append()
                                     break
                                 else:
                                     for varBind in varBinds:
@@ -297,6 +297,7 @@ def ping_operation(request):
                             snmp_result.append(
                                 f"Unsupported SNMP version: {snmp_version}"
                             )
+                            logger.error(f"Unsupported SNMP version: {snmp_version}")
 
                     # Check if the response contains valid results
                     if snmp_result and not any(
