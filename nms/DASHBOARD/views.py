@@ -336,7 +336,9 @@ def ping_operation(request):
                             CommunityData(community_string, mpModel=1),
                             UdpTransportTarget((ip_address, int(snmp_port))),
                             ContextData(),
-                            ObjectType(ObjectIdentity(hardcoded_oid)),
+                            ObjectType(
+                                ObjectIdentity(hardcoded_oid).loadMibs("SNMPv2-MIB")
+                            ),
                             lexicographicMode=False,
                         ):
                             if errorIndication:
@@ -345,7 +347,10 @@ def ping_operation(request):
                                 break
                             else:
                                 for varBind in varBinds:
-                                    snmp_result.append(f"{varBind[0]} = {varBind[1]}")
+                                    # Use the resolved name instead of raw OID
+                                    snmp_result.append(
+                                        f"{varBind[0].prettyPrint()} = {varBind[1]}"
+                                    )
 
                     # Check if the response contains valid results
                     if snmp_result and not any(
@@ -355,9 +360,7 @@ def ping_operation(request):
                             ["Simple SNMP Walk Result", "\n".join(snmp_result)]
                         )
                     else:
-                        table.add_row(
-                            ["Simple SNMP Walk Result", "\n".join(snmp_result)]
-                        )
+                        table.add_row(["Simple SNMP Walk Result", "No valid response."])
 
                 except Exception as e:
                     logger.error(f"An error occurred during Simple SNMP Walk: {str(e)}")
