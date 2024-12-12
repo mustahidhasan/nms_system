@@ -146,64 +146,135 @@ def ping_operation(request):
             # Perform DNS Lookup
             if dns_lookup:
                 try:
-                    # Determine the command based on OS
-                    command = ["nslookup", ip_address]
+                    # Forward DNS Lookup: Resolve domain name from IP
+                    command_forward = ["nslookup", ip_address]
 
-                    # Execute the DNS query
-                    response = subprocess.run(command, capture_output=True, text=True)
+                    # Execute Forward DNS query
+                    response_forward = subprocess.run(
+                        command_forward, capture_output=True, text=True
+                    )
 
-                    if response.returncode == 0:
-                        # Extract the resolved IP from the output
-                        dns_result = response.stdout.replace(
+                    if response_forward.returncode == 0:
+                        forward_dns_result = response_forward.stdout.replace(
                             "Authoritative answers can be found from:", ""
                         )
-                        logger.info("DNS query executed successfully.")
+                        logger.info("Forward DNS query executed successfully.")
 
-                        # Check if any resolved IP matches DNS records
-                        if any(dns_ip in dns_result for dns_ip in dns_names):
-                            table.add_row(["DNS Lookup Result", dns_result])
-                        else:
+                        # Check if resolved domains match the expected DNS records
+                        if any(dns_ip in forward_dns_result for dns_ip in dns_names):
                             table.add_row(
-                                [
-                                    "DNS Lookup Result",
-                                    "Resolved IP does not match DNS records.",
-                                ]
+                                ["Forward DNS Lookup Result", forward_dns_result]
                             )
-                    else:
-                        table.add_row(["DNS Lookup Result", "DNS query failed."])
-                except Exception as e:
-                    logger.error("Unexpected Error", f"{str(e)}")
-                    table.add_row(["Unexpected Error", f"{str(e)}"])
-            # perform verbos dns
-            if verbos_dns_lookup:
-                try:
-                    command = ["dig", ip_address]
-
-                    # Execute the DNS query
-                    response = subprocess.run(command, capture_output=True, text=True)
-
-                    if response.returncode == 0:
-                        # Extract the resolved IP from the output
-                        dns_result = response.stdout
-                        logger.info("Verbose DNS query executed successfully.")
-
-                        # Check if any resolved IP matches DNS records
-                        if any(dns_ip in dns_result for dns_ip in dns_names):
-                            table.add_row(["Verbose DNS Lookup Result", dns_result])
                         else:
                             table.add_row(
                                 [
-                                    "Verbose DNS Lookup Result",
-                                    "Resolved IP does not match Verbose DNS records.",
+                                    "Forward DNS Lookup Result",
+                                    "Resolved domain does not match expected DNS records.",
                                 ]
                             )
                     else:
                         table.add_row(
-                            ["Verbose DNS Lookup Result", "DNS query failed."]
+                            ["Forward DNS Lookup Result", "Forward DNS query failed."]
                         )
+
+                    # Reverse DNS Lookup: Resolve IP from domain name
+                    command_reverse = ["nslookup", ip_address]
+
+                    # Execute Reverse DNS query
+                    response_reverse = subprocess.run(
+                        command_reverse, capture_output=True, text=True
+                    )
+
+                    if response_reverse.returncode == 0:
+                        reverse_dns_result = response_reverse.stdout.replace(
+                            "Authoritative answers can be found from:", ""
+                        )
+                        logger.info("Reverse DNS query executed successfully.")
+                        table.add_row(["Reverse DNS Lookup Result", reverse_dns_result])
+                    else:
+                        table.add_row(
+                            ["Reverse DNS Lookup Result", "Reverse DNS query failed."]
+                        )
+
                 except Exception as e:
-                    logger.error("Unexpected Error", f"{str(e)}")
+                    logger.error(f"Unexpected Error: {str(e)}")
                     table.add_row(["Unexpected Error", f"{str(e)}"])
+
+            # Perform Verbose DNS Lookup
+            if verbos_dns_lookup:
+                try:
+                    # Forward DNS Lookup
+                    command_forward_verbose = ["dig", "+noall", "+answer", ip_address]
+
+                    # Execute Forward DNS query
+                    response_forward_verbose = subprocess.run(
+                        command_forward_verbose, capture_output=True, text=True
+                    )
+
+                    if response_forward_verbose.returncode == 0:
+                        forward_dns_result_verbose = response_forward_verbose.stdout
+                        logger.info("Verbose Forward DNS query executed successfully.")
+
+                        # Check if resolved domains match the expected DNS records
+                        if any(
+                            dns_ip in forward_dns_result_verbose for dns_ip in dns_names
+                        ):
+                            table.add_row(
+                                [
+                                    "Verbose Forward DNS Lookup Result",
+                                    forward_dns_result_verbose,
+                                ]
+                            )
+                        else:
+                            table.add_row(
+                                [
+                                    "Verbose Forward DNS Lookup Result",
+                                    "Resolved domain does not match expected verbose DNS records.",
+                                ]
+                            )
+                    else:
+                        table.add_row(
+                            [
+                                "Verbose Forward DNS Lookup Result",
+                                "Verbose DNS query failed.",
+                            ]
+                        )
+
+                    # Reverse DNS Lookup
+                    command_reverse_verbose = [
+                        "dig",
+                        "-x",
+                        ip_address,
+                        "+noall",
+                        "+answer",
+                    ]
+
+                    # Execute Reverse DNS query
+                    response_reverse_verbose = subprocess.run(
+                        command_reverse_verbose, capture_output=True, text=True
+                    )
+
+                    if response_reverse_verbose.returncode == 0:
+                        reverse_dns_result_verbose = response_reverse_verbose.stdout
+                        logger.info("Verbose Reverse DNS query executed successfully.")
+                        table.add_row(
+                            [
+                                "Verbose Reverse DNS Lookup Result",
+                                reverse_dns_result_verbose,
+                            ]
+                        )
+                    else:
+                        table.add_row(
+                            [
+                                "Verbose Reverse DNS Lookup Result",
+                                "Verbose Reverse DNS query failed.",
+                            ]
+                        )
+
+                except Exception as e:
+                    logger.error(f"Unexpected Error: {str(e)}")
+                    table.add_row(["Unexpected Error", f"{str(e)}"])
+
             # Advance SNMP Walk
             if snmp_walk:
                 snmp_port = 161  # Default port for SNMP
