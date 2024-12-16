@@ -11,8 +11,8 @@ def register_view(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
-            return redirect("dashboard")  # Redirect to the dashboard
+            login(request, user)  # Starts session
+            return redirect("ping_operation")  # Redirect to the dashboard
     else:
         form = RegisterForm()
     return render(request, "register.html", {"form": form})
@@ -20,14 +20,12 @@ def register_view(request):
 
 def login_view(request):
     if request.method == "POST":
-        form = LoginForm(data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get("username")
-            password = form.cleaned_data.get("password")
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                return redirect("ping_operation")  # Redirect to the dashboard
-    else:
-        form = LoginForm()
-    return render(request, "login.html", {"form": form})
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            login(request, user)
+            # Redirect to the "next" URL if available, otherwise to the dashboard
+            next_url = request.GET.get("next", "ping_operation")
+            return redirect(next_url)
+    return render(request, "login.html")
