@@ -396,6 +396,8 @@ def ping_operation(request):
                     # Initialize result list
                     snmp_result = []
 
+                    # Attempt SNMPv2c walk
+                    snmp_walk_successful = False
                     for community_string in community_strings:
                         for (
                             errorIndication,
@@ -422,16 +424,73 @@ def ping_operation(request):
                                     snmp_result.append(
                                         f"{varBind[0].prettyPrint()} = {varBind[1]}"
                                     )
+                        if snmp_result:
+                            snmp_walk_successful = True
+                            break
 
-                    # Check if the response contains valid results
-                    if snmp_result and not any(
-                        "Error" in result for result in snmp_result
-                    ):
-                        table.add_row(
-                            ["Simple SNMP Walk Result", "\n".join(snmp_result)]
-                        )
+                    # If SNMPv2c was successful, process the result
+                    if snmp_walk_successful:
+                        # Check if the response contains valid results
+                        if snmp_result and not any(
+                            "Error" in result for result in snmp_result
+                        ):
+                            table.add_row(
+                                ["Simple SNMP Walk Result", "\n".join(snmp_result)]
+                            )
+                        else:
+                            table.add_row(
+                                ["Simple SNMP Walk Result", "No valid response."]
+                            )
                     else:
-                        table.add_row(["Simple SNMP Walk Result", "No valid response."])
+                        # If SNMPv2c fails, attempt SNMPv3
+                        snmp_result_v3 = []
+                        v3_user = "myUser"  # change this
+                        v3_auth_password = "myAuthPass"  # change this
+                        v3_priv_password = "myPrivPass"  # change this
+
+                        for (
+                            errorIndication,
+                            errorStatus,
+                            errorIndex,
+                            varBinds,
+                        ) in nextCmd(
+                            SnmpEngine(),
+                            UsmUserData(
+                                v3_user,
+                                authKey=v3_auth_password,
+                                privKey=v3_priv_password,
+                                authProtocol=usmHMACSHAAuthProtocol,
+                                privProtocol=usmAesCfb128Protocol,
+                            ),
+                            UdpTransportTarget((ip_address, int(snmp_port))),
+                            ContextData(),
+                            ObjectType(
+                                ObjectIdentity(hardcoded_oid).loadMibs("SNMPv2-MIB")
+                            ),
+                            lexicographicMode=False,
+                        ):
+                            if errorIndication:
+                                break
+                            elif errorStatus:
+                                break
+                            else:
+                                for varBind in varBinds:
+                                    # Use the resolved name instead of raw OID
+                                    snmp_result_v3.append(
+                                        f"{varBind[0].prettyPrint()} = {varBind[1]}"
+                                    )
+
+                        # Process SNMPv3 result
+                        if snmp_result_v3 and not any(
+                            "Error" in result for result in snmp_result_v3
+                        ):
+                            table.add_row(
+                                ["Simple SNMPv3 Walk Result", "\n".join(snmp_result_v3)]
+                            )
+                        else:
+                            table.add_row(
+                                ["Simple SNMPv3 Walk Result", "No valid response."]
+                            )
 
                 except Exception as e:
                     logger.error(f"An error occurred during Simple SNMP Walk: {str(e)}")
