@@ -50,7 +50,12 @@
             border-radius: 10px;
             border: 1px solid black;
         }
-
+        .navbar-icon img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            margin-right: 10px;
+        }
         .collapse {
             flex-grow: 1;
             display: flex;
@@ -113,6 +118,38 @@
             width: 3rem;
             height: 3rem;
         }
+
+        .navbar-icon-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: auto; /* Reset right */
+            left: -30px; /* Shift the dropdown to the left */
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .dropdown-menu a {
+            display: block;
+            padding: 10px 15px;
+            text-decoration: none;
+            color: #333;
+            background-color: #fff;
+            transition: background-color 0.2s;
+        }
+        
+        .dropdown-menu a:hover {
+            background-color: #bacbe2;
+        }
+        
     </style>
 
 </head>
@@ -135,16 +172,24 @@
                     <li class="nav-item" id="refresh-item">
                         <a class="nav-link" href="">Refresh</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">Log out</a>
-                    </li>
                 </ul>
             </div>
 
             <!-- Right Logo -->
+            <div class="navbar-icon-container">
+                <a class="navbar-icon" href="javascript:void(0)" onclick="toggleDropdown()">
+                    <img src="{% static 'images/icons8-settings-50.png' %}" alt="setting">
+                </a>
+                <div id="dropdown" class="dropdown-menu">
+                    <a class="navbar-icon" href="/about/"><img src="{% static 'images/icons8-about-50.png' %}" alt="about">About</a>
+                    <a class="navbar-icon" href="{% url 'logout' %}"><img src="{% static 'images/icons8-logout-50.png' %}" alt="logout">Logout</a>
+                </div>
+            </div>
+            
             <a class="navbar-brand" href="{% url 'ping_operation' %}">
                 <img src="{% static 'images/nms_logo.png' %}" alt="logo">
             </a>
+
         </div>
     </nav>
 
@@ -567,6 +612,22 @@
                 oidSelect.value = ""; // Clear selection if no match
             }
         });
+
+        function toggleDropdown() {
+            const dropdown = document.getElementById('dropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // Close the dropdown if clicked outside
+        document.addEventListener('click', function (event) {
+            const dropdown = document.getElementById('dropdown');
+            const navbarIcon = document.querySelector('.navbar-icon');
+        
+            if (!dropdown.contains(event.target) && !navbarIcon.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+        
 
     </script>
 
