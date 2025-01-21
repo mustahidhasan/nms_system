@@ -7,7 +7,6 @@ import logging
 import socket
 from prettytable import PrettyTable
 
-from DNS.models import DNS
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +50,6 @@ def ping_operation(request):
         snmp_walk = request.POST.get("snmp_walk")
         simple_snmp_walk = request.POST.get("simple_snmp_walk")
         # Get all DNS names as a list
-        dns_names = list(DNS.objects.values_list("dns_name", flat=True))
 
         # Validate that the IP address or hostname does not have invalid spaces
         if " " in get_ip_address:
@@ -146,6 +144,7 @@ def ping_operation(request):
             # Perform DNS Lookup
             if dns_lookup:
                 try:
+                    """
                     # Forward DNS Lookup: Resolve domain name from IP
                     command_forward = ["nslookup", ip_address]
 
@@ -176,7 +175,7 @@ def ping_operation(request):
                         table.add_row(
                             ["Forward DNS Lookup Result", "Forward DNS query failed."]
                         )
-
+                    """
                     # Reverse DNS Lookup: Resolve IP from domain name
                     command_reverse = ["nslookup", ip_address]
 
@@ -203,6 +202,7 @@ def ping_operation(request):
             # Perform Verbose DNS Lookup
             if verbos_dns_lookup:
                 try:
+                    """
                     # Forward DNS Lookup
                     command_forward_verbose = ["dig", "+noall", "+answer", ip_address]
 
@@ -239,7 +239,7 @@ def ping_operation(request):
                                 "Verbose DNS query failed.",
                             ]
                         )
-
+                    """
                     # Reverse DNS Lookup
                     command_reverse_verbose = [
                         "dig",
