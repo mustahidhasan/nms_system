@@ -60,9 +60,18 @@ button.btn:hover {
 .show-password {
   display: flex;
   align-items: center;
-  margin-top: 10px;
+  gap: 5px; /* Adds space between the checkbox and label */
 }
 
 .show-password input[type="checkbox"] {
-  margin-right: 5px;
+  margin: 0; /* Removes unnecessary margin */
+  width: 16px; /* Sets a fixed width for the checkbox */
+  height: 16px; /* Sets a fixed height for the checkbox */
+  cursor: pointer; /* Adds a pointer cursor for better UX */
+}
+
+.show-password-label {
+  margin: 0; /* Ensures no extra margin */
+  line-height: 1; /* Ensures the label aligns well with the checkbox */
+  cursor: pointer; /* Allows clicking the label to check/uncheck */
 }
