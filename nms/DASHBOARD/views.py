@@ -7,7 +7,6 @@ import logging
 import socket
 from prettytable import PrettyTable
 
-from DNS.models import DNS
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +50,6 @@ def ping_operation(request):
         snmp_walk = request.POST.get("snmp_walk")
         simple_snmp_walk = request.POST.get("simple_snmp_walk")
         # Get all DNS names as a list
-        dns_names = list(DNS.objects.values_list("dns_name", flat=True))
 
         # Validate that the IP address or hostname does not have invalid spaces
         if " " in get_ip_address:
