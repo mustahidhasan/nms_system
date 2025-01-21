@@ -180,7 +180,10 @@
     "admin/js/core.js": "admin/js/core.cf103cd04ebf.js",
     "admin/js/urlify.js": "admin/js/urlify.ae970a820212.js",
     "admin/js/prepopulate.js": "admin/js/prepopulate.bd2361dfd64d.js",
-    "css/user.css": "css/user.68519c5219f5.css",
+    "css/ping.css": "css/ping.7eb9577d1471.css",
+    "css/user.css": "css/user.81cdec98feb8.css",
+    "js/user.js": "js/user.a069a2f38ecc.js",
+    "js/ping.js": "js/ping.bee66724c0c4.js",
     "images/icons8-settings-50.png": "images/icons8-settings-50.f070a16179a0.png",
     "images/icons8-logout-50.png": "images/icons8-logout-50.e4bb6dc8e2ae.png",
     "images/about.pdf": "images/about.7791549657af.pdf",
@@ -189,5 +192,5 @@
     "images/logo_left.png": "images/logo_left.7af351f6bf07.png"
   },
   "version": "1.1",
-  "hash": "787c973d1421"
+  "hash": "8767bba5e2c9"
 }
