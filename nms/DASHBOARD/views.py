@@ -146,6 +146,7 @@ def ping_operation(request):
             # Perform DNS Lookup
             if dns_lookup:
                 try:
+                    """
                     # Forward DNS Lookup: Resolve domain name from IP
                     command_forward = ["nslookup", ip_address]
 
@@ -176,7 +177,7 @@ def ping_operation(request):
                         table.add_row(
                             ["Forward DNS Lookup Result", "Forward DNS query failed."]
                         )
-
+                    """
                     # Reverse DNS Lookup: Resolve IP from domain name
                     command_reverse = ["nslookup", ip_address]
 
@@ -203,6 +204,7 @@ def ping_operation(request):
             # Perform Verbose DNS Lookup
             if verbos_dns_lookup:
                 try:
+                    """
                     # Forward DNS Lookup
                     command_forward_verbose = ["dig", "+noall", "+answer", ip_address]
 
@@ -239,7 +241,7 @@ def ping_operation(request):
                                 "Verbose DNS query failed.",
                             ]
                         )
-
+                    """
                     # Reverse DNS Lookup
                     command_reverse_verbose = [
                         "dig",
