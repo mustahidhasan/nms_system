@@ -31,7 +31,7 @@
     </nav>
     <div class="container mt-5">
       <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-8">
           <div class="card">
             <div class="card-body">
               <h1 class="card-title text-center">Login</h1>
@@ -40,7 +40,7 @@
                 {% csrf_token %}
 
                 <!-- Username Field -->
-                <div class="mb-3">
+                <div class="mb-3 mt-2">
                   <input
                     type="text"
                     class="form-control"
@@ -52,7 +52,7 @@
                 </div>
 
                 <!-- Password Field -->
-                <div class="mb-3">
+                <div class="mb-3 mt-4">
                   <input
                     type="password"
                     class="form-control"
@@ -64,7 +64,7 @@
                 </div>
 
                 <!-- Show Password Checkbox -->
-                <div class="show-password mb-3">
+                <div class="show-password mb-3 mt-5">
                   <input
                     type="checkbox"
                     class="show-password-input"
@@ -77,14 +77,14 @@
                 </div>
 
               <!-- Three Buttons in One Line -->
-              <div class="d-flex justify-content-between">
+              <div class="d-flex justify-content-between mt-4">
                 <!-- Sign Up Button -->
                 <a href="{% url 'register' %}" class="btn btn-primary btn-custom mt-3">
                   Sign Up
                 </a>
                 <!-- Forgot Password Button -->
                 <a href="#" class="btn-custom mt-3">
-                  Forgot Pass@word
+                  Forgot Password
                 </a>
                 <!-- Login Button -->
                 <button type="submit" class="btn btn-success btn-custom" >

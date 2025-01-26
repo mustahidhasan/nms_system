@@ -51,9 +51,9 @@ button.btn {
   margin-top: 15px;
 }
 
-button.btn:hover {
+/* button.btn:hover {
   background-color: #0056b3;
-}
+} */
 
 /* Show Password Checkbox */
 .show-password {
