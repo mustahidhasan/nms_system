@@ -15,7 +15,7 @@ def register_view(request):
             return redirect("ping_operation")  # Redirect to the dashboard
     else:
         form = RegisterForm()
-    return render(request, "", {"form": form})
+    return render(request, "register.html", {"form": form})
 
 
 def login_view(request):
