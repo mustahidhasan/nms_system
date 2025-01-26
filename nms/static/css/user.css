@@ -75,3 +75,21 @@ button.btn:hover {
   line-height: 1; /* Ensures the label aligns well with the checkbox */
   cursor: pointer; /* Allows clicking the label to check/uncheck */
 }
+.navbar {
+  width: 100%;
+  background-color: #e8e8ee;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add bottom box shadow */
+}
+.navbar-nav {
+  display: flex;
+  gap: 15px;
+  /* Space between nav items */
+}
+
+.navbar-brand img {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  border: 1px solid black;
+}
+
