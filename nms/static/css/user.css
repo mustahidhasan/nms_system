@@ -40,7 +40,6 @@ input:focus {
 
 /* Button Styles */
 button.btn {
-  background-color: #007bff;
   color: #fff;
   padding: 12px;
   font-size: 16px;
@@ -91,5 +90,20 @@ button.btn:hover {
   height: 80px;
   border-radius: 10px;
   border: 1px solid black;
+}
+
+.btn-custom {
+  width: 30%; /* Make all buttons take up 30% of the row */
+  height: 50px; /* Set a fixed height for all buttons */
+  display: flex;
+  align-items: center; /* Center text vertically */
+  justify-content: center; /* Center text horizontally */
+  text-align: center; /* Ensure text is centered */
+  border-radius: 5px; /* Add consistent rounded corners */
+}
+
+a.btn-custom {
+   /* Remove underline from <a> buttons */
+  line-height: normal; /* Match <a> text alignment with <button> */
 }
 
