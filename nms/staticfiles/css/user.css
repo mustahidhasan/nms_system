@@ -1,6 +1,5 @@
 /* General form container styles */
-.login-container,
-.register-container {
+.login-container {
   max-width: 400px;
   margin: 50px auto;
   padding: 30px;
@@ -21,8 +20,8 @@ h1 {
 
 /* Input Fields */
 input {
-  width: calc(100% - 20px); /* Adjust width for padding */
-  padding: 10px 15px; /* Reduce padding for a better fit */
+  width: calc(100% - 20px);
+  padding: 10px 15px;
   margin: 8px 0;
   border-radius: 6px;
   border: 1px solid #ccc;
@@ -41,8 +40,6 @@ input:focus {
 
 /* Button Styles */
 button.btn {
-  width: 100%;
-  background-color: #007bff;
   color: #fff;
   padding: 12px;
   font-size: 16px;
@@ -54,97 +51,59 @@ button.btn {
   margin-top: 15px;
 }
 
-button.btn:hover {
+/* button.btn:hover {
   background-color: #0056b3;
-}
+} */
 
 /* Show Password Checkbox */
 .show-password {
   display: flex;
   align-items: center;
-  margin-top: 10px;
+  gap: 5px; /* Adds space between the checkbox and label */
 }
 
 .show-password input[type="checkbox"] {
-  margin-right: 10px;
+  margin: 0; /* Removes unnecessary margin */
+  width: 16px; /* Sets a fixed width for the checkbox */
+  height: 16px; /* Sets a fixed height for the checkbox */
+  cursor: pointer; /* Adds a pointer cursor for better UX */
 }
 
-/* Register Message */
-.register-message {
-  text-align: center;
-  margin-top: 20px;
+.show-password-label {
+  margin: 0; /* Ensures no extra margin */
+  line-height: 1; /* Ensures the label aligns well with the checkbox */
+  cursor: pointer; /* Allows clicking the label to check/uncheck */
+}
+.navbar {
+  width: 100%;
+  background-color: #e8e8ee;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add bottom box shadow */
+}
+.navbar-nav {
+  display: flex;
+  gap: 15px;
+  /* Space between nav items */
 }
 
-.register-message a {
-  color: #007bff;
-  text-decoration: none;
-  font-weight: bold;
+.navbar-brand img {
+  width: 100px;
+  height: 80px;
+  border-radius: 10px;
+  border: 1px solid black;
 }
 
-.register-message a:hover {
-  text-decoration: underline;
+.btn-custom {
+  width: 30%; /* Make all buttons take up 30% of the row */
+  height: 50px; /* Set a fixed height for all buttons */
+  display: flex;
+  align-items: center; /* Center text vertically */
+  justify-content: center; /* Center text horizontally */
+  text-align: center; /* Ensure text is centered */
+  border-radius: 5px; /* Add consistent rounded corners */
 }
 
-/* Password Strength Message Box */
-.password-message {
-  display: none;
-  margin-top: 10px;
-  padding: 10px;
-  background-color: #f0f0f0;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-size: 14px;
+a.btn-custom {
+   /* Remove underline from <a> buttons */
+  line-height: normal; /* Match <a> text alignment with <button> */
 }
 
-.password-message ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.password-message li {
-  padding-left: 15px;
-  line-height: 1.5;
-}
-
-.password-message .invalid {
-  color: red;
-}
-
-.password-message .valid {
-  color: green;
-}
-/* Show Password Checkbox */
-.show-password {
-  display: flex; /* Aligns children in a row */
-  align-items: center; /* Vertically centers the checkbox and label */
-  margin-top: 10px; /* Space above the checkbox */
-}
-
-.show-password input[type="checkbox"] {
-  width: 15px; /* Adjusts the size of the checkbox */
-  height: 15px; /* Adjusts the size of the checkbox */
-  margin-right: 5px; /* Space between checkbox and label */
-}
-
-.show-password label {
-  font-size: 14px; /* Adjusts font size for the label */
-  font-weight: bold;
-}
-/* Login Link Styles */
-.login-message {
-  text-align: center; /* Center the text */
-  margin-top: 20px; /* Space above the message */
-}
-
-.login-message a {
-  color: #007bff; /* Link color */
-  text-decoration: none; /* Removes the underline */
-  font-weight: bold; /* Makes the text bold */
-  transition: color 0.3s ease; /* Smooth transition for color change */
-}
-
-.login-message a:hover {
-  text-decoration: underline; /* Underline on hover */
-  color: #0056b3; /* Darker blue on hover */
-}
