@@ -29,21 +29,21 @@ DEBUG = True
 ALLOWED_HOSTS = ["", "*"]
 if DEBUG:
     # Use the console backend for development
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
     # Optional: Define the default email address from which the reset emails are sent
-    DEFAULT_FROM_EMAIL = 'webmaster@gmail.com.com'
+    DEFAULT_FROM_EMAIL = "webmaster@gmail.com.com"
 else:
     """
     configure your email here
     """
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.gmail.com"
     EMAIL_PORT = 587
     EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = 'your_email@gmail.com'  # Your email address
-    EMAIL_HOST_PASSWORD = 'your_email_password'  # Your email password or app password
-    DEFAULT_FROM_EMAIL = 'your_email@gmail.com'
+    EMAIL_HOST_USER = "your_email@gmail.com"  # Your email address
+    EMAIL_HOST_PASSWORD = "your_email_password"  # Your email password or app password
+    DEFAULT_FROM_EMAIL = "your_email@gmail.com"
 
 
 # Application definition
