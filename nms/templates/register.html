@@ -49,15 +49,22 @@
                   </ul>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 mt-3">
-                  Register
+                <!-- Three Buttons in One Line -->
+              <div class="d-flex justify-content-between mt-4">
+                <!-- Sign Up Button -->
+                <a href="{% url 'login' %}" class="btn btn-primary btn-custom mt-3">
+                  Login
+                </a>
+                <!-- Forgot Password Button -->
+                <a href="#" class="btn-custom mt-3">
+                  Forgot Password
+                </a>
+                <!-- Login Button -->
+                <button type="submit" class="btn btn-success btn-custom" >
+                  Sign Up
                 </button>
+              </div>
               </form>
-
-              <p class="text-center mt-3 login-message">
-                Already have an account?
-                <a href="{% url 'login' %}">Login here</a>
-              </p>
             </div>
           </div>
         </div>
