@@ -52,7 +52,7 @@
               <form id="register-form" method="post">
                 {% csrf_token %}
 
-                <!-- First Name and Last Name in the same row -->
+                <!-- First Name and Last Name -->
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <input
@@ -88,11 +88,11 @@
                   />
                 </div>
 
-                <!-- Password and Confirm Password in the same row -->
+                <!-- Password and Confirm Password -->
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <input
-                      type="password1"
+                      type="password"
                       name="password1"
                       id="password1"
                       class="form-control"
@@ -102,16 +102,20 @@
                   </div>
                   <div class="col-md-6">
                     <input
-                      type="password2"
+                      type="password"
                       name="password2"
                       id="password2"
                       class="form-control"
                       placeholder="Confirm Password"
                       required
                     />
+                    <div id="confirm-password-feedback" class="password-message">
+                      Passwords do not match.
+                    </div>
                   </div>
                 </div>
 
+                <!-- Password Requirements -->
                 <div id="password-message" class="password-message">
                   <p>Password must contain:</p>
                   <ul class="list-unstyled">
@@ -123,17 +127,14 @@
                   </ul>
                 </div>
 
-                <!-- Three Buttons in One Line -->
+                <!-- Buttons -->
                 <div class="d-flex justify-content-between mt-4">
-                  <!-- Login Button -->
                   <a href="{% url 'login' %}" class="btn btn-primary btn-custom mt-3">
                     Login
                   </a>
-                  <!-- Forgot Password Button -->
                   <a href="#" class="btn btn-custom mt-3">
                     Forgot Password
                   </a>
-                  <!-- Sign Up Button -->
                   <button type="submit" class="btn btn-success btn-custom">
                     Sign Up
                   </button>
@@ -145,70 +146,70 @@
       </div>
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-      const passwordInput = document.querySelector('input[name="password"]');
-      const confirmPasswordInput = document.querySelector(
-        'input[name="password"]'
-      );
+      const passwordInput = document.getElementById("password1");
+      const confirmPasswordInput = document.getElementById("password2");
       const passwordMessage = document.getElementById("password-message");
       const lengthCheck = document.getElementById("length");
       const uppercaseCheck = document.getElementById("uppercase");
       const numberCheck = document.getElementById("number");
-      const registerForm = document.getElementById("register-form");
+      const confirmPasswordFeedback = document.getElementById(
+        "confirm-password-feedback"
+      );
 
       passwordInput.addEventListener("input", function () {
         const password = passwordInput.value;
 
+        // Length check
         if (password.length >= 8) {
-          lengthCheck.classList.remove("invalid");
           lengthCheck.classList.add("valid");
+          lengthCheck.classList.remove("invalid");
         } else {
-          lengthCheck.classList.remove("valid");
           lengthCheck.classList.add("invalid");
+          lengthCheck.classList.remove("valid");
         }
 
+        // Uppercase check
         if (/[A-Z]/.test(password)) {
-          uppercaseCheck.classList.remove("invalid");
           uppercaseCheck.classList.add("valid");
+          uppercaseCheck.classList.remove("invalid");
         } else {
-          uppercaseCheck.classList.remove("valid");
           uppercaseCheck.classList.add("invalid");
+          uppercaseCheck.classList.remove("valid");
         }
 
+        // Number check
         if (/\d/.test(password)) {
-          numberCheck.classList.remove("invalid");
           numberCheck.classList.add("valid");
+          numberCheck.classList.remove("invalid");
         } else {
-          numberCheck.classList.remove("valid");
           numberCheck.classList.add("invalid");
+          numberCheck.classList.remove("valid");
         }
 
         passwordMessage.style.display = "block";
       });
 
-      registerForm.addEventListener("submit", function (event) {
-        const password = passwordInput.value;
-        const confirmPassword = confirmPasswordInput.value;
-        const isLengthValid = password.length >= 8;
-        const isUppercaseValid = /[A-Z]/.test(password);
-        const isNumberValid = /\d/.test(password);
-        const isPasswordMatch = password === confirmPassword;
-
-        if (
-          !isLengthValid ||
-          !isUppercaseValid ||
-          !isNumberValid ||
-          !isPasswordMatch
-        ) {
-          event.preventDefault();
-          alert(
-            "User did not register. Please fill the form carefully and ensure passwords match."
-          );
+      confirmPasswordInput.addEventListener("input", function () {
+        if (confirmPasswordInput.value === passwordInput.value) {
+          confirmPasswordFeedback.style.display = "none";
         } else {
-          alert("Registration successful! Welcome!");
+          confirmPasswordFeedback.style.display = "block";
+        }
+      });
+
+      document.getElementById("register-form").addEventListener("submit", (e) => {
+        if (
+          lengthCheck.classList.contains("invalid") ||
+          uppercaseCheck.classList.contains("invalid") ||
+          numberCheck.classList.contains("invalid") ||
+          confirmPasswordInput.value !== passwordInput.value
+        ) {
+          e.preventDefault();
+          alert("Please ensure all fields are valid.");
         }
       });
     </script>
