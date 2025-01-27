@@ -179,3 +179,45 @@ body {
 #ipAddress{
   width: 400px;
 }
+
+/* Left navigation bar styling */
+.left-navigation {
+  position: fixed;
+  top: 100px; /* Adjust this value based on the height of your top navigation */
+  left: 0;
+  width: 250px; /* Set the width of the sidebar */
+  height: calc(100vh - 60px); /* Full height minus the top nav height */
+  background-color: #f8f9fa; /* Background color */
+  padding-top: 20px;
+  padding-right: 10px;
+  border-right: 2px solid #ddd;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+
+.left-navigation .form-group {
+  margin-bottom: 20px;
+}
+
+.left-navigation .form-select, 
+.left-navigation .form-control {
+  width: 100%;
+}
+
+.left-navigation .form-check {
+  margin-bottom: 10px;
+}
+
+/* Apply styling for buttons if needed */
+.left-navigation .btn {
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* Add media query for responsiveness */
+@media (max-width: 768px) {
+  .left-navigation {
+    width: 200px;
+    padding-top: 15px;
+  }
+}

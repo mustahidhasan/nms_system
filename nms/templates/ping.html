@@ -40,14 +40,14 @@
           class="collapse navbar-collapse justify-content-center"
           id="navbarTogglerDemo01"
         >
-          <ul class="navbar-nav">
+          <!-- <ul class="navbar-nav">
             <li class="nav-item active">
               <a class="nav-link" href="{% url 'ping_operation' %}">Home</a>
             </li>
             <li class="nav-item" id="refresh-item">
               <a class="nav-link" href="">Refresh</a>
             </li>
-          </ul>
+          </ul> -->
         </div>
 
         <!-- Right Logo -->
@@ -212,26 +212,28 @@
               </button>
                 </div>
                 
-                <!-- SNMP Fields -->
-                <div
-                  id="snmp_fields"
-                  class="p-3 border rounded bg-light"
-                  style="display: none"
-                >
-                  <h5 class="mb-3">SNMP Configuration</h5>
+                <!-- Left Navigation Wrapper -->
+                <div class="left-navigation">
+                  <!-- SNMP Fields -->
+                  <div
+                    id="snmp_fields"
+                    class="p-3 border rounded bg-light"
+                    style="display: none"
+                  >
+                    <h5 class="mb-3">SNMP Configuration</h5>
 
                   <label for="snmp_version" class="form-label"
                     >SNMP Version:</label
                   >
-                  <select
-                    class="form-select mb-3"
-                    name="snmp_version"
-                    id="snmp_version"
-                    onchange="toggleSNMPVersionFields()"
-                  >
-                    <option value="2c" selected><strong>v2c</strong></option>
-                    <option value="3"><strong>v3</strong></option>
-                  </select>
+                    <select
+                      class="form-select mb-3"
+                      name="snmp_version"
+                      id="snmp_version"
+                      onchange="toggleSNMPVersionFields()"
+                    >
+                      <option value="2c" selected><strong>v2c</strong></option>
+                      <option value="3"><strong>v3</strong></option>
+                    </select>
 
                   <!-- SNMPFORM Fields -->
                   <div id="v2cv3_1" style="display: none">
@@ -364,40 +366,40 @@
                       <option value="hex">Hex String</option>
                     </select>
                   </div>
-                </div>
-
-                <!-- Checkboxes for Operations -->
-                <div class="form-group">
-                  <label class="form-label active">Select Operations</label>
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="selectAll"
-                      onclick="toggleSelectAll()"
-                    />
-                    <label
-                      class="form-check-label active select_all"
-                      for="selectAll"
-                      >Select All</label
-                    >
                   </div>
-                  <div class="row mt-1">
+
+                  <!-- Checkboxes for Operations -->
+                  <div class="form-group">
+                    <label class="form-label active">Select Operations</label>
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="selectAll"
+                        onclick="toggleSelectAll()"
+                      />
+                      <label
+                        class="form-check-label active select_all"
+                        for="selectAll"
+                        >Select All</label
+                      >
+                    </div>
+                    <div class="row mt-1">
                     <!-- First Row of Checkboxes -->
-                    <div class="col-md-2">
-                      <div class="form-check">
-                        <input
-                          class="form-check-input operation-checkbox"
-                          type="checkbox"
-                          id="enable_ping"
-                          name="enable_ping"
-                          value="1"
-                        />
+                      <div class="col-md-2">
+                        <div class="form-check">
+                          <input
+                            class="form-check-input operation-checkbox"
+                            type="checkbox"
+                            id="enable_ping"
+                            name="enable_ping"
+                            value="1"
+                          />
                         <label class="form-check-label" for="enable_ping"
                           >Ping</label
                         >
                       </div>
-                    </div>
+                        </div>
                     <div class="col-md-2">
                       <div class="form-check">
                         <input
@@ -488,6 +490,7 @@
                     </div>
                   </div>
                 </div>
+
 
               </form>
             </div>
