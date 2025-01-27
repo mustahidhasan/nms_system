@@ -124,6 +124,19 @@
 
     <div class="container col-12 mt-1">
       <div class="row justify-content-center">
+        {% if messages %}
+        <div class="container mt-4">
+          {% for message in messages %}
+          <div
+            class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show"
+            role="alert"
+          >
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
         <!-- Network Operations Form -->
         <div class="col-md-8">
           <div class="card shadow-lg">
