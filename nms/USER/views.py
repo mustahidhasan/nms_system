@@ -22,7 +22,8 @@ def register_view(request):
                 )
         else:
             messages.error(
-                request, "Registration failed. Please correct the errors or use a different email address."
+                request,
+                "Registration failed. Please correct the errors or use a different email address.",
             )
     else:
         form = RegisterForm()

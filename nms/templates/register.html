@@ -45,20 +45,21 @@
     </nav>
     <div class="container mt-5">
       <div class="row justify-content-center">
-        {% if messages %}
+        <div class="col-md-8">
+          {% if messages %}
         <div class="container mt-4">
           {% for message in messages %}
           <div
             class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show"
             role="alert"
+            style="border-radius: 5px; margin-bottom: 10px; padding: 15px; font-size: 16px; line-height: 1.5; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);background-color: lightyellow; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);"
           >
             {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 10px; right: 10px;"></button>
           </div>
           {% endfor %}
         </div>
         {% endif %}
-        <div class="col-md-8">
           <div class="card">
             <div class="card-body">
               <h1 class="card-title text-center">Register</h1>
