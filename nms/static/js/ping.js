@@ -19,11 +19,6 @@ function toggleSNMPFields() {
   }
 }
 
-// Add a refresh button
-document.getElementById("refresh-item").addEventListener("click", function () {
-  location.reload();
-  sessionStorage.removeItem("ip_address");
-});
 // Function to toggle SNMP version-specific fields
 function toggleSNMPVersionFields() {
   var snmpVersion = document.getElementById("snmp_version").value;
