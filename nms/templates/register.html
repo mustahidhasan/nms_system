@@ -29,9 +29,23 @@
     </style>
   </head>
   <body>
+    <nav class="navbar navbar-expand-lg">
+      <div
+        class="container-fluid d-flex justify-content-between align-items-center"
+      >
+        <!-- Left Logo -->
+        <a class="navbar-brand" href="{% url 'ping_operation' %}">
+          <img src="{% static 'images/logo_left.png' %}" alt="logo" />
+        </a>
+        <!-- Right Logo -->
+        <a class="navbar-brand" href="{% url 'ping_operation' %}">
+          <img src="{% static 'images/nms_logo.png' %}" alt="logo" />
+        </a>
+      </div>
+    </nav>
     <div class="container mt-5">
       <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-8">
           <div class="card">
             <div class="card-body">
               <h1 class="card-title text-center">Register</h1>
@@ -41,22 +55,22 @@
                 <!-- First Name and Last Name in the same row -->
                 <div class="row mb-3">
                   <div class="col-md-6">
-                    <label for="first_name" class="form-label">First Name</label>
                     <input
                       type="text"
                       name="first_name"
                       id="first_name"
-                      class="form-control"
+                      class="form-control mt-5"
+                      placeholder="Enter your First Name"
                       required
                     />
                   </div>
                   <div class="col-md-6">
-                    <label for="last_name" class="form-label">Last Name</label>
                     <input
                       type="text"
                       name="last_name"
                       id="last_name"
-                      class="form-control"
+                      class="form-control mt-5"
+                      placeholder="Enter your Last Name"
                       required
                     />
                   </div>
@@ -64,12 +78,12 @@
 
                 <!-- Email -->
                 <div class="mb-3">
-                  <label for="email" class="form-label">Email</label>
                   <input
                     type="email"
                     name="email"
                     id="email"
                     class="form-control"
+                    placeholder="Enter your Email"
                     required
                   />
                 </div>
@@ -77,22 +91,22 @@
                 <!-- Password and Confirm Password in the same row -->
                 <div class="row mb-3">
                   <div class="col-md-6">
-                    <label for="password1" class="form-label">Password</label>
                     <input
                       type="password1"
                       name="password1"
                       id="password1"
                       class="form-control"
+                      placeholder="Enter your Password"
                       required
                     />
                   </div>
                   <div class="col-md-6">
-                    <label for="password2" class="form-label">Confirm Password</label>
                     <input
                       type="password2"
                       name="password2"
                       id="password2"
                       class="form-control"
+                      placeholder="Confirm Password"
                       required
                     />
                   </div>
