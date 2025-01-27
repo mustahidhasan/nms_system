@@ -176,3 +176,6 @@ body {
   height: 500px;
   border: none;
 }
+#ipAddress{
+  width: 700px;
+}

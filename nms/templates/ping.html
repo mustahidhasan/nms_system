@@ -146,7 +146,6 @@
           {% endif %}
           <div class="card shadow-lg">
             <div class="card-body">
-              <h3 class="card-title text-center mb-4">Network Operations</h3>
               <!-- Spinner Element -->
               <div class="spinner-overlay" id="spinnerOverlay">
                 <div class="spinner-border text-primary" role="status">
@@ -161,10 +160,7 @@
                 {% csrf_token %}
 
                 <!-- Input for IP/Hostname -->
-                <div class="form-group">
-                  <label for="ipAddress" class="form-label active"
-                    >Enter IP Address or Hostname Name</label
-                  >
+                <div class="form-group" style="display: flex; align-items: center;">
                   <input
                     autocomplete="off"
                     type="text"
@@ -172,8 +168,49 @@
                     id="ipAddress"
                     name="ip_address"
                     placeholder="Enter IP address or domain name"
-                  />
+                    style="flex: 1; margin-right: 10px;" />
+                  <button
+                    class="btn btn-primary"
+                    type="submit"
+                    style="
+                      background: linear-gradient(45deg, #3cff00, #57b300);
+                      color: #030000;
+                      font-size: 0.9rem;
+                      font-weight: bold;
+                      border: none;
+                      border-radius: 14px;
+                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                      padding: 8px 16px;
+                      transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    "
+                  >
+                    Submit
+                  </button>
                 </div>
+                <button
+                class="btn btn-primary"
+                style="
+                  background: linear-gradient(45deg, #487eb8, #4585c9);
+                  color: #fff;
+                  font-size: 0.9rem;
+                  font-weight: bold;
+                  border: none;
+                  border-radius: 8px;
+                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                  padding: 8px 16px;
+                  width: auto;
+                  display: inline-block;
+                  transition:
+                    transform 0.2s ease,
+                    box-shadow 0.2s ease;
+                "
+                type="button"
+                id="clearButton"
+                onclick="clearForm()"
+              >
+                Clear
+              </button>
+                
 
                 <!-- SNMP Fields -->
                 <div
@@ -452,52 +489,6 @@
                   </div>
                 </div>
 
-                <div class="text-center">
-                  <button
-                    class="btn btn-primary"
-                    type="submit"
-                    style="
-                      background: linear-gradient(45deg, #007bff, #0056b3);
-                      color: #fff;
-                      font-size: 0.9rem;
-                      font-weight: bold;
-                      border: none;
-                      border-radius: 8px;
-                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                      padding: 8px 16px;
-                      width: auto;
-                      display: inline-block;
-                      transition:
-                        transform 0.2s ease,
-                        box-shadow 0.2s ease;
-                    "
-                  >
-                    Run Network Operations
-                  </button>
-                  <button
-                    class="btn btn-primary"
-                    style="
-                      background: linear-gradient(45deg, #487eb8, #4585c9);
-                      color: #fff;
-                      font-size: 0.9rem;
-                      font-weight: bold;
-                      border: none;
-                      border-radius: 8px;
-                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                      padding: 8px 16px;
-                      width: auto;
-                      display: inline-block;
-                      transition:
-                        transform 0.2s ease,
-                        box-shadow 0.2s ease;
-                    "
-                    type="button"
-                    id="clearButton"
-                    onclick="clearForm()"
-                  >
-                    Clear
-                  </button>
-                </div>
               </form>
             </div>
           </div>
