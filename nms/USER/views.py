@@ -9,26 +9,28 @@ from django.db import IntegrityError
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from nms.settings import EMAIL_HOST_USER
+from .models import CustomUser 
+def confirm_otp(request):
+    if request.method == "POST":
+        entered_otp = request.POST.get('otp')
 
-# def confirm_otp(request):
-#     if request.method == "POST":
-#         entered_otp = request.POST.get('otp')
-#         session_otp = request.session.get('otp')
-#         print("line 17", session_otp)
-#         if entered_otp == session_otp:
-#             # OTP is correct, activate the user
-#             user_id = request.session.get('user_id')
-#             user = User.objects.get(id=user_id)
-#             user.is_active = True  # Activate the user account
-#             user.save()
+        session_otp = request.session.get('otp')
+        print("line 17", entered_otp,  session_otp)
+        if entered_otp == session_otp:
+            # OTP is correct, activate the user
+            user_id = request.session.get('user_id')
+            user = CustomUser.objects.get(id=user_id)
+            user.is_active = True  # Activate the user account
+            user.save()
 
-#             # Clear session OTP data
-#             del request.session['otp']
-#             del request.session['user_id']
-
-#             return JsonResponse({"success": True})
-#         else:
-#             return JsonResponse({"success": False, "error": "Invalid OTP"})
+            # Clear session OTP data
+            del request.session['otp']
+            del request.session['user_id']
+            messages.success(request, "user registered successfully")
+            return redirect('login')
+        else:
+            messages.success(request, "OTP did not matched")
+            return render(request, 'otp_verification.html')
 
 def generate_otp():
     return str(random.randint(100000, 999999))

@@ -51,17 +51,17 @@
             <div class="card-body">
               <h1 class="card-title text-center">Confirm With OTP</h1>
 
-              <form method="POST">
+              <form method="POST" action="{% url 'confirm_otp' %}">
                 {% csrf_token %}
 
                 <!-- Password Field -->
                 <div class="mb-3 mt-4">
                   <input
-                    type="password"
+                    type="text"
                     class="form-control"
-                    id="password"
-                    name="password"
-                    placeholder="Enter your password"
+                    id="otp"
+                    name="otp"
+                    placeholder="Enter your OTP"
                     required
                   />
                 </div>
