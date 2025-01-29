@@ -179,3 +179,12 @@ body {
 #ipAddress{
   width: 400px;
 }
+
+/* Left navigation bar styling */
+.left-navigation {
+  height: calc(100vh - 105px); /* Full height minus the top nav height (105px) */
+  background-color: #f8f9fa; /* Background color */
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);  
+  overflow-y: auto;
+  padding-left: 20px;
+}
