@@ -29,15 +29,107 @@
     </style>
   </head>
   <body>
+    <nav class="navbar navbar-expand-lg">
+      <div
+        class="container-fluid d-flex justify-content-between align-items-center"
+      >
+        <!-- Left Logo -->
+        <a class="navbar-brand" href="{% url 'ping_operation' %}">
+          <img src="{% static 'images/logo_left.png' %}" alt="logo" />
+        </a>
+        <!-- Right Logo -->
+        <a class="navbar-brand" href="{% url 'ping_operation' %}">
+          <img src="{% static 'images/nms_logo.png' %}" alt="logo" />
+        </a>
+      </div>
+    </nav>
     <div class="container mt-5">
       <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-8">
+          {% if messages %}
+        <div class="container mt-4">
+          {% for message in messages %}
+          <div
+            class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show"
+            role="alert"
+            style="border-radius: 5px; margin-bottom: 10px; padding: 15px; font-size: 16px; line-height: 1.5; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);background-color: lightyellow; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);"
+          >
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 10px; right: 10px;"></button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
           <div class="card">
             <div class="card-body">
               <h1 class="card-title text-center">Register</h1>
               <form id="register-form" method="post">
-                {% csrf_token %} {{ form.as_p }}
+                {% csrf_token %}
 
+                <!-- First Name and Last Name -->
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <input
+                      type="text"
+                      name="first_name"
+                      id="first_name"
+                      class="form-control mt-5"
+                      placeholder="Enter your First Name"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <input
+                      type="text"
+                      name="last_name"
+                      id="last_name"
+                      class="form-control mt-5"
+                      placeholder="Enter your Last Name"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-3">
+                  <input
+                    type="email"
+                    name="email"
+                    id="email"
+                    class="form-control"
+                    placeholder="Enter your Email"
+                    required
+                  />
+                </div>
+
+                <!-- Password and Confirm Password -->
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <input
+                      type="password"
+                      name="password1"
+                      id="password1"
+                      class="form-control"
+                      placeholder="Enter your Password"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <input
+                      type="password"
+                      name="password2"
+                      id="password2"
+                      class="form-control"
+                      placeholder="Confirm Password"
+                      required
+                    />
+                    <div id="confirm-password-feedback" class="password-message">
+                      Passwords do not match.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Password Requirements -->
                 <div id="password-message" class="password-message">
                   <p>Password must contain:</p>
                   <ul class="list-unstyled">
@@ -49,73 +141,89 @@
                   </ul>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 mt-3">
-                  Register
-                </button>
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                  <a href="{% url 'login' %}" class="btn btn-primary btn-custom mt-3">
+                    Login
+                  </a>
+                  <a href="{% url 'password_reset' %}" class="btn-custom mt-3">
+                    Forgot Password
+                  </a>
+                  <button type="submit" class="btn btn-success btn-custom">
+                    Sign Up
+                  </button>
+                </div>
               </form>
-
-              <p class="text-center mt-3 login-message">
-                Already have an account?
-                <a href="{% url 'login' %}">Login here</a>
-              </p>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-      const passwordInput = document.querySelector('input[type="password"]');
+      const passwordInput = document.getElementById("password1");
+      const confirmPasswordInput = document.getElementById("password2");
       const passwordMessage = document.getElementById("password-message");
       const lengthCheck = document.getElementById("length");
       const uppercaseCheck = document.getElementById("uppercase");
       const numberCheck = document.getElementById("number");
-      const registerForm = document.getElementById("register-form");
+      const confirmPasswordFeedback = document.getElementById(
+        "confirm-password-feedback"
+      );
 
       passwordInput.addEventListener("input", function () {
         const password = passwordInput.value;
 
+        // Length check
         if (password.length >= 8) {
-          lengthCheck.classList.remove("invalid");
           lengthCheck.classList.add("valid");
+          lengthCheck.classList.remove("invalid");
         } else {
-          lengthCheck.classList.remove("valid");
           lengthCheck.classList.add("invalid");
+          lengthCheck.classList.remove("valid");
         }
 
+        // Uppercase check
         if (/[A-Z]/.test(password)) {
-          uppercaseCheck.classList.remove("invalid");
           uppercaseCheck.classList.add("valid");
+          uppercaseCheck.classList.remove("invalid");
         } else {
-          uppercaseCheck.classList.remove("valid");
           uppercaseCheck.classList.add("invalid");
+          uppercaseCheck.classList.remove("valid");
         }
 
+        // Number check
         if (/\d/.test(password)) {
-          numberCheck.classList.remove("invalid");
           numberCheck.classList.add("valid");
+          numberCheck.classList.remove("invalid");
         } else {
-          numberCheck.classList.remove("valid");
           numberCheck.classList.add("invalid");
+          numberCheck.classList.remove("valid");
         }
 
         passwordMessage.style.display = "block";
       });
 
-      registerForm.addEventListener("submit", function (event) {
-        const password = passwordInput.value;
-        const isLengthValid = password.length >= 8;
-        const isUppercaseValid = /[A-Z]/.test(password);
-        const isNumberValid = /\d/.test(password);
-
-        if (!isLengthValid || !isUppercaseValid || !isNumberValid) {
-          event.preventDefault();
-          alert("User did not register. Please fill the form carefully.");
+      confirmPasswordInput.addEventListener("input", function () {
+        if (confirmPasswordInput.value === passwordInput.value) {
+          confirmPasswordFeedback.style.display = "none";
         } else {
-          alert("Registration successful! Welcome!");
+          confirmPasswordFeedback.style.display = "block";
+        }
+      });
+
+      document.getElementById("register-form").addEventListener("submit", (e) => {
+        if (
+          lengthCheck.classList.contains("invalid") ||
+          uppercaseCheck.classList.contains("invalid") ||
+          numberCheck.classList.contains("invalid") ||
+          confirmPasswordInput.value !== passwordInput.value
+        ) {
+          e.preventDefault();
+          alert("Please ensure all fields are valid.");
         }
       });
     </script>
