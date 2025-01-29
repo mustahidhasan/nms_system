@@ -1,3 +1,5 @@
+import random
+from django.core.mail import send_mail
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
@@ -5,28 +7,70 @@ from django.contrib import messages
 from .forms import RegisterForm, LoginForm
 from django.db import IntegrityError
 from django.contrib.auth.models import User
+from django.http import JsonResponse
+from nms.settings import EMAIL_HOST_USER
 
+# def confirm_otp(request):
+#     if request.method == "POST":
+#         entered_otp = request.POST.get('otp')
+#         session_otp = request.session.get('otp')
+#         print("line 17", session_otp)
+#         if entered_otp == session_otp:
+#             # OTP is correct, activate the user
+#             user_id = request.session.get('user_id')
+#             user = User.objects.get(id=user_id)
+#             user.is_active = True  # Activate the user account
+#             user.save()
+
+#             # Clear session OTP data
+#             del request.session['otp']
+#             del request.session['user_id']
+
+#             return JsonResponse({"success": True})
+#         else:
+#             return JsonResponse({"success": False, "error": "Invalid OTP"})
+
+def generate_otp():
+    return str(random.randint(100000, 999999))
 
 def register_view(request):
     if request.method == "POST":
         form = RegisterForm(request.POST)
         if form.is_valid():
+            # Generate OTP and send it to the user's email
+            otp = generate_otp()
+            email = form.cleaned_data['email']
+            
             try:
-                # Save the user to the database
-                form.save()
-                messages.success(request, "Registration successful! Please log in.")
-                return redirect("login")
-            except IntegrityError:
-                messages.error(
-                    request, "A user with this email already exists. Please try again."
+                # Save the form data temporarily but don't commit yet
+                user = form.save(commit=False)
+                user.is_active = False  # Deactivate the account until OTP is confirmed
+                user.save()
+
+                # Store the OTP in the session to verify later
+                request.session['otp'] = otp
+                request.session['user_id'] = user.id
+                print("line 52", EMAIL_HOST_USER, otp)
+                # Send OTP to user's email
+                send_mail(
+                    'Your OTP Code',
+                    f'Your OTP code is {otp}',
+                    EMAIL_HOST_USER,  # Replace with your domain email
+                    [email],
+                    fail_silently=False,
                 )
+
+                messages.info(request, "An OTP has been sent to your email. Please enter it to complete registration.")
+
+                return render(request, "otp_verification.html", {"email": email})
+
+            except IntegrityError:
+                messages.error(request, "A user with this email already exists. Please try again.")
         else:
-            messages.error(
-                request,
-                "Registration failed. Please correct the errors or use a different email address.",
-            )
+            messages.error(request, "Registration failed. Please correct the errors.")
     else:
         form = RegisterForm()
+
     return render(request, "register.html", {"form": form})
 
 
