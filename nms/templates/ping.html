@@ -284,15 +284,26 @@
             {% if messages %}
             <div class="container mt-4">
               {% for message in messages %}
-              <div
-                class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show"
-                role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
+                <div
+                  class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show"
+                  role="alert"
+                  id="message-{{ forloop.counter }}">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
               {% endfor %}
             </div>
-            {% endif %}
+            <script>
+              setTimeout(function() {
+                var messages = document.querySelectorAll('.alert');
+                messages.forEach(function(message) {
+                  message.classList.remove('show');
+                  message.classList.add('fade');
+                });
+              }, 10000); // 10000 milliseconds = 10 seconds
+            </script>
+          {% endif %}
+
 
             <div class="card shadow-lg">
               <div class="card-body" style="background-color: rgba(3, 44, 18, 0.842);">
