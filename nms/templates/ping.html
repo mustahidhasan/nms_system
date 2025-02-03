@@ -196,7 +196,7 @@
             </div>
 
             <!-- Checkboxes for Operations -->
-            <div class="form-group" id="form_elements">
+            <div class="form-group" id="form_elements" style="display: block;">
               <label class="form-label active">Select Operations</label>
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="selectAll" onclick="toggleSelectAll()" />
@@ -406,21 +406,19 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{% static 'js/ping.js' %}"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const advancedSnmpCheckbox = document.getElementById("snmp_walk");
-      const formElementsDiv = document.getElementById("form_elements");
-      const clearButton = document.getElementById('clearButton')
-      if (advancedSnmpCheckbox && formElementsDiv) {
-          advancedSnmpCheckbox.addEventListener("change", function () {
-              if (this.checked) {
-                  formElementsDiv.style.display = "none";
-              } else {
-                  formElementsDiv.style.display = "block";
-              }
-          });
-      }
+    const advancedSnmpCheckbox = document.getElementById("snmp_walk");
+    const formElementsDiv = document.getElementById("form_elements");
 
-  });
+    if (advancedSnmpCheckbox && formElementsDiv) {
+        advancedSnmpCheckbox.addEventListener("click", function () {
+            if (this.checked) {
+                formElementsDiv.style.display = "none";
+            } else {
+                formElementsDiv.style.display = "block";
+            }
+        });
+    };
+
   
   </script>
 </body>
