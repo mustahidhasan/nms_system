@@ -2,13 +2,15 @@
 function clearForm() {
   var form = document.getElementById("inputForm");
   var div_result = document.getElementById("result_div");
+  var form_fields = document.getElementById("form_elements")
   form.reset(); // Reset all the input fields in the form
   sessionStorage.removeItem("ip_address");
 
   var Div = document.getElementById("snmp_fields");
   Div.style.display = "none"; // Hide SNMPv2c fields
   div_result.style.display = "none";
-}
+  form_fields.style.display = "block";
+};
 function toggleSNMPFields() {
   const snmpFields = document.getElementById("snmp_fields");
   const snmpCheckbox = document.getElementById("snmp_walk");
@@ -17,7 +19,7 @@ function toggleSNMPFields() {
   } else {
     snmpFields.style.display = "none";
   }
-}
+};
 
 // Function to toggle SNMP version-specific fields
 function toggleSNMPVersionFields() {
@@ -57,7 +59,7 @@ function toggleSNMPVersionFields() {
     v3Div_6.style.display = "none";
     v3Div_7.style.display = "none";
   }
-}
+};
 
 // Ensure the correct fields are visible on page load
 window.onload = function () {
@@ -72,7 +74,7 @@ function toggleSelectAll() {
       checkbox.checked = selectAll.checked;
     }
   });
-}
+};
 
 // save in local storage
 // Load form data from sessionStorage on page load
@@ -127,19 +129,19 @@ function toggleDropdown() {
   const dropdown = document.getElementById("dropdown");
   dropdown.style.display =
     dropdown.style.display === "block" ? "none" : "block";
-}
+};
 
 // Function to show the popup
 function showPopup() {
   const popup = document.getElementById("popup");
   popup.style.display = "block";
-}
+};
 
 // Function to close the popup
 function closePopup() {
   const popup = document.getElementById("popup");
   popup.style.display = "none";
-}
+};
 
 // Close the dropdown if clicked outside
 document.addEventListener("click", function (event) {

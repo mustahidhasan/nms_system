@@ -2,14 +2,12 @@
 function clearForm() {
   var form = document.getElementById("inputForm");
   var div_result = document.getElementById("result_div");
-  var form_fields = document.getElementById("form_elements")
   form.reset(); // Reset all the input fields in the form
   sessionStorage.removeItem("ip_address");
 
   var Div = document.getElementById("snmp_fields");
   Div.style.display = "none"; // Hide SNMPv2c fields
   div_result.style.display = "none";
-  form_fields.style.display = "block";
 };
 function toggleSNMPFields() {
   const snmpFields = document.getElementById("snmp_fields");
