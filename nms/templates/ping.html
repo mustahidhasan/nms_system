@@ -74,23 +74,7 @@
               frameborder="0"
             ></iframe> -->
           <h4>Project set up Steps</h4><br>
-          <p>
-            - python3 -m venv env <br>
-            - source env/bin/activate<br><br>
-
-            1. pip install -r requirements.txt<br>
-            2. cd nms<br>
-            3. python manage.py makemigrations<br>
-            4. python manage.py migrate<br>
-            5. python manage.py createsuperuser<br>
-            a. give the crediantials for creating the admin<br>
-            6. python manage.py runserver<br>
-            7. login and browse from http://127.0.0.1:8000/<br>
-            8. admin panel: http://127.0.0.1:8000/admin/<br><br>
-
-            to use the current data base do not delete the db.sqlite3 file<br>
-            to create a fresh db delete this file and follow 1 to 5 you will have a fresh project<br><br>
-          </p>
+          <embed src="{% static 'files/nms_pdf.pdf' %}" type="application/pdf" width="100%" height="500px" />
         </div>
       </div>
 
@@ -105,7 +89,7 @@
         <!-- Left Navigation Wrapper -->
         <div class="col-md-3">
 
-          <div class="left-navigation">
+          <div class="left-navigation" style="box-shadow: 5px 0 10px rgba(0, 0, 0, 0.1);">
             <!-- SNMP Fields -->
             <div id="snmp_fields" class="p-3 border rounded bg-light" style="display: none">
               <h5 class="mb-3">Advanced SNMP Configuration</h5>
@@ -300,7 +284,7 @@
                   message.classList.remove('show');
                   message.classList.add('fade');
                 });
-              }, 10000); // 10000 milliseconds = 10 seconds
+              }, 3000); // 3000 milliseconds = 3 seconds
             </script>
           {% endif %}
 
