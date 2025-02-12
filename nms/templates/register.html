@@ -37,6 +37,8 @@
         <a class="navbar-brand" href="{% url 'ping_operation' %}">
           <img src="{% static 'images/logo_left.png' %}" alt="logo" />
         </a>
+        <h2 style="text-align: center; margin: 10px; color: #247e00; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 1.5px; text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);">Network Operations</h2>
+
         <!-- Right Logo -->
         <a class="navbar-brand" href="{% url 'ping_operation' %}">
           <img src="{% static 'images/nms_logo.png' %}" alt="logo" />
@@ -46,28 +48,7 @@
     <div class="container mt-5">
       <div class="row justify-content-center">
         <div class="col-md-8">
-          {% if messages %}
-            <div class="container mt-4">
-              {% for message in messages %}
-                <div
-                  class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show"
-                  role="alert"
-                  id="message-{{ forloop.counter }}">
-                  {{ message }}
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-              {% endfor %}
-            </div>
-            <script>
-              setTimeout(function() {
-                var messages = document.querySelectorAll('.alert');
-                messages.forEach(function(message) {
-                  message.classList.remove('show');
-                  message.classList.add('fade');
-                });
-              }, 10000); // 10000 milliseconds = 10 seconds
-            </script>
-          {% endif %}
+          
           <div class="card">
             <div class="card-body">
               <h1 class="card-title text-center">Register</h1>
