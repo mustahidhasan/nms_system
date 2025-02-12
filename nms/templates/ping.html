@@ -312,29 +312,8 @@
         <!-- Network Operations Form -->
         <div class="col-md-8">
           <div>
-            {% if messages %}
-            <div class="container mt-4">
-              {% for message in messages %}
-                <div
-                  class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show"
-                  role="alert"
-                  id="message-{{ forloop.counter }}">
-                  {{ message }}
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-              {% endfor %}
-            </div>
-            <script>
-              setTimeout(function() {
-                var messages = document.querySelectorAll('.alert');
-                messages.forEach(function(message) {
-                  message.classList.remove('show');
-                  message.classList.add('fade');
-                });
-              }, 3000); // 3000 milliseconds = 3 seconds
-            </script>
-          {% endif %}
-
+            <br>
+            <h2 style="text-align: center; margin: 10px; color: #247e00; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 1.5px; text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);">Network Operations</h2>
 
             <div class="card shadow-lg">
               <div class="card-body" style="background-color: rgba(3, 44, 18, 0.842);">
