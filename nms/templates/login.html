@@ -83,12 +83,12 @@
               <!-- Three Buttons in One Line -->
               <div class="d-flex justify-content-between mt-4">
                 <!-- Sign Up Button -->
-                <a href="{% url 'register' %}" class="btn btn-primary btn-custom mt-3">
-                  Sign Up
+                <a href="{% url 'register' %}" class="btn btn-primary btn-custom mt-3" style="pointer-events: none; opacity: 0.6;">
+                  <strike>Sign Up</strike>
                 </a>
                 <!-- Forgot Password Button -->
-                <a href="{% url 'password_reset' %}" class="btn-custom mt-3">
-                  Forgot Password
+                <a href="{% url 'password_reset' %}" class="btn-custom mt-3" style="pointer-events: none; opacity: 0.6;">
+                  <strike>Forgot Password</strike>
                 </a>
                 <!-- Login Button -->
                 <button type="submit" class="btn btn-success btn-custom" >
