@@ -51,6 +51,11 @@
           <img src="{% static 'images/icons8-settings-50.png' %}" alt="setting" />
         </a>
         <div id="dropdown" class="dropdown-menu">
+          {% if user.is_superuser %}
+          <a class="navbar-icon" href="{% url 'active_users_dashboard' %}">
+            <img src="{% static 'images/icons8-user-48.png' %}" alt="users" />Users
+          </a>
+          {% endif %}
           <!-- About with Popup Trigger -->
           <a class="navbar-icon" href="javascript:void(0)" onclick="showPopup()">
             <img src="{% static 'images/icons8-about-50.png' %}" alt="about" />About
@@ -328,8 +333,14 @@
 
                 <!-- Input for IP/Hostname -->
                 <div class="form-group" style="display: flex; align-items: center;">
-                  <input autocomplete="off" type="text" class="form-control" id="ipAddress" name="ip_address"
-                    placeholder="Enter IP address or domain name" style="flex: 1; margin-right: 10px;" />
+                  <div style="display: flex; gap: 15px; width: 100%;">
+                    <input autocomplete="off" type="text" class="form-control" id="ipAddress" name="start_ip_address"
+                        placeholder="Start IP address" style="flex: 1; min-width: 200px; padding: 10px; font-size: 16px;" />
+                    <input autocomplete="off" type="text" class="form-control" id="ipAddress1" name="end_ip_address"
+                        placeholder="End IP address" style="flex: 1; min-width: 200px; padding: 10px; font-size: 16px;" />
+                </div>
+                
+                
                   <button class="btn btn-primary" type="submit" style="
                         background: linear-gradient(45deg, #3cff00, #57b300);
                         color: #030000;
@@ -377,6 +388,14 @@
               <div>
                 {% if table %}
                 <h5 class="card-title">Results</h5>
+                
+                <!-- Email Input and Send Button -->
+                <div class="d-flex mb-3">
+                  <input type="text" id="emailInput" class="form-control me-2" placeholder="Enter emails (comma separated)">
+                  <button class="btn btn-info" onclick="sendEmail()">Send Email</button>
+                </div>
+                <button class="btn btn-success" onclick="downloadTable()">Download Table Data</button>
+
                 <table class="table table-bordered table-striped">
                   <thead>
                     <tr>
@@ -445,6 +464,69 @@
 
   
   </script>
+  <script>
+    function sendEmail() {
+      // Get the email addresses from the input field
+      let emailInput = document.getElementById("emailInput").value;
+      let emailList = emailInput.split(',').map(email => email.trim()).filter(email => email !== "");
+  
+      if (emailList.length === 0) return; // Stop execution if no emails are provided
+  
+      // Get the table content to include in the email body
+      let table = document.querySelector("#result_div table tbody");
+      if (!table) return; // Stop execution if no table data is available
+  
+      let emailBody = "Results:\n\n";
+      table.querySelectorAll("tr").forEach(row => {
+          let operation = row.cells[0].innerText;
+          let result = row.cells[1].innerText;
+          emailBody += `Operation: ${operation}\nResult: ${result}\n\n`;
+      });
+  
+      // Send email via AJAX to Django view
+      fetch('send-email/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email_list: emailList, email_body: emailBody })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (!data.success) console.error("Error sending email.");
+      })
+      .catch(error => console.error('Error:', error));
+  }
+    
+  </script>
+  <script>
+    function downloadTable() {
+      // Create an array of rows to represent the table data
+      let rows = [];
+      const table = document.querySelector("table");
+      
+      // Loop through each row in the table
+      for (let i = 1; i < table.rows.length; i++) {  // Start at 1 to skip the header row
+        let row = table.rows[i];
+        let operation = row.cells[0].textContent.trim();
+        let result = row.cells[1].textContent.trim();
+        rows.push([operation, result]);
+      }
+  
+      // Convert the rows array into CSV format
+      const csvContent = "Operation,Result\n" + rows.map(row => row.join(",")).join("\n\n\n\n");
+      
+      // Create a Blob from the CSV content
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      
+      // Create a temporary download link
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "network_operation_data.csv";  // Specify the file name
+      link.click();
+    }
+  </script>
+
+    
+
 </body>
 
 </html>

@@ -1,3 +1,10 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
 /* General form container styles */
 .login-container {
   max-width: 400px;
@@ -77,8 +84,18 @@ button.btn {
 .navbar {
   width: 100%;
   background-color: #e8e8ee;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add bottom box shadow */
+  box-shadow: 6px 4px 6px rgba(0, 0, 0, 0.5); /* Add bottom box shadow */
 }
+
+.container-fluid {
+  display: flex;
+  justify-content: space-between;
+  /* Ensures left, center, and right sections are properly spaced */
+  align-items: center;
+  padding: 0;
+  margin: 0;
+}
+
 .navbar-nav {
   display: flex;
   gap: 15px;
@@ -92,6 +109,51 @@ button.btn {
   border: 1px solid black;
 }
 
+.navbar-icon img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  margin-right: 10px;
+}
+
+.collapse {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  /* Center-align nav items */
+}
+
+.navbar-brand:last-child {
+  margin-left: auto;
+  /* Push the right logo to the far right */
+}
+
+.active {
+  font-weight: bolder;
+}
+
+/* Hover effect for nav links */
+.nav-link {
+  color: #000000;
+  /* Default color */
+  text-decoration: none;
+  /* No underline */
+  transition: color 0.3s ease, background-color 0.3s ease;
+  /* Smooth transition */
+  padding: 5px 10px;
+  /* Padding for better hover visibility */
+  border-radius: 5px;
+  /* Rounded corners on hover */
+}
+
+.nav-link:hover {
+  color: #ffffff;
+  /* Text color on hover */
+  background-color: #022b6b;
+  /* Background color on hover */
+  text-decoration: none;
+  /* Ensure no underline on hover */
+}
 .btn-custom {
   width: 30%; /* Make all buttons take up 30% of the row */
   height: 50px; /* Set a fixed height for all buttons */

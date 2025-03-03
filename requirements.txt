@@ -19,3 +19,6 @@ whitenoise==6.7.0
 prettytable==3.11.0
 django-cors-headers==4.4.0
 django-jazzmin
+djangorestframework
+djangorestframework-simplejwt
+redis
