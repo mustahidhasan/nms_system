@@ -387,9 +387,10 @@
                 <!-- Email Input and Send Button -->
                 <div class="d-flex mb-3">
                   <input type="text" id="emailInput" class="form-control me-2" placeholder="Enter emails (comma separated)">
-                  <button class="btn btn-primary" onclick="sendEmail()">Send Email</button>
+                  <button class="btn btn-info" onclick="sendEmail()">Send Email</button>
                 </div>
-          
+                <button class="btn btn-primary" onclick="downloadTable()">Download Table</button>
+
                 <table class="table table-bordered table-striped">
                   <thead>
                     <tr>
@@ -490,6 +491,33 @@
       .catch(error => console.error('Error:', error));
   }
     
+  </script>
+  <script>
+    function downloadTable() {
+      // Create an array of rows to represent the table data
+      let rows = [];
+      const table = document.querySelector("table");
+      
+      // Loop through each row in the table
+      for (let i = 1; i < table.rows.length; i++) {  // Start at 1 to skip the header row
+        let row = table.rows[i];
+        let operation = row.cells[0].textContent.trim();
+        let result = row.cells[1].textContent.trim();
+        rows.push([operation, result]);
+      }
+  
+      // Convert the rows array into CSV format
+      const csvContent = "Operation,Result\n" + rows.map(row => row.join(",")).join("\n");
+      
+      // Create a Blob from the CSV content
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      
+      // Create a temporary download link
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "network_operation_data.csv";  // Specify the file name
+      link.click();
+    }
   </script>
 
     
