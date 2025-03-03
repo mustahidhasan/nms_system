@@ -51,6 +51,11 @@
           <img src="{% static 'images/icons8-settings-50.png' %}" alt="setting" />
         </a>
         <div id="dropdown" class="dropdown-menu">
+          {% if user.is_superuser %}
+          <a class="navbar-icon" href="{% url 'active_users_dashboard' %}">
+            <img src="{% static 'images/icons8-user-48.png' %}" alt="users" />Users
+          </a>
+          {% endif %}
           <!-- About with Popup Trigger -->
           <a class="navbar-icon" href="javascript:void(0)" onclick="showPopup()">
             <img src="{% static 'images/icons8-about-50.png' %}" alt="about" />About
