@@ -7,7 +7,13 @@ import logging
 import socket
 from prettytable import PrettyTable
 
-
+from django.core.mail import send_mail
+from django.http import JsonResponse
+import json
+import logging
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+# Set up logging
 logger = logging.getLogger(__name__)
 
 # Import necessary modules from pysnmp
@@ -510,14 +516,7 @@ def ping_operation(request):
 def snmp_results(request):
     return render(request, "snmp_results.html")
 
-from django.core.mail import send_mail
-from django.http import JsonResponse
-import json
-import logging
-from django.views.decorators.csrf import csrf_exempt
 
-# Set up logging
-logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def send_email(request):
@@ -537,7 +536,7 @@ def send_email(request):
             send_mail(
                 subject="Results from Web Page",
                 message=email_body,
-                from_email="mustahidhasan9@gmail.com",  # Use the same email as in settings
+                from_email=settings.DEFAULT_FROM_EMAIL,  # Use the same email as in settings
                 recipient_list=email_list,
             )
 
