@@ -138,7 +138,6 @@ def get_active_users_count():
             try:
                 user = CustomUser.objects.get(id=user_id)
                 active_users.append({
-                    'username': user.username,
                     'email': user.email,
                     'first_name': user.first_name,
                     'last_name': user.last_name,
