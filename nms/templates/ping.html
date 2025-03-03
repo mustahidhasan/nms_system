@@ -389,7 +389,7 @@
                   <input type="text" id="emailInput" class="form-control me-2" placeholder="Enter emails (comma separated)">
                   <button class="btn btn-info" onclick="sendEmail()">Send Email</button>
                 </div>
-                <button class="btn btn-primary" onclick="downloadTable()">Download Table</button>
+                <button class="btn btn-success" onclick="downloadTable()">Download Table Data</button>
 
                 <table class="table table-bordered table-striped">
                   <thead>
@@ -507,7 +507,7 @@
       }
   
       // Convert the rows array into CSV format
-      const csvContent = "Operation,Result\n" + rows.map(row => row.join(",")).join("\n");
+      const csvContent = "Operation,Result\n" + rows.map(row => row.join(",")).join("\n\n\n\n");
       
       // Create a Blob from the CSV content
       const blob = new Blob([csvContent], { type: "text/csv" });
