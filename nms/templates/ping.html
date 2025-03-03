@@ -377,6 +377,13 @@
               <div>
                 {% if table %}
                 <h5 class="card-title">Results</h5>
+                
+                <!-- Email Input and Send Button -->
+                <div class="d-flex mb-3">
+                  <input type="text" id="emailInput" class="form-control me-2" placeholder="Enter emails (comma separated)">
+                  <button class="btn btn-primary" onclick="sendEmail()">Send Email</button>
+                </div>
+          
                 <table class="table table-bordered table-striped">
                   <thead>
                     <tr>
@@ -445,6 +452,42 @@
 
   
   </script>
+  <script>
+    function sendEmail() {
+      // Get the email addresses from the input field
+      let emailInput = document.getElementById("emailInput").value;
+      let emailList = emailInput.split(',').map(email => email.trim()).filter(email => email !== "");
+  
+      if (emailList.length === 0) return; // Stop execution if no emails are provided
+  
+      // Get the table content to include in the email body
+      let table = document.querySelector("#result_div table tbody");
+      if (!table) return; // Stop execution if no table data is available
+  
+      let emailBody = "Results:\n\n";
+      table.querySelectorAll("tr").forEach(row => {
+          let operation = row.cells[0].innerText;
+          let result = row.cells[1].innerText;
+          emailBody += `Operation: ${operation}\nResult: ${result}\n\n`;
+      });
+  
+      // Send email via AJAX to Django view
+      fetch('send-email/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email_list: emailList, email_body: emailBody })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (!data.success) console.error("Error sending email.");
+      })
+      .catch(error => console.error('Error:', error));
+  }
+    
+  </script>
+
+    
+
 </body>
 
 </html>

@@ -509,3 +509,44 @@ def ping_operation(request):
 
 def snmp_results(request):
     return render(request, "snmp_results.html")
+
+from django.core.mail import send_mail
+from django.http import JsonResponse
+import json
+import logging
+from django.views.decorators.csrf import csrf_exempt
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+@csrf_exempt
+def send_email(request):
+    if request.method == 'POST':
+        try:
+            # Parse the JSON request body
+            data = json.loads(request.body)
+            email_list = data.get('email_list', [])
+            email_body = data.get('email_body', '')
+
+            if not email_list or not email_body:
+                return JsonResponse({'success': False, 'message': 'Invalid input'}, status=400)
+
+            # Send email to all email addresses in the list
+            print("line 535, ", email_list)
+            print("line 536", email_body)
+            send_mail(
+                subject="Results from Web Page",
+                message=email_body,
+                from_email="mustahidhasan9@gmail.com",  # Use the same email as in settings
+                recipient_list=email_list,
+            )
+
+            return JsonResponse({'success': True, 'message': 'Email sent successfully!'})
+        
+        except Exception as e:
+            # Log the error for debugging
+            print(f"Error sending email: {str(e)}")
+            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+
