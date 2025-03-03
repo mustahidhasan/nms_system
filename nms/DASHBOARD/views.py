@@ -47,7 +47,9 @@ def logout_view(request):
 @login_required
 def ping_operation(request):
     if request.method == "POST":
-        get_ip_address = request.POST.get("ip_address")
+        get_ip_address_start = request.POST.get("start_ip_address")
+        get_ip_address_end = request.POST.get("end_ip_address")
+        
         enable_ping = request.POST.get("enable_ping")
         verbose_ping = request.POST.get("verbose_ping")
         traceroute = request.POST.get("traceroute")
@@ -58,7 +60,7 @@ def ping_operation(request):
         # Get all DNS names as a list
 
         # Validate that the IP address or hostname does not have invalid spaces
-        if " " in get_ip_address:
+        if " " in get_ip_address_start:
             messages.error(request, "Valid IP Address or Hostname is required.")
             logger.error("Valid IP Address or Hostname is required.")
             return render(
@@ -71,15 +73,15 @@ def ping_operation(request):
         try:
             # If it's an IP address, validate it
             socket.inet_aton(
-                get_ip_address
+                get_ip_address_start
             )  # This raises socket.error if the IP is invalid
-            ip_address = get_ip_address  # Use directly if valid IP
+            ip_address = get_ip_address_start  # Use directly if valid IP
         except socket.error:
             try:
                 # Resolve the hostname to an IP
-                ip_address = socket.gethostbyname(get_ip_address)
+                ip_address = socket.gethostbyname(get_ip_address_start)
             except socket.gaierror:
-                logger.error(f"Failed to resolve hostname: {get_ip_address}")
+                logger.error(f"Failed to resolve hostname: {get_ip_address_start}")
                 messages.error(request, "Valid IP Address or Hostname is required.")
                 logger.error("Invalid IP address or hostname provided.")
                 return render(
