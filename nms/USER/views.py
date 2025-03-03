@@ -1,3 +1,4 @@
+from datetime import timezone
 import random
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect
@@ -10,6 +11,16 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from nms.settings import EMAIL_HOST_USER
 from .models import CustomUser 
+
+from django.contrib.auth import login, authenticate
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .forms import LoginForm
+from django.contrib.sessions.models import Session
+from django.utils import timezone
+
+active_users = set()
+
 def confirm_otp(request):
     if request.method == "POST":
         entered_otp = request.POST.get('otp')
@@ -76,6 +87,8 @@ def register_view(request):
     return render(request, "register.html", {"form": form})
 
 
+
+
 def login_view(request):
     if request.method == "POST":
         form = LoginForm(data=request.POST)
@@ -85,6 +98,9 @@ def login_view(request):
             user = authenticate(request, email=email, password=password)
             if user is not None:
                 login(request, user)
+
+                # Store the user ID in the session
+                request.session['user_id'] = user.id  # Store user ID in the session
                 messages.success(request, "You are now logged in successfully.")
                 return redirect("ping_operation")  # Redirect to a dashboard or homepage
             else:
@@ -98,6 +114,29 @@ def login_view(request):
 
 @login_required
 def logout_view(request):
+    # Remove the user from the active users set
+    active_users.discard(request.user.id)
     logout(request)
     messages.success(request, "You have been logged out successfully.")
     return redirect("login")
+
+
+
+def get_active_users_count():
+    # Retrieve all active sessions (not expired)
+    active_sessions = Session.objects.filter(expire_date__gte=timezone.now())  # Only non-expired sessions
+    active_user_count = 0
+
+    for session in active_sessions:
+        session_data = session.get_decoded()  # Decode the session data
+        user_id = session_data.get('user_id')  # Get the stored user ID in session
+        if user_id:
+            active_user_count += 1
+
+    return active_user_count
+
+@login_required
+def active_users_dashboard(request):
+    active_user_count = get_active_users_count()
+    print("line 138", active_user_count)
+    return render(request, "active_users_dashboard.html", {"active_user_count": active_user_count})
