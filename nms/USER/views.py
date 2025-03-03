@@ -121,22 +121,43 @@ def logout_view(request):
     return redirect("login")
 
 
+from django.contrib.sessions.models import Session
+from django.utils import timezone
+from .models import CustomUser  # Import your custom user model
 
 def get_active_users_count():
     # Retrieve all active sessions (not expired)
     active_sessions = Session.objects.filter(expire_date__gte=timezone.now())  # Only non-expired sessions
-    active_user_count = 0
+    active_users = []
 
     for session in active_sessions:
         session_data = session.get_decoded()  # Decode the session data
-        user_id = session_data.get('user_id')  # Get the stored user ID in session
+        user_id = session_data.get('_auth_user_id')  # Get the stored user ID in session
         if user_id:
-            active_user_count += 1
+            # Get the custom user object from the database using the user_id
+            try:
+                user = CustomUser.objects.get(id=user_id)
+                active_users.append({
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'is_active': user.is_active,
+                })
+            except CustomUser.DoesNotExist:
+                # Handle the case if the user is not found (although rare)
+                pass
 
-    return active_user_count
+    return active_users
+
+
 
 @login_required
 def active_users_dashboard(request):
-    active_user_count = get_active_users_count()
+    active_users = get_active_users_count()  # Retrieve the active users details
+    active_user_count = len(active_users)  # Count the number of active users
     print("line 138", active_user_count)
-    return render(request, "active_users_dashboard.html", {"active_user_count": active_user_count})
+    return render(request, "active_users_dashboard.html", {
+        "active_user_count": active_user_count,
+        "active_users": active_users,
+    })
