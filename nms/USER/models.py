@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-
+from django.utils.timezone import now
+from django.conf import settings  # Get the custom user model dynamically
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -35,3 +36,19 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+from django.db import models
+from django.contrib.auth import get_user_model
+
+class UserActivity(models.Model):
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    activity_type = models.CharField(max_length=50)  # e.g., "Login" or "Logout"
+    timestamp = models.DateTimeField(auto_now_add=True)
+    session_start_time = models.DateTimeField(null=True, blank=True)
+    session_end_time = models.DateTimeField(null=True, blank=True)
+    session_duration = models.DurationField(null=True, blank=True)  # Store duration
+
+    def __str__(self):
+        return f'{self.user} - {self.activity_type} - {self.timestamp}'
+
