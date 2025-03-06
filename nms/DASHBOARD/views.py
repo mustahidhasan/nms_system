@@ -44,20 +44,48 @@ def logout_view(request):
     logger.error("log out failed")
     return redirect("login")  # Replace 'login' with the name of your login URL
 
-def generate_ip_range(start_ip, end_ip):
-    """Generate a list of IPs from start to end."""
-    start = ip_address(start_ip)
-    end = ip_address(end_ip)
+def generate_ip_list(ip_input):
+    """Parses input of multiple IPs or IP ranges and returns a list of IPs."""
+    ip_list = []
     
-    # Create a range from the integer representation of the start and end IPs
-    return [str(ip_address(ip)) for ip in range(int(start), int(end) + 1)]
+    # Split by comma to handle multiple IPs
+    parts = ip_input.split(',')
+    
+    for part in parts:
+        part = part.strip()
+        
+        # Check if it's a range (denoted by '-')
+        if '-' in part:
+            try:
+                start_ip, end_ip = part.split('-')
+                start_ip = ip_address(start_ip.strip())
+                end_ip = ip_address(end_ip.strip())
+
+                if start_ip > end_ip:
+                    raise ValueError(f"Invalid range: {start_ip} - {end_ip}")
+
+                # Generate and add the range of IPs
+                ip_list.extend([str(ip_address(ip)) for ip in range(int(start_ip), int(end_ip) + 1)])
+
+            except ValueError as e:
+                print(f"Error: {e}")
+        
+        else:
+            # Single IP case
+            try:
+                ip = ip_address(part)
+                ip_list.append(str(ip))
+            except ValueError:
+                print(f"Invalid IP address: {part}")
+
+    return ip_list
+
 
 @login_required
 def ping_operation(request):
     if request.method == "POST":
         get_ip_address_start = request.POST.get("start_ip_address")
-        get_ip_address_end = request.POST.get("end_ip_address")
-        get_ip_address_all = generate_ip_range(get_ip_address_start, get_ip_address_end)
+        get_ip_address_all = generate_ip_list(get_ip_address_start)
 
         print("line 62", get_ip_address_all)
 
@@ -542,7 +570,7 @@ def ping_operation(request):
             except:
                 table.add_row("Please check your end device")
 
-                
+
             # If no valid SNMP response, render ping.html
             return render(request, "ping.html", {"table": table})
 
