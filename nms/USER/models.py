@@ -38,15 +38,17 @@ class CustomUser(AbstractUser):
         return self.email
 
 
-
 from django.db import models
 from django.contrib.auth import get_user_model
 
 class UserActivity(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
-    activity_type = models.CharField(max_length=50)  # e.g., 'login', 'logout'
+    activity_type = models.CharField(max_length=50)  # e.g., "Login" or "Logout"
     timestamp = models.DateTimeField(auto_now_add=True)
-    session_duration = models.DurationField(null=True, blank=True)  # For logout events
+    session_start_time = models.DateTimeField(null=True, blank=True)
+    session_end_time = models.DateTimeField(null=True, blank=True)
+    session_duration = models.DurationField(null=True, blank=True)  # Store duration
 
     def __str__(self):
-        return f"{self.user.email} - {self.activity_type} at {self.timestamp}"
+        return f'{self.user} - {self.activity_type} - {self.timestamp}'
+

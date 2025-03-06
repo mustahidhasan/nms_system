@@ -77,6 +77,8 @@ def register_view(request):
 
     return render(request, "register.html", {"form": form})
 
+from django.utils import timezone
+
 def login_view(request):
     if request.method == "POST":
         form = LoginForm(data=request.POST)
@@ -87,17 +89,17 @@ def login_view(request):
             if user is not None:
                 login(request, user)
 
-                # Log login activity
+                # Record login activity with session start time
                 UserActivity.objects.create(
                     user=user,
-                    activity_type='login',
-                    timestamp=timezone.now()
+                    activity_type="Login",
+                    session_start_time=timezone.now(),
                 )
 
-                # Store user ID in session
-                request.session['user_id'] = user.id
+                # Store the user ID in the session
+                request.session['user_id'] = user.id  # Store user ID in the session
                 messages.success(request, "You are now logged in successfully.")
-                return redirect("ping_operation")
+                return redirect("ping_operation")  # Redirect to a dashboard or homepage
             else:
                 messages.error(request, "Invalid email or password. Please try again.")
         else:
@@ -106,21 +108,27 @@ def login_view(request):
         form = LoginForm()
     return render(request, "login.html", {"form": form})
 
+
+from django.utils import timezone
+
 @login_required
 def logout_view(request):
-    # Record logout activity
-    user = request.user
-    UserActivity.objects.create(
-        user=user,
-        activity_type="Logout",
-        timestamp=timezone.now(),  # Capture the logout time
-    )
-    
+    # Get the user activity related to the current session
+    user_activity = UserActivity.objects.filter(user=request.user, activity_type="Login").last()
+    print("line 118", user_activity)
+    if user_activity:
+        # Record the logout activity with session end time and duration
+        user_activity.activity_type = "Logout"
+        user_activity.session_end_time = timezone.now()
+        user_activity.session_duration = user_activity.session_end_time - user_activity.session_start_time
+        user_activity.save()
+
     # Remove the user from the active users set
-    active_users.discard(user.id)
+    active_users.discard(request.user.id)
     logout(request)
     messages.success(request, "You have been logged out successfully.")
     return redirect("login")
+
 
 def get_active_users_count():
     # Retrieve all active sessions (not expired)

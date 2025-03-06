@@ -38,11 +38,6 @@ from django.contrib import messages
 from ipaddress import ip_address
 
 
-@login_required
-def logout_view(request):
-    logout(request)
-    logger.error("log out failed")
-    return redirect("login")  # Replace 'login' with the name of your login URL
 
 def generate_ip_list(ip_input):
     """Parses input of multiple IPs or IP ranges and returns a list of IPs."""

@@ -43,7 +43,7 @@
                   <td>{{ user_activity.activity_type }}</td>
                   <td>
                       {% if user_activity.session_duration %}
-                          {{ user_activity.session_duration }} minutes
+                          {{ user_activity.session_duration|floatformat:2 }} minutes
                       {% else %}
                           Not Available
                       {% endif %}

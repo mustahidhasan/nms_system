@@ -1,7 +1,7 @@
 # main_app/urls.py (or wherever your main app's URLs are defined)
 
 from django.urls import path, include
-from .views import register_view, login_view, confirm_otp, active_users_dashboard
+from .views import register_view, login_view, confirm_otp, active_users_dashboard, logout_view
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -28,5 +28,6 @@ urlpatterns = [
         name="password_reset_complete",
     ),
     path('active_users_dashboard/', active_users_dashboard, name='active_users_dashboard'),
+    path("logout/", logout_view, name="logout"),
 
 ]
