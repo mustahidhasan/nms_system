@@ -41,21 +41,8 @@
                   <td>{{ user_activity.user.first_name }} {{ user_activity.user.last_name }}</td>
                   <td>{{ user_activity.timestamp|date:"D, d M Y H:i:s" }}</td>
                   <td>{{ user_activity.activity_type }}</td>
-                  <td>
-                    {% if user_activity.session_duration %}
-                      {% with seconds=user_activity.session_duration.total_seconds|floatformat:0 %}
-                          {% if seconds >= 60 %}
-                              {{ seconds|divisibleby:60 }}m {{ seconds|divisibleby:60|yesno:",0" }}s
-                          {% else %}
-                              {{ seconds }}s
-                          {% endif %}
-                      {% endwith %}
-                  {% else %}
-                      Not Available
-                  {% endif %}
+                  <td>{{ user_activity.formatted_duration|safe }}</td>
 
-                
-                  </td>
               </tr>
           {% endfor %}
       </tbody>

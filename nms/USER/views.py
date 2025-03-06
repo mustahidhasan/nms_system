@@ -149,6 +149,22 @@ from django.contrib.sessions.models import Session
 from django.utils import timezone
 from .models import CustomUser, UserActivity  # Import your models
 
+def format_duration(duration):
+    """Convert duration (timedelta) into hours, minutes, and seconds."""
+    if not duration:
+        return "Not Available"
+
+    total_seconds = int(duration.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    if hours > 0:
+        return f"{hours}h {minutes}m {seconds}s"
+    elif minutes > 0:
+        return f"{minutes}m {seconds}s"
+    else:
+        return f"{seconds}s"
+
 def active_users_dashboard(request):
     # Retrieve the active user sessions
     active_sessions = Session.objects.filter(expire_date__gte=timezone.now())
@@ -171,11 +187,19 @@ def active_users_dashboard(request):
 
     # Retrieve all user activities (login/logout)
     user_activities = UserActivity.objects.all().order_by('-timestamp')  # Order by latest activity
-    
+
+    # Format session duration before passing to the template
+    for activity in user_activities:
+        if activity.activity_type == "Login":
+            activity.formatted_duration = '<span class="badge bg-success">Running</span>'  # Show "Running" for active logins
+        else:
+            activity.formatted_duration = format_duration(activity.session_duration)
+
     active_user_count = len(active_users)  # Count the number of active users
-    
+
     return render(request, "active_users_dashboard.html", {
         "active_user_count": active_user_count,
         "active_users": active_users,
-        "user_activities": user_activities  # Pass activities to the template
+        "user_activities": user_activities,  # Pass formatted activities to the template
     })
+
