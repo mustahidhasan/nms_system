@@ -42,11 +42,19 @@
                   <td>{{ user_activity.timestamp|date:"D, d M Y H:i:s" }}</td>
                   <td>{{ user_activity.activity_type }}</td>
                   <td>
-                      {% if user_activity.session_duration %}
-                          {{ user_activity.session_duration|floatformat:2 }} minutes
-                      {% else %}
-                          Not Available
-                      {% endif %}
+                    {% if user_activity.session_duration %}
+                      {% with seconds=user_activity.session_duration.total_seconds|floatformat:0 %}
+                          {% if seconds >= 60 %}
+                              {{ seconds|divisibleby:60 }}m {{ seconds|divisibleby:60|yesno:",0" }}s
+                          {% else %}
+                              {{ seconds }}s
+                          {% endif %}
+                      {% endwith %}
+                  {% else %}
+                      Not Available
+                  {% endif %}
+
+                
                   </td>
               </tr>
           {% endfor %}
