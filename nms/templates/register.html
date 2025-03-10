@@ -139,6 +139,18 @@
         </div>
       </div>
     </nav>
+    <!-- Popup Modal -->
+    <div id="popup" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closePopup()">&times;</span>
+        <h4>Project Setup Steps</h4>
+        <embed
+          src="{% static 'files/nms_pdf.pdf' %}"
+          type="application/pdf"
+          class="pdf-container"
+        />
+      </div>
+    </div>
     <div class="container mt-5">
       <div class="row justify-content-center">
         <div class="col-md-8">
