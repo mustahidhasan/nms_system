@@ -27,22 +27,116 @@
         font-size: 14px;
       }
     </style>
+    <style>
+      .navbar{
+        padding: 12px;
+      }
+      /* Navbar styles */
+      .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        display: none;
+        min-width: 120px;
+        z-index: 1000;
+      }
+      .dropdown-menu a {
+        display: block;
+        padding: 10px;
+        text-decoration: none;
+        color: black;
+      }
+      .dropdown-menu a:hover {
+        background-color: #f1f1f1;
+      }
+      .show {
+        display: block;
+      }
+
+      /* Popup Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1050;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+      .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 20px;
+        border-radius: 5px;
+        width: 80%;
+        max-width: 600px;
+        text-align: center;
+        position: relative;
+      }
+      .modal-content h4 {
+        margin-bottom: 15px;
+      }
+      .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 24px;
+        cursor: pointer;
+      }
+      .pdf-container {
+        width: 100%;
+        height: 500px;
+        border: none;
+      }
+    </style>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg">
-      <div
-        class="container-fluid d-flex justify-content-between align-items-center"
-      >
+      <div class="container-fluid d-flex justify-content-between align-items-center">
         <!-- Left Logo -->
         <a class="navbar-brand" href="{% url 'ping_operation' %}">
           <img src="{% static 'images/logo_left.png' %}" alt="logo" />
         </a>
-        <h2 style="text-align: center; margin: 10px; color: #247e00; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 1.5px; text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);">Network Operations</h2>
+
+        <!-- Center Title -->
+        <h2
+          class="navbar-title"
+          style="
+            text-align: center;
+            margin: 0;
+            color: #247e00;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+            flex-grow: 1; /* Allows the title to take remaining space */
+          "
+        >
+          Network Operations
+        </h2>
 
         <!-- Right Logo -->
         <a class="navbar-brand" href="{% url 'ping_operation' %}">
           <img src="{% static 'images/nms_logo.png' %}" alt="logo" />
         </a>
+
+        <!-- Settings Dropdown -->
+        <div class="navbar-icon-container">
+          <a class="navbar-icon" href="javascript:void(0)" onclick="toggleDropdown()">
+            <img src="{% static 'images/icons8-settings-50.png' %}" alt="setting" />
+          </a>
+          <div id="dropdown" class="dropdown-menu">
+            <a href="javascript:void(0)" onclick="showPopup()">
+              <img src="{% static 'images/icons8-about-50.png' %}" alt="about" /> About
+            </a>
+          </div>
+        </div>
       </div>
     </nav>
     <div class="container mt-5">
@@ -213,6 +307,37 @@
         ) {
           e.preventDefault();
           alert("Please ensure all fields are valid.");
+        }
+      });
+    </script>
+    <!-- Scripts -->
+    <script>
+      function toggleDropdown() {
+        var dropdown = document.getElementById("dropdown");
+        dropdown.classList.toggle("show");
+      }
+
+      function showPopup() {
+        var popup = document.getElementById("popup");
+        popup.style.display = "block";
+      }
+
+      function closePopup() {
+        var popup = document.getElementById("popup");
+        popup.style.display = "none";
+      }
+
+      function togglePassword() {
+        var passwordField = document.getElementById("password");
+        passwordField.type = passwordField.type === "password" ? "text" : "password";
+      }
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", function (event) {
+        var dropdown = document.getElementById("dropdown");
+        var icon = document.querySelector(".navbar-icon");
+        if (!dropdown.contains(event.target) && !icon.contains(event.target)) {
+          dropdown.classList.remove("show");
         }
       });
     </script>
