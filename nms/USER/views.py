@@ -94,6 +94,7 @@ def login_view(request):
                     user=user,
                     activity_type="Login",
                     session_start_time=timezone.now(),
+                    session_status=True,
                 )
 
                 # Store the user ID in the session

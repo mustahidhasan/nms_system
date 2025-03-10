@@ -48,6 +48,7 @@ class UserActivity(models.Model):
     session_start_time = models.DateTimeField(null=True, blank=True)
     session_end_time = models.DateTimeField(null=True, blank=True)
     session_duration = models.DurationField(null=True, blank=True)  # Store duration
+    session_status = models.BooleanField(null=True, blank=True, default=False)
 
     def __str__(self):
         return f'{self.user} - {self.activity_type} - {self.timestamp}'

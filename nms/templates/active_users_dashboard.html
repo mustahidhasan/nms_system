@@ -67,9 +67,11 @@
                 </th>
               </tr>
                 <tr>
-                    <th scope="col">User</th>
+                    <th scope="col">User id</th>
+                    <th scope="col">uername</th>
                     <th scope="col">Last Activity Time</th>
                     <th scope="col">Activity Type</th>
+                    <th scope="col">Status</th>
                     <th scope="col">Session Duration</th>
                 </tr>
                 
@@ -77,9 +79,15 @@
             <tbody id="user-activity-table">
                 {% for user_activity in user_activities %}
                     <tr>
-                        <td>{{ user_activity.user.first_name }} {{ user_activity.user.last_name }}</td>
+                        <td>{{ user_activity.user.pk }}</td>
+                        <td>{{ user_activity.user }}</td>
                         <td>{{ user_activity.timestamp|date:"D, d M Y H:i:s" }}</td>
                         <td>{{ user_activity.activity_type }}</td>
+                        {% if  user_activity.session_status  %}
+                            <td>Success</td>
+                        {% else %}
+                            <td>Failed</td>
+                        {% endif %}
                         <td>{{ user_activity.formatted_duration|safe }}</td>
                     </tr>
                 {% endfor %}
