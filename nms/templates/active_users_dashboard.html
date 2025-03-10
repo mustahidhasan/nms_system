@@ -7,17 +7,13 @@
 
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.0/purify.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
-    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
 
   <style>
-    /* Make the table scrollable */
     .table-container {
-        max-height: 400px; /* Adjust height as needed */
+        max-height: 400px;
         overflow-y: auto;
         border: 1px solid #ddd;
     }
@@ -37,7 +33,7 @@
         <a href="{% url 'ping_operation' %}" class="btn btn-primary">Back To Home</a>
         <button onclick="location.reload();" class="btn btn-secondary">Refresh</button>
     </div>
-  
+
     <h2 class="mt-5 mb-3 text-center">Active Users Details</h2>
   
     <div class="row">
@@ -61,20 +57,24 @@
     <div class="table-container mt-3">
         <table class="table table-striped">
             <thead>
-              <tr>
-                <th colspan="4">
-                    <input style="width: 400px;" type="text" id="searchUser" class="form-control search-input" placeholder="Search by User Name...">
-                </th>
-              </tr>
                 <tr>
-                    <th scope="col">User id</th>
-                    <th scope="col">uername</th>
+                    <th colspan="6">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <input style="width: 300px;" type="text" id="searchUser" class="form-control search-input" placeholder="Search by User Name...">
+                            <button class="btn btn-success" onclick="downloadCSV()">Download CSV</button>
+                        </div>
+                    </th>
+                    
+                    
+                </tr>
+                <tr>
+                    <th scope="col">User ID</th>
+                    <th scope="col">Username</th>
                     <th scope="col">Last Activity Time</th>
                     <th scope="col">Activity Type</th>
                     <th scope="col">Status</th>
                     <th scope="col">Session Duration</th>
                 </tr>
-                
             </thead>
             <tbody id="user-activity-table">
                 {% for user_activity in user_activities %}
@@ -83,31 +83,42 @@
                         <td>{{ user_activity.user }}</td>
                         <td>{{ user_activity.timestamp|date:"D, d M Y H:i:s" }}</td>
                         <td>{{ user_activity.activity_type }}</td>
-                        {% if  user_activity.session_status  %}
-                            <td>Success</td>
-                        {% else %}
-                            <td>Failed</td>
-                        {% endif %}
+                        <td>{% if user_activity.session_status %}Success{% else %}Failed{% endif %}</td>
                         <td>{{ user_activity.formatted_duration|safe }}</td>
                     </tr>
+                
+                
                 {% endfor %}
             </tbody>
         </table>
     </div>
   </div>
-  
-  <!-- Bootstrap Styles (Include in layout) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  
+
   <script>
-    // Live Search Functionality
-    document.getElementById("searchUser").addEventListener("keyup", function () {
-        let input = this.value.toLowerCase();
-        let rows = document.querySelectorAll("#user-activity-table tr");
+    function downloadCSV() {
+        const rows = document.querySelectorAll('#user-activity-table tr');
+        let csvContent = 'User ID,Username,Last Activity Time,Activity Type,Status,Session Duration\n';
 
         rows.forEach(row => {
-            let userName = row.cells[0].textContent.toLowerCase();
-            row.style.display = userName.includes(input) ? "" : "none";
+            const cols = row.querySelectorAll('td');
+            const rowData = Array.from(cols).map(col => col.textContent).join(',');
+            csvContent += rowData + '\n';
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'user_activity_log.csv';
+        link.click();
+    }
+
+    document.getElementById('searchUser').addEventListener('keyup', function () {
+        const input = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#user-activity-table tr');
+
+        rows.forEach(row => {
+            const userName = row.cells[1].textContent.toLowerCase();
+            row.style.display = userName.includes(input) ? '' : 'none';
         });
     });
   </script>
