@@ -98,19 +98,23 @@
     function downloadCSV() {
         const rows = document.querySelectorAll('#user-activity-table tr');
         let csvContent = 'User ID,Username,Last Activity Time,Activity Type,Status,Session Duration\n';
-
+    
         rows.forEach(row => {
             const cols = row.querySelectorAll('td');
-            const rowData = Array.from(cols).map(col => col.textContent).join(',');
-            csvContent += rowData + '\n';
+            const rowData = Array.from(cols).map(col => col.textContent.trim()).join(',');
+    
+            // Skip empty rows
+            if (rowData.replace(/,/g, '').length > 0) {
+                csvContent += rowData + '\n';
+            }
         });
-
+    
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = 'user_activity_log.csv';
         link.click();
-    }
+    }    
 
     document.getElementById('searchUser').addEventListener('keyup', function () {
         const input = this.value.toLowerCase();
