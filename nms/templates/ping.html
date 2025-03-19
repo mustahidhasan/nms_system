@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
     integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/ping.css' %}" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 </head>
 
 <body>
@@ -387,35 +389,35 @@
             <div>
               <div>
                 {% if table %}
-                <h5 class="card-title">Results</h5>
-                
-                <!-- Email Input and Send Button -->
-                <div class="d-flex mb-3">
-                  <input type="text" id="emailInput" class="form-control me-2" placeholder="Enter emails (comma separated)">
-                  <button class="btn btn-info" onclick="sendEmail()">Send Email</button>
-                </div>
-                <button class="btn btn-success" onclick="downloadTable()">Download Table Data</button>
-
-                <table class="table table-bordered table-striped">
-                  <thead>
-                    <tr>
-                      <th>Operation</th>
-                      <th>Result</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in table.rows %}
-                    <tr>
-                      <td>{{ row.0 }}</td>
-                      <td>
-                        <div style="max-height: 200px; overflow-y: auto; font-family:monospace;">
-                          <pre>{{ row.1 }}</pre>
-                        </div>
-                      </td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
+                  <h5 class="card-title">Results</h5>
+          
+                  <!-- Email Input and Send Button -->
+                  <div class="d-flex mb-3">
+                    <input type="text" id="emailInput" class="form-control me-2" placeholder="Enter emails (comma separated)">
+                    <button class="btn btn-info" onclick="sendEmail()">Send Email</button>
+                  </div>
+                  <button class="btn btn-success" onclick="downloadTableAsCSV()">Download Table as CSV</button>
+          
+                  <table class="table table-bordered table-striped">
+                    <thead>
+                      <tr>
+                        <th>Operation</th>
+                        <th>Result</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for row in table.rows %}
+                      <tr>
+                        <td>{{ row.0 }}</td>
+                        <td>
+                          <div style="max-height: 200px; overflow-y: auto; font-family:monospace;">
+                            <pre>{{ row.1 }}</pre>
+                          </div>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 {% endif %}
               </div>
             </div>
@@ -497,33 +499,41 @@
   }
     
   </script>
+  
   <script>
-    function downloadTable() {
-      // Create an array of rows to represent the table data
-      let rows = [];
-      const table = document.querySelector("table");
+    function downloadTableAsCSV() {
+      // Get the table element
+      const table = document.querySelector('table');
+      
+      // Initialize an array to hold the CSV data
+      let csvContent = "";
       
       // Loop through each row in the table
-      for (let i = 1; i < table.rows.length; i++) {  // Start at 1 to skip the header row
-        let row = table.rows[i];
-        let operation = row.cells[0].textContent.trim();
-        let result = row.cells[1].textContent.trim();
-        rows.push([operation, result]);
-      }
+      table.querySelectorAll('tr').forEach(function(row, rowIndex) {
+        const rowData = [];
+        
+        // Loop through each cell in the row
+        row.querySelectorAll('td, th').forEach(function(cell) {
+          // Escape any commas and newlines in cell data
+          const cellText = cell.textContent.trim().replace(/,/g, '') || cell.innerText;
+          rowData.push(`"${cellText}"`);
+        });
   
-      // Convert the rows array into CSV format
-      const csvContent = "Operation,Result\n" + rows.map(row => row.join(",")).join("\n\n\n\n");
+        // Join row data with commas and add a newline at the end of each row
+        csvContent += rowData.join(',') + "\n";
+      });
+  
+      // Create a Blob object from the CSV data and generate a download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
       
-      // Create a Blob from the CSV content
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      
-      // Create a temporary download link
-      const link = document.createElement("a");
+      // Create a download link and trigger the download
       link.href = URL.createObjectURL(blob);
-      link.download = "network_operation_data.csv";  // Specify the file name
+      link.download = 'network_operation_data.csv';
       link.click();
     }
   </script>
+  
 
     
 
