@@ -144,11 +144,17 @@ def ping_operation(request):
                     for ip_address in ip_addresses:
                         command = ["ping", "-n", "1", ip_address] if os_name == "Windows" else ["ping", "-c", "1", ip_address]
                         logger.info(f"Pinging {ip_address} with basic ping.")
-                        response = subprocess.run(command, capture_output=True, text=True)
-                        ping_result = "Device is alive" if response.returncode == 0 else "Device is unreachable"
+                        try:
+                            response = subprocess.run(command, capture_output=True, text=True, check=True)
+                            ping_result = "Device is alive"
+                        except subprocess.CalledProcessError:
+                            ping_result = "Device is unreachable"
+                        except Exception as e:
+                            ping_result = f"Error: {str(e)}"
                         table.add_row([f"Enable Ping Result for {ip_address}", ping_result])
-            except:
-                table.add_row("Please check your end device")
+            except Exception as e:
+                table.add_row(["General Error", f"An error occurred: {str(e)}"])
+
 
             try:
                 # Perform Verbose Ping
@@ -160,15 +166,17 @@ def ping_operation(request):
                             command = ["ping", "-c", "4", ip_address]
 
                         logger.info(f"Pinging {ip_address} with verbose ping.")
-                        response = subprocess.run(command, capture_output=True, text=True)
-                        verbose_result = (
-                            response.stdout
-                            if response.returncode == 0
-                            else "Verbose Ping failed."
-                        )
+                        try:
+                            response = subprocess.run(command, capture_output=True, text=True, check=True)
+                            verbose_result = response.stdout
+                        except subprocess.CalledProcessError:
+                            verbose_result = "Verbose Ping failed."
+                        except Exception as e:
+                            verbose_result = f"Error: {str(e)}"
                         table.add_row([f"Verbose Ping Result for {ip_address}", verbose_result])
-            except:
-                table.add_row("Please check your end device")
+            except Exception as e:
+                table.add_row(["General Error", f"An error occurred: {str(e)}"])
+
            
             try:
                 # Perform Traceroute
@@ -180,17 +188,19 @@ def ping_operation(request):
                             command = ["traceroute", "-I", ip_address]
 
                         logger.info(f"Running traceroute for {ip_address}.")
-                        response = subprocess.run(command, capture_output=True, text=True)
-                        traceroute_result = (
-                            response.stdout
-                            if response.returncode == 0
-                            else "Traceroute failed."
-                        )
+                        try:
+                            response = subprocess.run(command, capture_output=True, text=True, check=True)
+                            traceroute_result = response.stdout
+                        except subprocess.CalledProcessError:
+                            traceroute_result = "Traceroute failed."
+                        except Exception as e:
+                            traceroute_result = f"Error: {str(e)}"
                         table.add_row([f"Traceroute Result for {ip_address}", traceroute_result])
-            except:
-                table.add_row("Please check your end device")
+            except Exception as e:
+                table.add_row(["General Error", f"An error occurred: {str(e)}"])
+
                 
-            try:    
+            try:
                 # Perform DNS Lookup
                 if dns_lookup:
                     for ip_address in ip_addresses:
@@ -231,26 +241,30 @@ def ping_operation(request):
                             command_reverse = ["nslookup", ip_address]
 
                             # Execute Reverse DNS query
-                            response_reverse = subprocess.run(
-                                command_reverse, capture_output=True, text=True
-                            )
+                            response_reverse = subprocess.run(command_reverse, capture_output=True, text=True)
 
                             if response_reverse.returncode == 0:
                                 reverse_dns_result = response_reverse.stdout.replace(
                                     "Authoritative answers can be found from:", ""
                                 )
-                                logger.info("Reverse DNS query executed successfully.")
+                                logger.info(f"Reverse DNS query executed successfully for {ip_address}.")
                                 table.add_row([f"Reverse DNS Lookup Result for {ip_address}", reverse_dns_result])
                             else:
-                                table.add_row(
-                                    [f"Reverse DNS Lookup Result for {ip_address}", "Reverse DNS query failed."]
-                                )
+                                logger.warning(f"Reverse DNS query failed for {ip_address}.")
+                                table.add_row([f"Reverse DNS Lookup Result for {ip_address}", "Reverse DNS query failed."])
+
+                        except subprocess.CalledProcessError as e:
+                            logger.error(f"Subprocess Error during DNS lookup for {ip_address}: {str(e)}")
+                            table.add_row([f"Reverse DNS Lookup Result for {ip_address}", f"Subprocess Error: {str(e)}"])
 
                         except Exception as e:
-                            logger.error(f"Unexpected Error: {str(e)}")
-                            table.add_row(["Unexpected Error", f"{str(e)}"])
-            except:
-                table.add_row("Please check your end device")
+                            logger.error(f"Unexpected Error during DNS lookup for {ip_address}: {str(e)}")
+                            table.add_row([f"Reverse DNS Lookup Result for {ip_address}", f"Unexpected Error: {str(e)}"])
+
+            except Exception as e:
+                logger.error(f"General Error during DNS lookup process: {str(e)}")
+                table.add_row(["General Error", f"An error occurred during the DNS lookup process: {str(e)}"])
+
             
 
             try:
@@ -312,7 +326,7 @@ def ping_operation(request):
 
                             if response_reverse_verbose.returncode == 0:
                                 reverse_dns_result_verbose = response_reverse_verbose.stdout
-                                logger.info("Verbose Reverse DNS query executed successfully.")
+                                logger.info(f"Verbose Reverse DNS query executed successfully for {ip_address}.")
                                 table.add_row(
                                     [
                                         f"Verbose Reverse DNS Lookup Result for {ip_address}",
@@ -320,6 +334,7 @@ def ping_operation(request):
                                     ]
                                 )
                             else:
+                                logger.warning(f"Verbose Reverse DNS query failed for {ip_address}.")
                                 table.add_row(
                                     [
                                         f"Verbose Reverse DNS Lookup Result for {ip_address}",
@@ -327,11 +342,28 @@ def ping_operation(request):
                                     ]
                                 )
 
+                        except subprocess.CalledProcessError as e:
+                            logger.error(f"Subprocess Error during verbose DNS lookup for {ip_address}: {str(e)}")
+                            table.add_row(
+                                [
+                                    f"Verbose Reverse DNS Lookup Result for {ip_address}",
+                                    f"Subprocess Error: {str(e)}",
+                                ]
+                            )
+
                         except Exception as e:
-                            logger.error(f"Unexpected Error: {str(e)}")
-                            table.add_row(["Unexpected Error", f"{str(e)}"])
-            except:
-                table.add_row("Please check your end device")
+                            logger.error(f"Unexpected Error during verbose DNS lookup for {ip_address}: {str(e)}")
+                            table.add_row(
+                                [
+                                    f"Verbose Reverse DNS Lookup Result for {ip_address}",
+                                    f"Unexpected Error: {str(e)}",
+                                ]
+                            )
+
+            except Exception as e:
+                logger.error(f"General Error during verbose DNS lookup process: {str(e)}")
+                table.add_row(["General Error", f"An error occurred during the verbose DNS lookup process: {str(e)}"])
+
             
 
             try:
@@ -340,9 +372,7 @@ def ping_operation(request):
                     for ip_address in ip_addresses:
                         snmp_port = 161  # Default port for SNMP
                         snmp_version = request.POST.get("snmp_version")
-                        community_strings = request.POST.getlist(
-                            "community_strings", ["public", "private"]
-                        )  # add more here
+                        community_strings = request.POST.getlist("community_strings", ["public", "private"])  # add more if needed
                         username = request.POST.get("username")
                         password = request.POST.get("password")
                         authentication_type = request.POST.get("authentication_type", "SHA")
@@ -357,12 +387,7 @@ def ping_operation(request):
                             for community_string in community_strings:
                                 # SNMP Version 1 or 2c
                                 if snmp_version in ["1", "2c"]:
-                                    for (
-                                        errorIndication,
-                                        errorStatus,
-                                        errorIndex,
-                                        varBinds,
-                                    ) in nextCmd(
+                                    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
                                         SnmpEngine(),
                                         CommunityData(
                                             community_string,
@@ -374,14 +399,17 @@ def ping_operation(request):
                                         lexicographicMode=False,
                                     ):
                                         if errorIndication:
+                                            snmp_result.append(f"SNMP Error: {errorIndication}")
+                                            logger.error(f"SNMP Error: {errorIndication}")
                                             break
                                         elif errorStatus:
+                                            snmp_result.append(f"SNMP Error at {errorIndex}: {errorStatus.prettyPrint()}")
+                                            logger.error(f"SNMP Error at {errorIndex}: {errorStatus.prettyPrint()}")
                                             break
                                         else:
                                             for varBind in varBinds:
-                                                snmp_result.append(
-                                                    f"{varBind[0]} = {varBind[1]}"
-                                                )
+                                                snmp_result.append(f"{varBind[0]} = {varBind[1]}")
+                                                
                                 # SNMP Version 3
                                 elif snmp_version == "3":
                                     auth_protocol = usmNoAuthProtocol
@@ -395,12 +423,7 @@ def ping_operation(request):
                                     elif encryption_type == "DES":
                                         priv_protocol = usmDESPrivProtocol
 
-                                    for (
-                                        errorIndication,
-                                        errorStatus,
-                                        errorIndex,
-                                        varBinds,
-                                    ) in nextCmd(
+                                    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
                                         SnmpEngine(),
                                         UsmUserData(
                                             username,
@@ -410,53 +433,51 @@ def ping_operation(request):
                                             privProtocol=priv_protocol,
                                         ),
                                         UdpTransportTarget((ip_address, int(snmp_port))),
+                                        ContextData(),
                                         ObjectType(ObjectIdentity(oid)),
                                         lexicographicMode=False,
                                     ):
                                         if errorIndication:
+                                            snmp_result.append(f"SNMP Error: {errorIndication}")
+                                            logger.error(f"SNMP Error: {errorIndication}")
                                             break
                                         elif errorStatus:
-                                            snmp_result.append()
+                                            snmp_result.append(f"SNMP Error at {errorIndex}: {errorStatus.prettyPrint()}")
+                                            logger.error(f"SNMP Error at {errorIndex}: {errorStatus.prettyPrint()}")
                                             break
                                         else:
                                             for varBind in varBinds:
-                                                snmp_result.append(
-                                                    f"{varBind[0]} = {varBind[1]}"
-                                                )
+                                                snmp_result.append(f"{varBind[0]} = {varBind[1]}")
 
                                 # Unsupported SNMP Version
                                 else:
-                                    snmp_result.append(
-                                        f"Unsupported SNMP version: {snmp_version}"
-                                    )
+                                    snmp_result.append(f"Unsupported SNMP version: {snmp_version}")
                                     logger.error(f"Unsupported SNMP version: {snmp_version}")
 
-                            # Check if the response contains valid results
-                            if snmp_result and not any(
-                                "Error" in result for result in snmp_result
-                            ):
-                                table.add_row([f"SNMP Walk Result for {ip_address}", "\n".join(snmp_result)])
+                            # Check if results contain errors
+                            if snmp_result:
+                                result_message = "\n".join(snmp_result)
                             else:
-                                table.add_row([f"SNMP Walk Result for {ip_address}", "\n".join(snmp_result)])
+                                result_message = "No SNMP data returned."
+
+                            table.add_row([f"SNMP Walk Result for {ip_address}", result_message])
 
                         except Exception as e:
-                            logger.error(
-                                f"An error occurred while performing SNMP walk: {str(e)}"
-                            )
+                            logger.error(f"An error occurred while performing SNMP walk for {ip_address}: {str(e)}")
                             table.add_row([f"SNMP Walk Result for {ip_address}", f"Error: {str(e)}"])
-            except:
-                table.add_row("Please check your end device")  
+
+            except Exception as e:
+                logger.error(f"General error during SNMP walk process: {str(e)}")
+                table.add_row(["General Error", f"An error occurred during the SNMP walk process: {str(e)}"])
+
             
 
             try:
-                # simple snmp
+                # Simple SNMP
                 if simple_snmp_walk:
                     for ip_address in ip_addresses:
                         snmp_port = 161  # Default port for SNMP
-                        community_strings = [
-                            "public",
-                            "private",
-                        ]  # Predefined community strings
+                        community_strings = ["public", "private"]  # Predefined community strings
                         hardcoded_oid = "1.3.6.1.2.1.1"  # Example OID for system information
 
                         try:
@@ -476,38 +497,31 @@ def ping_operation(request):
                                     CommunityData(community_string, mpModel=1),
                                     UdpTransportTarget((ip_address, int(snmp_port))),
                                     ContextData(),
-                                    ObjectType(
-                                        ObjectIdentity(hardcoded_oid).loadMibs("SNMPv2-MIB")
-                                    ),
+                                    ObjectType(ObjectIdentity(hardcoded_oid).loadMibs("SNMPv2-MIB")),
                                     lexicographicMode=False,
                                 ):
                                     if errorIndication:
+                                        logger.error(f"SNMPv2c Walk Error for {ip_address} with community '{community_string}': {str(errorIndication)}")
+                                        table.add_row([f"SNMP Walk Result for {ip_address}", f"Error: {str(errorIndication)}"])
+                                        snmp_walk_successful = False
                                         break
                                     elif errorStatus:
+                                        logger.error(f"SNMPv2c Error at {errorIndex} for {ip_address} with community '{community_string}': {errorStatus.prettyPrint()}")
+                                        table.add_row([f"SNMP Walk Result for {ip_address}", f"Error: {errorStatus.prettyPrint()}"])
+                                        snmp_walk_successful = False
                                         break
                                     else:
                                         for varBind in varBinds:
                                             # Use the resolved name instead of raw OID
-                                            snmp_result.append(
-                                                f"{varBind[0].prettyPrint()} = {varBind[1]}"
-                                            )
+                                            snmp_result.append(f"{varBind[0].prettyPrint()} = {varBind[1]}")
+
                                 if snmp_result:
                                     snmp_walk_successful = True
                                     break
 
                             # If SNMPv2c was successful, process the result
                             if snmp_walk_successful:
-                                # Check if the response contains valid results
-                                if snmp_result and not any(
-                                    "Error" in result for result in snmp_result
-                                ):
-                                    table.add_row(
-                                        [f"Simple SNMP Walk Result for {ip_address}", "\n".join(snmp_result)]
-                                    )
-                                else:
-                                    table.add_row(
-                                        [f"Simple SNMP Walk Result for {ip_address}", "No valid response."]
-                                    )
+                                table.add_row([f"Simple SNMP Walk Result for {ip_address}", "\n".join(snmp_result)])
                             else:
                                 # If SNMPv2c fails, attempt SNMPv3
                                 snmp_result_v3 = []
@@ -531,39 +545,35 @@ def ping_operation(request):
                                     ),
                                     UdpTransportTarget((ip_address, int(snmp_port))),
                                     ContextData(),
-                                    ObjectType(
-                                        ObjectIdentity(hardcoded_oid).loadMibs("SNMPv2-MIB")
-                                    ),
+                                    ObjectType(ObjectIdentity(hardcoded_oid).loadMibs("SNMPv2-MIB")),
                                     lexicographicMode=False,
                                 ):
                                     if errorIndication:
+                                        logger.error(f"SNMPv3 Walk Error for {ip_address}: {str(errorIndication)}")
+                                        table.add_row([f"SNMPv3 Walk Result for {ip_address}", f"Error: {str(errorIndication)}"])
                                         break
                                     elif errorStatus:
+                                        logger.error(f"SNMPv3 Error at {errorIndex} for {ip_address}: {errorStatus.prettyPrint()}")
+                                        table.add_row([f"SNMPv3 Walk Result for {ip_address}", f"Error: {errorStatus.prettyPrint()}"])
                                         break
                                     else:
                                         for varBind in varBinds:
                                             # Use the resolved name instead of raw OID
-                                            snmp_result_v3.append(
-                                                f"{varBind[0].prettyPrint()} = {varBind[1]}"
-                                            )
+                                            snmp_result_v3.append(f"{varBind[0].prettyPrint()} = {varBind[1]}")
 
                                 # Process SNMPv3 result
-                                if snmp_result_v3 and not any(
-                                    "Error" in result for result in snmp_result_v3
-                                ):
-                                    table.add_row(
-                                        [f"Simple SNMPv3 Walk Result for {ip_address}", "\n".join(snmp_result_v3)]
-                                    )
+                                if snmp_result_v3:
+                                    table.add_row([f"Simple SNMPv3 Walk Result for {ip_address}", "\n".join(snmp_result_v3)])
                                 else:
-                                    table.add_row(
-                                        [f"Simple SNMPv3 Walk Result for {ip_address}", "No valid response."]
-                                    )
+                                    table.add_row([f"Simple SNMPv3 Walk Result for {ip_address}", "No valid response."])
 
                         except Exception as e:
-                            logger.error(f"An error occurred during Simple SNMP Walk: {str(e)}")
+                            logger.error(f"An error occurred during Simple SNMP Walk for {ip_address}: {str(e)}")
                             table.add_row([f"Simple SNMP Walk Result for {ip_address}", f"Error: {str(e)}"])
-            except:
-                table.add_row("Please check your end device")
+            except Exception as e:
+                logger.error(f"General error during SNMP walk process: {str(e)}")
+                table.add_row(["General Error", f"An error occurred during the SNMP walk process: {str(e)}"])
+
 
 
             # If no valid SNMP response, render ping.html
