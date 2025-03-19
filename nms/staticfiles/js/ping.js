@@ -82,8 +82,8 @@ window.onload = function () {
   if (sessionStorage.getItem("ip_address")) {
     document.getElementById("ipAddress").value =
       sessionStorage.getItem("ip_address");
-    document.getElementById("ipAddress1").value =
-      sessionStorage.getItem("ip_address1");
+    // document.getElementById("ipAddress1").value =
+    //   sessionStorage.getItem("ip_address1");
   }
   document.getElementById("snmp_version").dispatchEvent(new Event("change"));
 };
@@ -94,10 +94,10 @@ document.getElementById("inputForm").addEventListener("input", function () {
     "ip_address",
     document.getElementById("ipAddress").value,
   );
-  sessionStorage.setItem(
-    "ip_address1",
-    document.getElementById("ipAddress1").value,
-  );
+  // sessionStorage.setItem(
+  //   "ip_address1",
+  //   document.getElementById("ipAddress1").value,
+  // );
 });
 // Get form and spinner elements
 const form = document.getElementById("inputForm");
