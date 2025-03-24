@@ -75,6 +75,148 @@ def generate_ip_list(ip_input):
 
     return ip_list
 
+# Separate function for validating IP addresses
+def validate_ip_addresses(get_ip_address_all, request):
+    ip_addresses = []
+    for item in get_ip_address_all:
+        try:
+            # If it's an IP address, validate it
+            socket.inet_aton(item)  # This raises socket.error if the IP is invalid
+            ip_addresses.append(item)  # Use directly if valid IP
+        except socket.error:
+            try:
+                # Resolve the hostname to an IP
+                resolved_ip = socket.gethostbyname(item)
+                ip_addresses.append(resolved_ip)
+            except socket.gaierror:
+                logger.error(f"Failed to resolve hostname: {item}")
+                messages.error(request, "Valid IP Address or Hostname is required.")
+                return []  # Return empty list if IP/hostname is invalid
+    return ip_addresses
+
+
+# Separate function for Enable Ping operation
+def enable_ping_operation(ip_addresses, os_name, table):
+    for ip_address in ip_addresses:
+        command = ["ping", "-n", "1", ip_address] if os_name == "Windows" else ["ping", "-c", "1", ip_address]
+        logger.info(f"Pinging {ip_address} with basic ping.")
+        try:
+            response = subprocess.run(command, capture_output=True, text=True, check=True)
+            ping_result = "Device is alive"
+        except subprocess.CalledProcessError:
+            ping_result = "Device is unreachable"
+        except Exception as e:
+            ping_result = f"Error: {str(e)}"
+        table.add_row([f"Enable Ping Result for {ip_address}", ping_result])
+
+
+# Separate function for Verbose Ping operation
+def verbose_ping_operation(ip_addresses, os_name, table):
+    for ip_address in ip_addresses:
+        command = ["ping", "-n", "4", ip_address] if os_name == "Windows" else ["ping", "-c", "4", ip_address]
+        logger.info(f"Pinging {ip_address} with verbose ping.")
+        try:
+            response = subprocess.run(command, capture_output=True, text=True, check=True)
+            verbose_result = response.stdout
+        except subprocess.CalledProcessError:
+            verbose_result = "Verbose Ping failed."
+        except Exception as e:
+            verbose_result = f"Error: {str(e)}"
+        table.add_row([f"Verbose Ping Result for {ip_address}", verbose_result])
+
+
+# Separate function for Traceroute operation
+def traceroute_operation(ip_addresses, os_name, table):
+    for ip_address in ip_addresses:
+        command = ["tracert", ip_address] if os_name == "Windows" else ["traceroute", "-I", ip_address]
+        logger.info(f"Running traceroute for {ip_address}.")
+        try:
+            response = subprocess.run(command, capture_output=True, text=True, check=True)
+            traceroute_result = response.stdout
+        except subprocess.CalledProcessError:
+            traceroute_result = "Traceroute failed."
+        except Exception as e:
+            traceroute_result = f"Error: {str(e)}"
+        table.add_row([f"Traceroute Result for {ip_address}", traceroute_result])
+
+
+# Separate function for DNS Lookup operation
+def dns_lookup_operation(ip_addresses, table):
+    for ip_address in ip_addresses:
+        try:
+            command_reverse = ["nslookup", ip_address]
+            response_reverse = subprocess.run(command_reverse, capture_output=True, text=True)
+
+            if response_reverse.returncode == 0:
+                reverse_dns_result = response_reverse.stdout.replace(
+                    "Authoritative answers can be found from:", ""
+                )
+                logger.info(f"Reverse DNS query executed successfully for {ip_address}.")
+                table.add_row([f"Reverse DNS Lookup Result for {ip_address}", reverse_dns_result])
+            else:
+                logger.warning(f"Reverse DNS query failed for {ip_address}.")
+                table.add_row([f"Reverse DNS Lookup Result for {ip_address}", "Reverse DNS query failed."])
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Subprocess Error during DNS lookup for {ip_address}: {str(e)}")
+            table.add_row([f"Reverse DNS Lookup Result for {ip_address}", f"Subprocess Error: {str(e)}"])
+
+        except Exception as e:
+            logger.error(f"Unexpected Error during DNS lookup for {ip_address}: {str(e)}")
+            table.add_row([f"Reverse DNS Lookup Result for {ip_address}", f"Unexpected Error: {str(e)}"])
+
+
+# Separate function for Verbose DNS Lookup operation
+def verbose_dns_lookup_operation(ip_addresses, table):
+    for ip_address in ip_addresses:
+        command_reverse_verbose = [
+            "dig",
+            "-x",
+            ip_address,
+            "+noall",
+            "+answer",
+        ]
+
+        try:
+            response_reverse_verbose = subprocess.run(
+                command_reverse_verbose, capture_output=True, text=True
+            )
+
+            if response_reverse_verbose.returncode == 0:
+                reverse_dns_result_verbose = response_reverse_verbose.stdout
+                logger.info(f"Verbose Reverse DNS query executed successfully for {ip_address}.")
+                table.add_row(
+                    [
+                        f"Verbose Reverse DNS Lookup Result for {ip_address}",
+                        reverse_dns_result_verbose,
+                    ]
+                )
+            else:
+                logger.warning(f"Verbose Reverse DNS query failed for {ip_address}.")
+                table.add_row(
+                    [
+                        f"Verbose Reverse DNS Lookup Result for {ip_address}",
+                        "Verbose Reverse DNS query failed.",
+                    ]
+                )
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Subprocess Error during verbose DNS lookup for {ip_address}: {str(e)}")
+            table.add_row(
+                [
+                    f"Verbose Reverse DNS Lookup Result for {ip_address}",
+                    f"Subprocess Error: {str(e)}",
+                ]
+            )
+
+        except Exception as e:
+            logger.error(f"Unexpected Error during verbose DNS lookup for {ip_address}: {str(e)}")
+            table.add_row(
+                [
+                    f"Verbose Reverse DNS Lookup Result for {ip_address}",
+                    f"Unexpected Error: {str(e)}",
+                ]
+            )
 
 @login_required
 def ping_operation(request):
@@ -91,278 +233,39 @@ def ping_operation(request):
         verbos_dns_lookup = request.POST.get("verbos_dns_lookup")
         snmp_walk = request.POST.get("snmp_walk")
         simple_snmp_walk = request.POST.get("simple_snmp_walk")
-        # Get all DNS names as a list
-
-        # Validate that the IP address or hostname does not have invalid spaces
-        if any(" " in ip for ip in get_ip_address_all):
-            messages.error(request, "Valid IP Address or Hostname is required.")
-            logger.error("Valid IP Address or Hostname is required.")
+        
+        # Validate the IP address format (IPv4)
+        ip_addresses = validate_ip_addresses(get_ip_address_all, request)
+        if not ip_addresses:
             return render(
                 request,
                 "ping.html",
-                {"error_message": "IP address or hostname cannot contain spaces."},
+                {"error_message": "Invalid IP address or hostname provided."},
             )
-
-        # Validate the IP address format (IPv4)
-        ip_addresses = []
-
-        for item in get_ip_address_all:
-            try:
-                # If it's an IP address, validate it
-                socket.inet_aton(item)  # This raises socket.error if the IP is invalid
-                ip_addresses.append(item)  # Use directly if valid IP
-            except socket.error:
-                try:
-                    # Resolve the hostname to an IP
-                    resolved_ip = socket.gethostbyname(item)
-                    ip_addresses.append(resolved_ip)
-                except socket.gaierror:
-                    logger.error(f"Failed to resolve hostname: {item}")
-                    messages.error(request, "Valid IP Address or Hostname is required.")
-                    logger.error("Invalid IP address or hostname provided.")
-                    return render(
-                        request,
-                        "ping.html",
-                        {"error_message": "Invalid IP address or hostname provided."},
-                    )
-
-        print("Resolved IP Addresses:", ip_addresses)
-
 
         # Detect the operating system
         os_name = platform.system()
-        results = []
+        
+        # Create a PrettyTable for formatting output
+        table = PrettyTable()
+        table.field_names = ["Operation", "Result"]
 
         try:
-            # Create a PrettyTable for formatting output
-            table = PrettyTable()
-            table.field_names = ["Operation", "Result"]
+            # Perform operations
+            if enable_ping:
+                enable_ping_operation(ip_addresses, os_name, table)
 
-            try:
-                # Perform Enable Ping
-                if enable_ping:
-                    for ip_address in ip_addresses:
-                        command = ["ping", "-n", "1", ip_address] if os_name == "Windows" else ["ping", "-c", "1", ip_address]
-                        logger.info(f"Pinging {ip_address} with basic ping.")
-                        try:
-                            response = subprocess.run(command, capture_output=True, text=True, check=True)
-                            ping_result = "Device is alive"
-                        except subprocess.CalledProcessError:
-                            ping_result = "Device is unreachable"
-                        except Exception as e:
-                            ping_result = f"Error: {str(e)}"
-                        table.add_row([f"Enable Ping Result for {ip_address}", ping_result])
-            except Exception as e:
-                table.add_row(["General Error", f"An error occurred: {str(e)}"])
+            if verbose_ping:
+                verbose_ping_operation(ip_addresses, os_name, table)
 
+            if traceroute:
+                traceroute_operation(ip_addresses, os_name, table)
 
-            try:
-                # Perform Verbose Ping
-                if verbose_ping:
-                    for ip_address in ip_addresses:
-                        if os_name == "Windows":
-                            command = ["ping", "-n", "4", ip_address]
-                        else:
-                            command = ["ping", "-c", "4", ip_address]
+            if dns_lookup:
+                dns_lookup_operation(ip_addresses, table)
 
-                        logger.info(f"Pinging {ip_address} with verbose ping.")
-                        try:
-                            response = subprocess.run(command, capture_output=True, text=True, check=True)
-                            verbose_result = response.stdout
-                        except subprocess.CalledProcessError:
-                            verbose_result = "Verbose Ping failed."
-                        except Exception as e:
-                            verbose_result = f"Error: {str(e)}"
-                        table.add_row([f"Verbose Ping Result for {ip_address}", verbose_result])
-            except Exception as e:
-                table.add_row(["General Error", f"An error occurred: {str(e)}"])
-
-           
-            try:
-                # Perform Traceroute
-                if traceroute:
-                    for ip_address in ip_addresses:
-                        if os_name == "Windows":
-                            command = ["tracert", ip_address]
-                        else:
-                            command = ["traceroute", "-I", ip_address]
-
-                        logger.info(f"Running traceroute for {ip_address}.")
-                        try:
-                            response = subprocess.run(command, capture_output=True, text=True, check=True)
-                            traceroute_result = response.stdout
-                        except subprocess.CalledProcessError:
-                            traceroute_result = "Traceroute failed."
-                        except Exception as e:
-                            traceroute_result = f"Error: {str(e)}"
-                        table.add_row([f"Traceroute Result for {ip_address}", traceroute_result])
-            except Exception as e:
-                table.add_row(["General Error", f"An error occurred: {str(e)}"])
-
-                
-            try:
-                # Perform DNS Lookup
-                if dns_lookup:
-                    for ip_address in ip_addresses:
-                        try:
-                            """
-                            # Forward DNS Lookup: Resolve domain name from IP
-                            command_forward = ["nslookup", ip_address]
-
-                            # Execute Forward DNS query
-                            response_forward = subprocess.run(
-                                command_forward, capture_output=True, text=True
-                            )
-
-                            if response_forward.returncode == 0:
-                                forward_dns_result = response_forward.stdout.replace(
-                                    "Authoritative answers can be found from:", ""
-                                )
-                                logger.info("Forward DNS query executed successfully.")
-
-                                # Check if resolved domains match the expected DNS records
-                                if any(dns_ip in forward_dns_result for dns_ip in dns_names):
-                                    table.add_row(
-                                        ["Forward DNS Lookup Result", forward_dns_result]
-                                    )
-                                else:
-                                    table.add_row(
-                                        [
-                                            "Forward DNS Lookup Result",
-                                            "Resolved domain does not match expected DNS records.",
-                                        ]
-                                    )
-                            else:
-                                table.add_row(
-                                    ["Forward DNS Lookup Result", "Forward DNS query failed."]
-                                )
-                            """
-                            # Reverse DNS Lookup: Resolve IP from domain name
-                            command_reverse = ["nslookup", ip_address]
-
-                            # Execute Reverse DNS query
-                            response_reverse = subprocess.run(command_reverse, capture_output=True, text=True)
-
-                            if response_reverse.returncode == 0:
-                                reverse_dns_result = response_reverse.stdout.replace(
-                                    "Authoritative answers can be found from:", ""
-                                )
-                                logger.info(f"Reverse DNS query executed successfully for {ip_address}.")
-                                table.add_row([f"Reverse DNS Lookup Result for {ip_address}", reverse_dns_result])
-                            else:
-                                logger.warning(f"Reverse DNS query failed for {ip_address}.")
-                                table.add_row([f"Reverse DNS Lookup Result for {ip_address}", "Reverse DNS query failed."])
-
-                        except subprocess.CalledProcessError as e:
-                            logger.error(f"Subprocess Error during DNS lookup for {ip_address}: {str(e)}")
-                            table.add_row([f"Reverse DNS Lookup Result for {ip_address}", f"Subprocess Error: {str(e)}"])
-
-                        except Exception as e:
-                            logger.error(f"Unexpected Error during DNS lookup for {ip_address}: {str(e)}")
-                            table.add_row([f"Reverse DNS Lookup Result for {ip_address}", f"Unexpected Error: {str(e)}"])
-
-            except Exception as e:
-                logger.error(f"General Error during DNS lookup process: {str(e)}")
-                table.add_row(["General Error", f"An error occurred during the DNS lookup process: {str(e)}"])
-
-            
-
-            try:
-                # Perform Verbose DNS Lookup
-                if verbos_dns_lookup:
-                    for ip_address in ip_addresses:
-                        try:
-                            """
-                            # Forward DNS Lookup
-                            command_forward_verbose = ["dig", "+noall", "+answer", ip_address]
-
-                            # Execute Forward DNS query
-                            response_forward_verbose = subprocess.run(
-                                command_forward_verbose, capture_output=True, text=True
-                            )
-
-                            if response_forward_verbose.returncode == 0:
-                                forward_dns_result_verbose = response_forward_verbose.stdout
-                                logger.info("Verbose Forward DNS query executed successfully.")
-
-                                # Check if resolved domains match the expected DNS records
-                                if any(
-                                    dns_ip in forward_dns_result_verbose for dns_ip in dns_names
-                                ):
-                                    table.add_row(
-                                        [
-                                            "Verbose Forward DNS Lookup Result",
-                                            forward_dns_result_verbose,
-                                        ]
-                                    )
-                                else:
-                                    table.add_row(
-                                        [
-                                            "Verbose Forward DNS Lookup Result",
-                                            "Resolved domain does not match expected verbose DNS records.",
-                                        ]
-                                    )
-                            else:
-                                table.add_row(
-                                    [
-                                        "Verbose Forward DNS Lookup Result",
-                                        "Verbose DNS query failed.",
-                                    ]
-                                )
-                            """
-                            # Reverse DNS Lookup
-                            command_reverse_verbose = [
-                                "dig",
-                                "-x",
-                                ip_address,
-                                "+noall",
-                                "+answer",
-                            ]
-
-                            # Execute Reverse DNS query
-                            response_reverse_verbose = subprocess.run(
-                                command_reverse_verbose, capture_output=True, text=True
-                            )
-
-                            if response_reverse_verbose.returncode == 0:
-                                reverse_dns_result_verbose = response_reverse_verbose.stdout
-                                logger.info(f"Verbose Reverse DNS query executed successfully for {ip_address}.")
-                                table.add_row(
-                                    [
-                                        f"Verbose Reverse DNS Lookup Result for {ip_address}",
-                                        reverse_dns_result_verbose,
-                                    ]
-                                )
-                            else:
-                                logger.warning(f"Verbose Reverse DNS query failed for {ip_address}.")
-                                table.add_row(
-                                    [
-                                        f"Verbose Reverse DNS Lookup Result for {ip_address}",
-                                        "Verbose Reverse DNS query failed.",
-                                    ]
-                                )
-
-                        except subprocess.CalledProcessError as e:
-                            logger.error(f"Subprocess Error during verbose DNS lookup for {ip_address}: {str(e)}")
-                            table.add_row(
-                                [
-                                    f"Verbose Reverse DNS Lookup Result for {ip_address}",
-                                    f"Subprocess Error: {str(e)}",
-                                ]
-                            )
-
-                        except Exception as e:
-                            logger.error(f"Unexpected Error during verbose DNS lookup for {ip_address}: {str(e)}")
-                            table.add_row(
-                                [
-                                    f"Verbose Reverse DNS Lookup Result for {ip_address}",
-                                    f"Unexpected Error: {str(e)}",
-                                ]
-                            )
-
-            except Exception as e:
-                logger.error(f"General Error during verbose DNS lookup process: {str(e)}")
-                table.add_row(["General Error", f"An error occurred during the verbose DNS lookup process: {str(e)}"])
+            if verbos_dns_lookup:
+                verbose_dns_lookup_operation(ip_addresses, table)
 
             
 
