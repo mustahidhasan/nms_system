@@ -318,101 +318,77 @@ def advanced_snmp_walk(ip_addresses, snmp_version, community_strings, username, 
 
 
 # Separate function for Simple SNMP Walk
-def simple_snmp_walk(ip_addresses, snmp_port, table):
-    try:
-        # Initialize result list
+async def simple_snmp_walk(ip_addresses, snmp_port, table):
+    async def snmp_walk(ip_address, community_strings, hardcoded_oid, snmp_version):
         snmp_result = []
-
-        for ip_address in ip_addresses:
-            community_strings = ["public", "private"]  # Predefined community strings
-            hardcoded_oid = "1.3.6.1.2.1.1"  # Example OID for system information
-
-            # Attempt SNMPv2c walk
-            snmp_walk_successful = False
-            for community_string in community_strings:
-                for (
-                    errorIndication,
-                    errorStatus,
-                    errorIndex,
-                    varBinds,
-                ) in nextCmd(
-                    SnmpEngine(),
-                    CommunityData(community_string, mpModel=1),
-                    UdpTransportTarget((ip_address, int(snmp_port))),
-                    ContextData(),
-                    ObjectType(ObjectIdentity(hardcoded_oid).loadMibs("SNMPv2-MIB")),
-                    lexicographicMode=False,
-                ):
-                    if errorIndication:
-                        logger.error(f"SNMPv2c Walk Error for {ip_address} with community '{community_string}': {str(errorIndication)}")
-                        table.add_row([f"SNMP Walk Result for {ip_address}", f"Error: {str(errorIndication)}"])
-                        snmp_walk_successful = False
-                        break
-                    elif errorStatus:
-                        logger.error(f"SNMPv2c Error at {errorIndex} for {ip_address} with community '{community_string}': {errorStatus.prettyPrint()}")
-                        table.add_row([f"SNMP Walk Result for {ip_address}", f"Error: {errorStatus.prettyPrint()}"])
-                        snmp_walk_successful = False
-                        break
-                    else:
-                        for varBind in varBinds:
-                            # Use the resolved name instead of raw OID
-                            snmp_result.append(f"{varBind[0].prettyPrint()} = {varBind[1]}")
-
-                if snmp_result:
-                    snmp_walk_successful = True
-                    break
-
-            # If SNMPv2c was successful, process the result
-            if snmp_walk_successful:
-                table.add_row([f"Simple SNMP Walk Result for {ip_address}", "\n".join(snmp_result)])
+        try:
+            if snmp_version == 'v2c':
+                for community_string in community_strings:
+                    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+                        SnmpEngine(),
+                        CommunityData(community_string, mpModel=1),
+                        UdpTransportTarget((ip_address, int(snmp_port))),
+                        ContextData(),
+                        ObjectType(ObjectIdentity(hardcoded_oid).loadMibs('SNMPv2-MIB')),
+                        lexicographicMode=False,
+                    ):
+                        if errorIndication:
+                            logger.error(f'SNMPv2c Walk Error for {ip_address} with community "{community_string}": {str(errorIndication)}')
+                            return f'Error: {str(errorIndication)}'
+                        elif errorStatus:
+                            logger.error(f'SNMPv2c Error at {errorIndex} for {ip_address} with community "{community_string}": {errorStatus.prettyPrint()}')
+                            return f'Error: {errorStatus.prettyPrint()}'
+                        else:
+                            for varBind in varBinds:
+                                snmp_result.append(f'{varBind[0].prettyPrint()} = {varBind[1]}')
             else:
-                # If SNMPv2c fails, attempt SNMPv3
-                snmp_result_v3 = []
-                v3_user = "myUser"  # change this
-                v3_auth_password = "myAuthPass"  # change this
-                v3_priv_password = "myPrivPass"  # change this
-
-                for (
-                    errorIndication,
-                    errorStatus,
-                    errorIndex,
-                    varBinds,
-                ) in nextCmd(
+                v3_user = 'myUser'
+                v3_auth_password = 'myAuthPass'
+                v3_priv_password = 'myPrivPass'
+                for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
                     SnmpEngine(),
-                    UsmUserData(
-                        v3_user,
-                        authKey=v3_auth_password,
-                        privKey=v3_priv_password,
-                        authProtocol=usmHMACSHAAuthProtocol,
-                        privProtocol=usmAesCfb128Protocol,
-                    ),
+                    UsmUserData(v3_user, authKey=v3_auth_password, privKey=v3_priv_password,
+                    authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
                     UdpTransportTarget((ip_address, int(snmp_port))),
                     ContextData(),
-                    ObjectType(ObjectIdentity(hardcoded_oid).loadMibs("SNMPv2-MIB")),
+                    ObjectType(ObjectIdentity(hardcoded_oid).loadMibs('SNMPv2-MIB')),
                     lexicographicMode=False,
                 ):
                     if errorIndication:
-                        logger.error(f"SNMPv3 Walk Error for {ip_address}: {str(errorIndication)}")
-                        table.add_row([f"SNMPv3 Walk Result for {ip_address}", f"Error: {str(errorIndication)}"])
-                        break
+                        logger.error(f'SNMPv3 Walk Error for {ip_address}: {str(errorIndication)}')
+                        return f'Error: {str(errorIndication)}'
                     elif errorStatus:
-                        logger.error(f"SNMPv3 Error at {errorIndex} for {ip_address}: {errorStatus.prettyPrint()}")
-                        table.add_row([f"SNMPv3 Walk Result for {ip_address}", f"Error: {errorStatus.prettyPrint()}"])
-                        break
+                        logger.error(f'SNMPv3 Error at {errorIndex} for {ip_address}: {errorStatus.prettyPrint()}')
+                        return f'Error: {errorStatus.prettyPrint()}'
                     else:
                         for varBind in varBinds:
-                            # Use the resolved name instead of raw OID
-                            snmp_result_v3.append(f"{varBind[0].prettyPrint()} = {varBind[1]}")
+                            snmp_result.append(f'{varBind[0].prettyPrint()} = {varBind[1]}')
+            return snmp_result
+        except Exception as e:
+            logger.error(f'An error occurred during SNMP walk for {ip_address}: {str(e)}')
+            return f'Error: {str(e)}'
 
-                # Process SNMPv3 result
-                if snmp_result_v3:
-                    table.add_row([f"Simple SNMPv3 Walk Result for {ip_address}", "\n".join(snmp_result_v3)])
-                else:
-                    table.add_row([f"Simple SNMPv3 Walk Result for {ip_address}", "No valid response."])
+    community_strings = ['public', 'private']
+    hardcoded_oid = '1.3.6.1.2.1.1'
 
-    except Exception as e:
-        logger.error(f"An error occurred during Simple SNMP Walk for {ip_address}: {str(e)}")
-        table.add_row([f"Simple SNMP Walk Result for {ip_address}", f"Error: {str(e)}"])
+    tasks = [snmp_walk(ip, community_strings, hardcoded_oid, 'v2c') for ip in ip_addresses]
+    results = await asyncio.gather(*tasks)
+
+    for ip_address, snmp_result in zip(ip_addresses, results):
+        if isinstance(snmp_result, list) and snmp_result:
+            table.add_row([f'Simple SNMP Walk Result for {ip_address}', '\n'.join(snmp_result)])
+        else:
+            table.add_row([f'Simple SNMP Walk Result for {ip_address}', snmp_result])
+
+    # Process SNMPv3 if needed
+    tasks_v3 = [snmp_walk(ip, community_strings, hardcoded_oid, 'v3') for ip in ip_addresses]
+    results_v3 = await asyncio.gather(*tasks_v3)
+
+    for ip_address, snmp_result_v3 in zip(ip_addresses, results_v3):
+        if isinstance(snmp_result_v3, list) and snmp_result_v3:
+            table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', '\n'.join(snmp_result_v3)])
+        else:
+            table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', snmp_result_v3])
 
 @login_required
 def ping_operation(request):
@@ -481,11 +457,7 @@ def ping_operation(request):
 
             if is_simple_snmp_walk:
                 # Call the simple_snmp_walk function with the necessary parameters
-                simple_snmp_walk(
-                    ip_addresses,
-                    snmp_port=161,  # Default SNMP port
-                    table=table
-                )
+                asyncio.run(simple_snmp_walk(ip_addresses, '161', table))
 
 
 
