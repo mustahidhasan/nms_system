@@ -122,20 +122,28 @@ async def enable_ping_operation(ip_addresses, os_name, table):
         table.add_row([f"Enable Ping Result for {ip_address}", ping_result])
 
 
-# Separate function for Verbose Ping operation
-def verbose_ping_operation(ip_addresses, os_name, table):
-    for ip_address in ip_addresses:
+async def verbose_ping_operation(ip_addresses, os_name, table):
+    async def ping_device(ip_address):
         command = ["ping", "-n", "4", ip_address] if os_name == "Windows" else ["ping", "-c", "4", ip_address]
         logger.info(f"Pinging {ip_address} with verbose ping.")
         try:
-            response = subprocess.run(command, capture_output=True, text=True, check=True)
-            verbose_result = response.stdout
-        except subprocess.CalledProcessError:
-            verbose_result = "Verbose Ping failed."
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            if process.returncode == 0:
+                return ip_address, stdout.decode().strip()
+            else:
+                return ip_address, "Verbose Ping failed."
         except Exception as e:
-            verbose_result = f"Error: {str(e)}"
-        table.add_row([f"Verbose Ping Result for {ip_address}", verbose_result])
-
+            return ip_address, f"Error: {str(e)}"
+    
+    tasks = [ping_device(ip) for ip in ip_addresses]
+    results = await asyncio.gather(*tasks)
+    for ip_address, ping_result in results:
+        table.add_row([f"Verbose Ping Result for {ip_address}", ping_result])
 
 # Separate function for Traceroute operation
 def traceroute_operation(ip_addresses, os_name, table):
@@ -450,7 +458,7 @@ def ping_operation(request):
                 asyncio.run(enable_ping_operation(ip_addresses, os_name, table))
 
             if verbose_ping:
-                verbose_ping_operation(ip_addresses, os_name, table)
+                asyncio.run(verbose_ping_operation(ip_addresses, os_name, table))
 
             if traceroute:
                 traceroute_operation(ip_addresses, os_name, table)
