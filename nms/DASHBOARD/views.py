@@ -15,6 +15,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 # Set up logging
 logger = logging.getLogger(__name__)
+import asyncio
+import subprocess
 
 # Import necessary modules from pysnmp
 from pysnmp.hlapi import (
@@ -96,17 +98,27 @@ def validate_ip_addresses(get_ip_address_all, request):
 
 
 # Separate function for Enable Ping operation
-def enable_ping_operation(ip_addresses, os_name, table):
-    for ip_address in ip_addresses:
+async def enable_ping_operation(ip_addresses, os_name, table):
+    async def ping_device(ip_address):
         command = ["ping", "-n", "1", ip_address] if os_name == "Windows" else ["ping", "-c", "1", ip_address]
         logger.info(f"Pinging {ip_address} with basic ping.")
         try:
-            response = subprocess.run(command, capture_output=True, text=True, check=True)
-            ping_result = "Device is alive"
-        except subprocess.CalledProcessError:
-            ping_result = "Device is unreachable"
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            await process.communicate()
+            if process.returncode == 0:
+                return ip_address, "Device is alive"
+            else:
+                return ip_address, "Device is unreachable"
         except Exception as e:
-            ping_result = f"Error: {str(e)}"
+            return ip_address, f"Error: {str(e)}"
+    
+    tasks = [ping_device(ip) for ip in ip_addresses]
+    results = await asyncio.gather(*tasks)
+    for ip_address, ping_result in results:
         table.add_row([f"Enable Ping Result for {ip_address}", ping_result])
 
 
@@ -435,7 +447,7 @@ def ping_operation(request):
         try:
             # Perform operations
             if enable_ping:
-                enable_ping_operation(ip_addresses, os_name, table)
+                asyncio.run(enable_ping_operation(ip_addresses, os_name, table))
 
             if verbose_ping:
                 verbose_ping_operation(ip_addresses, os_name, table)
