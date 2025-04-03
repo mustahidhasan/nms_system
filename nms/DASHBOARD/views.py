@@ -232,12 +232,10 @@ async def verbose_dns_lookup_operation(ip_addresses, table):
         table.add_row([f"Verbose Reverse DNS Lookup Result for {ip_address}", dns_result])
 
 # Separate function for Advanced SNMP Walk
-def advanced_snmp_walk(ip_addresses, snmp_version, community_strings, username, password, authentication_type, encryption_type, encryption_key, oid, snmp_port, table):
-    try:
-        # Initialize result list
+async def advanced_snmp_walk(ip_addresses, snmp_version, community_strings, username, password, authentication_type, encryption_type, encryption_key, oid, snmp_port, table):
+    async def snmp_walk(ip_address):
         snmp_result = []
-
-        for ip_address in ip_addresses:
+        try:
             for community_string in community_strings:
                 # SNMP Version 1 or 2c
                 if snmp_version in ["1", "2c"]:
@@ -310,13 +308,18 @@ def advanced_snmp_walk(ip_addresses, snmp_version, community_strings, username, 
 
             # Check if results contain errors
             result_message = "\n".join(snmp_result) if snmp_result else "No SNMP data returned."
-            table.add_row([f"SNMP Walk Result for {ip_address}", result_message])
+            return ip_address, result_message
 
-    except Exception as e:
-        logger.error(f"An error occurred while performing SNMP walk for {ip_address}: {str(e)}")
-        table.add_row([f"SNMP Walk Result for {ip_address}", f"Error: {str(e)}"])
+        except Exception as e:
+            logger.error(f"An error occurred while performing SNMP walk for {ip_address}: {str(e)}")
+            return ip_address, f"Error: {str(e)}"
 
+    tasks = [snmp_walk(ip) for ip in ip_addresses]
+    results = await asyncio.gather(*tasks)
 
+    # Add results to the table
+    for ip_address, result_message in results:
+        table.add_row([f"SNMP Walk Result for {ip_address}", result_message])
 # Separate function for Simple SNMP Walk
 async def simple_snmp_walk(ip_addresses, snmp_port, table):
     async def snmp_walk(ip_address, community_strings, hardcoded_oid, snmp_version):
@@ -441,7 +444,7 @@ def ping_operation(request):
 
             if snmp_walk:
                 # Call the advanced_snmp_walk function with the necessary parameters
-                advanced_snmp_walk(
+                asyncio.run(advanced_snmp_walk(
                     ip_addresses,
                     snmp_version=request.POST.get("snmp_version"),
                     community_strings=request.POST.getlist("community_strings", ["public", "private"]),
@@ -453,7 +456,8 @@ def ping_operation(request):
                     oid=request.POST.get("oid"),
                     snmp_port=161,  # Default SNMP port
                     table=table
-                )
+                ))
+                
 
             if is_simple_snmp_walk:
                 # Call the simple_snmp_walk function with the necessary parameters
