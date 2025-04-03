@@ -170,31 +170,31 @@ async def traceroute_operation(ip_addresses, os_name, table):
         table.add_row([f"Traceroute Result for {ip_address}", traceroute_result])
 
 # Separate function for DNS Lookup operation
-def dns_lookup_operation(ip_addresses, table):
-    for ip_address in ip_addresses:
+async def dns_lookup_operation(ip_addresses, table):
+    async def lookup_dns(ip_address):
         try:
             command_reverse = ["nslookup", ip_address]
-            response_reverse = subprocess.run(command_reverse, capture_output=True, text=True)
-
-            if response_reverse.returncode == 0:
-                reverse_dns_result = response_reverse.stdout.replace(
-                    "Authoritative answers can be found from:", ""
-                )
+            process = await asyncio.create_subprocess_exec(
+                *command_reverse,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            if process.returncode == 0:
+                reverse_dns_result = stdout.decode().replace("Authoritative answers can be found from:", "")
                 logger.info(f"Reverse DNS query executed successfully for {ip_address}.")
-                table.add_row([f"Reverse DNS Lookup Result for {ip_address}", reverse_dns_result])
+                return ip_address, reverse_dns_result
             else:
                 logger.warning(f"Reverse DNS query failed for {ip_address}.")
-                table.add_row([f"Reverse DNS Lookup Result for {ip_address}", "Reverse DNS query failed."])
-
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Subprocess Error during DNS lookup for {ip_address}: {str(e)}")
-            table.add_row([f"Reverse DNS Lookup Result for {ip_address}", f"Subprocess Error: {str(e)}"])
-
+                return ip_address, "Reverse DNS query failed."
         except Exception as e:
-            logger.error(f"Unexpected Error during DNS lookup for {ip_address}: {str(e)}")
-            table.add_row([f"Reverse DNS Lookup Result for {ip_address}", f"Unexpected Error: {str(e)}"])
-
-
+            logger.error(f"Error during DNS lookup for {ip_address}: {str(e)}")
+            return ip_address, f"Error: {str(e)}"
+    
+    tasks = [lookup_dns(ip) for ip in ip_addresses]
+    results = await asyncio.gather(*tasks)
+    for ip_address, dns_result in results:
+        table.add_row([f"Reverse DNS Lookup Result for {ip_address}", dns_result])
 # Separate function for Verbose DNS Lookup operation
 def verbose_dns_lookup_operation(ip_addresses, table):
     for ip_address in ip_addresses:
@@ -473,7 +473,7 @@ def ping_operation(request):
                 asyncio.run(traceroute_operation(ip_addresses, os_name, table))
 
             if dns_lookup:
-                dns_lookup_operation(ip_addresses, table)
+                asyncio.run(dns_lookup_operation(ip_addresses, table))
 
             if verbos_dns_lookup:
                 verbose_dns_lookup_operation(ip_addresses, table)
