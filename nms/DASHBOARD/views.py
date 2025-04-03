@@ -146,19 +146,28 @@ async def verbose_ping_operation(ip_addresses, os_name, table):
         table.add_row([f"Verbose Ping Result for {ip_address}", ping_result])
 
 # Separate function for Traceroute operation
-def traceroute_operation(ip_addresses, os_name, table):
-    for ip_address in ip_addresses:
+async def traceroute_operation(ip_addresses, os_name, table):
+    async def run_traceroute(ip_address):
         command = ["tracert", ip_address] if os_name == "Windows" else ["traceroute", "-I", ip_address]
         logger.info(f"Running traceroute for {ip_address}.")
         try:
-            response = subprocess.run(command, capture_output=True, text=True, check=True)
-            traceroute_result = response.stdout
-        except subprocess.CalledProcessError:
-            traceroute_result = "Traceroute failed."
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            if process.returncode == 0:
+                return ip_address, stdout.decode().strip()
+            else:
+                return ip_address, "Traceroute failed."
         except Exception as e:
-            traceroute_result = f"Error: {str(e)}"
+            return ip_address, f"Error: {str(e)}"
+    
+    tasks = [run_traceroute(ip) for ip in ip_addresses]
+    results = await asyncio.gather(*tasks)
+    for ip_address, traceroute_result in results:
         table.add_row([f"Traceroute Result for {ip_address}", traceroute_result])
-
 
 # Separate function for DNS Lookup operation
 def dns_lookup_operation(ip_addresses, table):
@@ -461,7 +470,7 @@ def ping_operation(request):
                 asyncio.run(verbose_ping_operation(ip_addresses, os_name, table))
 
             if traceroute:
-                traceroute_operation(ip_addresses, os_name, table)
+                asyncio.run(traceroute_operation(ip_addresses, os_name, table))
 
             if dns_lookup:
                 dns_lookup_operation(ip_addresses, table)
