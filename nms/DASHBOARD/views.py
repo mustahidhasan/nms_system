@@ -195,9 +195,10 @@ async def dns_lookup_operation(ip_addresses, table):
     results = await asyncio.gather(*tasks)
     for ip_address, dns_result in results:
         table.add_row([f"Reverse DNS Lookup Result for {ip_address}", dns_result])
+
 # Separate function for Verbose DNS Lookup operation
-def verbose_dns_lookup_operation(ip_addresses, table):
-    for ip_address in ip_addresses:
+async def verbose_dns_lookup_operation(ip_addresses, table):
+    async def lookup_verbose_dns(ip_address):
         command_reverse_verbose = [
             "dig",
             "-x",
@@ -205,47 +206,31 @@ def verbose_dns_lookup_operation(ip_addresses, table):
             "+noall",
             "+answer",
         ]
-
         try:
-            response_reverse_verbose = subprocess.run(
-                command_reverse_verbose, capture_output=True, text=True
+            process = await asyncio.create_subprocess_exec(
+                *command_reverse_verbose,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
-
-            if response_reverse_verbose.returncode == 0:
-                reverse_dns_result_verbose = response_reverse_verbose.stdout
+            stdout, stderr = await process.communicate()
+            if process.returncode == 0:
+                reverse_dns_result_verbose = stdout.decode().strip()
                 logger.info(f"Verbose Reverse DNS query executed successfully for {ip_address}.")
-                table.add_row(
-                    [
-                        f"Verbose Reverse DNS Lookup Result for {ip_address}",
-                        reverse_dns_result_verbose,
-                    ]
-                )
+                return ip_address, reverse_dns_result_verbose if reverse_dns_result_verbose else "No answer received."
             else:
-                logger.warning(f"Verbose Reverse DNS query failed for {ip_address}.")
-                table.add_row(
-                    [
-                        f"Verbose Reverse DNS Lookup Result for {ip_address}",
-                        "Verbose Reverse DNS query failed.",
-                    ]
-                )
-
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Subprocess Error during verbose DNS lookup for {ip_address}: {str(e)}")
-            table.add_row(
-                [
-                    f"Verbose Reverse DNS Lookup Result for {ip_address}",
-                    f"Subprocess Error: {str(e)}",
-                ]
-            )
-
+                error_message = stderr.decode().strip() or "Verbose Reverse DNS query failed."
+                logger.warning(f"Verbose Reverse DNS query failed for {ip_address}: {error_message}")
+                return ip_address, error_message
         except Exception as e:
-            logger.error(f"Unexpected Error during verbose DNS lookup for {ip_address}: {str(e)}")
-            table.add_row(
-                [
-                    f"Verbose Reverse DNS Lookup Result for {ip_address}",
-                    f"Unexpected Error: {str(e)}",
-                ]
-            )
+            error_message = f"Error: {str(e)}"
+            logger.error(f"Error during verbose DNS lookup for {ip_address}: {error_message}")
+            return ip_address, error_message
+    
+    tasks = [lookup_verbose_dns(ip) for ip in ip_addresses]
+    results = await asyncio.gather(*tasks)
+    for ip_address, dns_result in results:
+        table.add_row([f"Verbose Reverse DNS Lookup Result for {ip_address}", dns_result])
+
 # Separate function for Advanced SNMP Walk
 def advanced_snmp_walk(ip_addresses, snmp_version, community_strings, username, password, authentication_type, encryption_type, encryption_key, oid, snmp_port, table):
     try:
@@ -476,7 +461,7 @@ def ping_operation(request):
                 asyncio.run(dns_lookup_operation(ip_addresses, table))
 
             if verbos_dns_lookup:
-                verbose_dns_lookup_operation(ip_addresses, table)
+                asyncio.run(verbose_dns_lookup_operation(ip_addresses, table))
 
             if snmp_walk:
                 # Call the advanced_snmp_walk function with the necessary parameters
