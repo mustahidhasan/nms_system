@@ -22,3 +22,4 @@ django-jazzmin
 djangorestframework
 djangorestframework-simplejwt
 redis
+python-decouple

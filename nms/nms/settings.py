@@ -163,9 +163,13 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-# Session expiration time set to 30 minutes (in seconds)
-SESSION_COOKIE_AGE = 30 * 60  # 30 minutes
 
-# Optional: Expire session when the browser is closed
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 LOGIN_URL = "/"  # URL for your login page
+
+import os
+from decouple import config
+
+AZURE_CLIENT_ID = config("AZURE_CLIENT_ID")
+AZURE_TENANT_ID = config("AZURE_TENANT_ID")
+AZURE_CLIENT_SECRET = config("AZURE_CLIENT_SECRET")
+

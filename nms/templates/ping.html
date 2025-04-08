@@ -54,7 +54,7 @@
         </a>
         <div id="dropdown" class="dropdown-menu">
           {% if user.is_superuser %}
-          <a class="navbar-icon" href="{% url 'active_users_dashboard' %}">
+          <a class="navbar-icon" href="#">
             <img src="{% static 'images/icons8-user-48.png' %}" alt="users" />Users
           </a>
           {% endif %}
@@ -62,10 +62,7 @@
           <a class="navbar-icon" href="javascript:void(0)" onclick="showPopup()">
             <img src="{% static 'images/icons8-about-50.png' %}" alt="about" />About
           </a>
-          <!-- Logout Option -->
-          <a class="navbar-icon" href="{% url 'logout' %}">
-            <img src="{% static 'images/icons8-logout-50.png' %}" alt="logout" />Logout
-          </a>
+       
         </div>
       </div>
 
