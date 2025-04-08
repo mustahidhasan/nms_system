@@ -165,3 +165,8 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "/"  # URL for your login page
+
+AZURE_CLIENT_ID = "f682b7c8-8047-4b0b-91de-f6735855f32d"
+AZURE_TENANT_ID = "20873f24-587c-427a-8b39-20b75349b61d"
+AZURE_CLIENT_SECRET = "70205d17-81bc-465f-982d-3ed5eb5079df"  # Get this from Azure portal
+
