@@ -6,7 +6,7 @@ from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path("", login_view, name="login"),
-    path("dashboard/", include("DASHBOARD.urls")),  # Include the dashboard app URLs
+    # path("dashboard/", include("DASHBOARD.urls")),  # Include the dashboard app URLs
    
 
 ]
