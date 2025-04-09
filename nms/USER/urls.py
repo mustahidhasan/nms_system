@@ -1,12 +1,8 @@
-# main_app/urls.py (or wherever your main app's URLs are defined)
-
-from django.urls import path, include
-from .views import login_view
-from django.contrib.auth import views as auth_views
+# urls.py
+from django.urls import path
+from .views import azure_login, azure_callback
 
 urlpatterns = [
-    path("", login_view, name="login"),
-    # path("dashboard/", include("DASHBOARD.urls")),  # Include the dashboard app URLs
-   
-
+    path("", azure_login, name="azure_login"),
+    path("auth/callback/", azure_callback, name="azure_callback"),
 ]

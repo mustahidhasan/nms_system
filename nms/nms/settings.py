@@ -164,12 +164,14 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-LOGIN_URL = "/"  # URL for your login page
 
-import os
-from decouple import config
+AZURE_TENANT_ID = "20873f24-587c-427a-8b39-20b75349b61d"
+AZURE_CLIENT_ID = "f682b7c8-8047-4b0b-91de-f6735855f32d"
+AZURE_CLIENT_SECRET = "xbe8Q~MAh700oUTNaQ0lBn2rPmHZHhodg4kGYb9F"
+AZURE_REDIRECT_URI = "http://localhost:8000/auth/callback/"
 
-AZURE_CLIENT_ID = config("AZURE_CLIENT_ID")
-AZURE_TENANT_ID = config("AZURE_TENANT_ID")
-AZURE_CLIENT_SECRET = config("AZURE_CLIENT_SECRET")
+AZURE_AUTHORITY = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
+AZURE_AUTHORIZE_ENDPOINT = f"{AZURE_AUTHORITY}/oauth2/v2.0/authorize"
+AZURE_TOKEN_ENDPOINT = f"{AZURE_AUTHORITY}/oauth2/v2.0/token"
+AZURE_SCOPES = "openid profile email offline_access User.Read"
 

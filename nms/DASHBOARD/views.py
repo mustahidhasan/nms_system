@@ -392,7 +392,7 @@ async def simple_snmp_walk(ip_addresses, snmp_port, table):
             table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', '\n'.join(snmp_result_v3)])
         else:
             table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', snmp_result_v3])
-
+@login_required
 def ping_operation(request):
     if request.method == "POST":
         get_ip_address_start = request.POST.get("start_ip_address")
