@@ -28,16 +28,6 @@ SECRET_KEY = "django-insecure-x2--wh#=1^e7n^k*kttuey@wt%a$a7@)2()c=$_7ybu31v&yg0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["", "*"]
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ''  # Your Gmail address
-EMAIL_HOST_PASSWORD = ''  # The 16-character app password you generated
-DEFAULT_FROM_EMAIL = ''
-
-
 
 # Application definition
 
@@ -52,23 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "USER",
     "DASHBOARD",
-    'rest_framework',
-    'rest_framework_simplejwt',
 ]
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
-}
-
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': False,
-}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -112,7 +86,6 @@ DATABASES = {
     }
 }
 
-AUTH_USER_MODEL = "USER.CustomUser"  # Replace 'yourapp' with your app name
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -165,13 +138,18 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
+# Azure AD App Credentials
 AZURE_TENANT_ID = "20873f24-587c-427a-8b39-20b75349b61d"
 AZURE_CLIENT_ID = "f682b7c8-8047-4b0b-91de-f6735855f32d"
 AZURE_CLIENT_SECRET = "xbe8Q~MAh700oUTNaQ0lBn2rPmHZHhodg4kGYb9F"
+
+# Redirect URI (must be registered in Azure AD App Portal)
 AZURE_REDIRECT_URI = "http://localhost:8000/auth/callback/"
 
+# Microsoft Identity Platform endpoints
 AZURE_AUTHORITY = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
 AZURE_AUTHORIZE_ENDPOINT = f"{AZURE_AUTHORITY}/oauth2/v2.0/authorize"
 AZURE_TOKEN_ENDPOINT = f"{AZURE_AUTHORITY}/oauth2/v2.0/token"
-AZURE_SCOPES = "openid profile email offline_access User.Read"
 
+# Scopes to request from Microsoft Graph
+AZURE_SCOPES = "openid profile email offline_access User.Read"

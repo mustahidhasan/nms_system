@@ -1,22 +1,4 @@
-# views.py
 import urllib.parse
-from django.conf import settings
-from django.shortcuts import redirect
-
-
-def azure_login(request):
-    params = {
-        'client_id': settings.AZURE_CLIENT_ID,
-        'response_type': 'code',
-        'redirect_uri': settings.AZURE_REDIRECT_URI,
-        'response_mode': 'query',
-        'scope': settings.AZURE_SCOPES,
-        'state': 'some_random_state',  # optional for CSRF
-    }
-
-    login_url = f"{settings.AZURE_AUTHORIZE_ENDPOINT}?{urllib.parse.urlencode(params)}"
-    return redirect(login_url)
-# views.py
 import requests
 from django.conf import settings
 from django.shortcuts import redirect
@@ -25,11 +7,35 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 
 
+def azure_login(request):
+    """
+    Initiates the Microsoft Azure login by redirecting the user
+    to the Microsoft authorization endpoint.
+    """
+    params = {
+        'client_id': settings.AZURE_CLIENT_ID,
+        'response_type': 'code',
+        'redirect_uri': settings.AZURE_REDIRECT_URI,
+        'response_mode': 'query',
+        'scope': settings.AZURE_SCOPES,
+        'state': 'some_random_state',  # Optional but recommended for CSRF
+    }
+
+    login_url = f"{settings.AZURE_AUTHORIZE_ENDPOINT}?{urllib.parse.urlencode(params)}"
+    return redirect(login_url)
+
+
 def azure_callback(request):
+    """
+    Handles the callback from Azure after successful login.
+    Exchanges the authorization code for an access token,
+    fetches user info from Microsoft Graph, and logs the user into Django.
+    """
     code = request.GET.get('code')
     if not code:
-        return JsonResponse({'error': 'No code returned from Microsoft'}, status=400)
+        return JsonResponse({'error': 'No authorization code returned from Microsoft'}, status=400)
 
+    # Exchange authorization code for access token
     token_data = {
         'client_id': settings.AZURE_CLIENT_ID,
         'scope': settings.AZURE_SCOPES,
@@ -39,23 +45,33 @@ def azure_callback(request):
         'client_secret': settings.AZURE_CLIENT_SECRET,
     }
 
-    token_response = requests.post(settings.AZURE_TOKEN_ENDPOINT, data=token_data)
-    tokens = token_response.json()
+    try:
+        token_response = requests.post(settings.AZURE_TOKEN_ENDPOINT, data=token_data)
+        tokens = token_response.json()
 
-    if 'access_token' not in tokens:
-        return JsonResponse({'error': tokens}, status=400)
+        if 'access_token' not in tokens:
+            return JsonResponse({'error': 'Token exchange failed', 'details': tokens}, status=400)
 
-    # Get user info from Graph API
-    headers = {'Authorization': f"Bearer {tokens['access_token']}"}
-    user_info = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers).json()
+        # Get user info from Microsoft Graph
+        headers = {'Authorization': f"Bearer {tokens['access_token']}"}
+        graph_response = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers)
+        user_info = graph_response.json()
 
-    email = user_info.get('mail') or user_info.get('userPrincipalName')
-    name = user_info.get('displayName') or email
+        email = user_info.get('mail') or user_info.get('userPrincipalName')
+        name = user_info.get('displayName') or email
 
-    user, created = User.objects.get_or_create(
-        username=email,
-        defaults={'email': email, 'first_name': name}
-    )
+        if not email:
+            return JsonResponse({'error': 'Could not retrieve user email from Microsoft Graph'}, status=400)
 
-    login(request, user)  # Django login
-    return redirect('ping_operation')  # Redirect to your secure view
+        # Create or get user in Django
+        user, created = User.objects.get_or_create(
+            username=email,
+            defaults={'email': email, 'first_name': name}
+        )
+
+        # Log the user in
+        login(request, user)
+        return redirect('ping_operation')  # Replace with your post-login view
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

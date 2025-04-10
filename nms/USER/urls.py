@@ -1,8 +1,8 @@
 # urls.py
 from django.urls import path
-from .views import azure_login, azure_callback
+from . import views
 
 urlpatterns = [
-    path("", azure_login, name="azure_login"),
-    path("auth/callback/", azure_callback, name="azure_callback"),
+    path('auth/login/', views.azure_login, name='azure_login'),
+    path('auth/callback/', views.azure_callback, name='azure_callback'),
 ]
