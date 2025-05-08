@@ -3,9 +3,10 @@ import requests
 from django.conf import settings
 from django.shortcuts import redirect
 from django.contrib.auth import login
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 
+User = get_user_model()
 
 def azure_login(request):
     """
@@ -65,8 +66,8 @@ def azure_callback(request):
 
         # Create or get user in Django
         user, created = User.objects.get_or_create(
-            username=email,
-            defaults={'email': email, 'first_name': name}
+            email=email,
+            defaults={'first_name': name}
         )
 
         # Log the user in
