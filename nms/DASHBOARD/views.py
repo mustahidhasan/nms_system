@@ -395,18 +395,18 @@ async def simple_snmp_walk(ip_addresses, snmp_port, table):
 # New function to perform MTR
 async def mtr_operation(ip_addresses, table):
     try:
-        # Prepare the command for mtr, we are using '-r' for reporting and '-c' for count
-        # The '-r' flag outputs results in a human-readable format
-        command = ['mtr', '-r', '-c', '10', *ip_addresses]  # Run 10 probes for each IP address
+        for ip in ip_addresses:
+            # Command to run mtr for a single IP
+            command = ['mtr', '-r', '-c', '10', ip]
 
-        # Run the command and capture the output
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = await asyncio.to_thread(process.communicate)
+            # Run the command and capture the output
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = await asyncio.to_thread(process.communicate)
 
-        if stderr:
-            table.add_row(["MTR", f"Error: {stderr.decode('utf-8')}"])
-        else:
-            table.add_row(["MTR", stdout.decode('utf-8')])
+            if stderr:
+                table.add_row([f"MTR - {ip}", f"Error: {stderr.decode('utf-8')}"])
+            else:
+                table.add_row([f"MTR - {ip}", stdout.decode('utf-8')])
     except Exception as e:
         table.add_row(["MTR", f"Error: {str(e)}"])
 
