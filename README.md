@@ -18,3 +18,5 @@ to create a fresh db delete this file and follow 1 to 5 you will have a fresh pr
 right now the demo account is
 username: admin
 password: 1234
+
+sudo apt-get install mtr

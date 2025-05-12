@@ -72,7 +72,6 @@
                     <th scope="col">Username</th>
                     <th scope="col">Last Activity Time</th>
                     <th scope="col">Activity Type</th>
-                    <th scope="col">Status</th>
                     <th scope="col">Session Duration</th>
                 </tr>
             </thead>
@@ -83,7 +82,6 @@
                         <td>{{ user_activity.user }}</td>
                         <td>{{ user_activity.timestamp|date:"D, d M Y H:i:s" }}</td>
                         <td>{{ user_activity.activity_type }}</td>
-                        <td>{% if user_activity.session_status %}Success{% else %}Failed{% endif %}</td>
                         <td>{{ user_activity.formatted_duration|safe }}</td>
                     </tr>
                 

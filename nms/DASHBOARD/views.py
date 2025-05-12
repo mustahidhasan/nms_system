@@ -82,20 +82,19 @@ def validate_ip_addresses(get_ip_address_all, request):
     ip_addresses = []
     for item in get_ip_address_all:
         try:
-            # If it's an IP address, validate it
-            socket.inet_aton(item)  # This raises socket.error if the IP is invalid
-            ip_addresses.append(item)  # Use directly if valid IP
+            # Validate if it's an IPv4 address
+            socket.inet_aton(item)
+            ip_addresses.append(item)
         except socket.error:
             try:
-                # Resolve the hostname to an IP
+                # Attempt to resolve hostname to IP
                 resolved_ip = socket.gethostbyname(item)
                 ip_addresses.append(resolved_ip)
             except socket.gaierror:
                 logger.error(f"Failed to resolve hostname: {item}")
-                messages.error(request, "Valid IP Address or Hostname is required.")
-                return []  # Return empty list if IP/hostname is invalid
-    return ip_addresses
-
+                messages.warning(request, f"Could not resolve: {item}")
+                continue  # Skip invalid hostname, but don't fail all
+    return list(set(ip_addresses))  # Deduplicate
 
 # Separate function for Enable Ping operation
 async def enable_ping_operation(ip_addresses, os_name, table):
@@ -392,13 +391,30 @@ async def simple_snmp_walk(ip_addresses, snmp_port, table):
             table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', '\n'.join(snmp_result_v3)])
         else:
             table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', snmp_result_v3])
+
+# New function to perform MTR
+async def mtr_operation(ip_addresses, table):
+    try:
+        for ip in ip_addresses:
+            # Command to run mtr for a single IP
+            command = ['mtr', '-r', '-c', '10', ip]
+
+            # Run the command and capture the output
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = await asyncio.to_thread(process.communicate)
+
+            if stderr:
+                table.add_row([f"MTR - {ip}", f"Error: {stderr.decode('utf-8')}"])
+            else:
+                table.add_row([f"MTR - {ip}", stdout.decode('utf-8')])
+    except Exception as e:
+        table.add_row(["MTR", f"Error: {str(e)}"])
+
 @login_required
 def ping_operation(request):
     if request.method == "POST":
         get_ip_address_start = request.POST.get("start_ip_address")
         get_ip_address_all = generate_ip_list(get_ip_address_start)
-
-        print("line 62", get_ip_address_all)
 
         enable_ping = request.POST.get("enable_ping")
         verbose_ping = request.POST.get("verbose_ping")
@@ -407,74 +423,91 @@ def ping_operation(request):
         verbos_dns_lookup = request.POST.get("verbos_dns_lookup")
         snmp_walk = request.POST.get("snmp_walk")
         is_simple_snmp_walk = request.POST.get("simple_snmp_walk")
-        
-        # Validate the IP address format (IPv4)
+        mtr = request.POST.get("mtr")  # Capture the MTR option from the form
+
+        # Validate the IP addresses / hostnames
         ip_addresses = validate_ip_addresses(get_ip_address_all, request)
         if not ip_addresses:
-            return render(
-                request,
-                "ping.html",
-                {"error_message": "Invalid IP address or hostname provided."},
-            )
+            return render(request, "ping.html", {
+                "error_message": "No valid IP address or hostname found."
+            })
 
-        # Detect the operating system
         os_name = platform.system()
-        
-        # Create a PrettyTable for formatting output
+
         table = PrettyTable()
         table.field_names = ["Operation", "Result"]
 
         try:
-            # Perform operations
-            if enable_ping:
-                asyncio.run(enable_ping_operation(ip_addresses, os_name, table))
+            async def perform_operations():
+                if enable_ping:
+                    try:
+                        await enable_ping_operation(ip_addresses, os_name, table)
+                    except Exception as e:
+                        table.add_row(["Enable Ping", f"Error: {str(e)}"])
 
-            if verbose_ping:
-                asyncio.run(verbose_ping_operation(ip_addresses, os_name, table))
+                if verbose_ping:
+                    try:
+                        await verbose_ping_operation(ip_addresses, os_name, table)
+                    except Exception as e:
+                        table.add_row(["Verbose Ping", f"Error: {str(e)}"])
 
-            if traceroute:
-                asyncio.run(traceroute_operation(ip_addresses, os_name, table))
+                if traceroute:
+                    try:
+                        await traceroute_operation(ip_addresses, os_name, table)
+                    except Exception as e:
+                        table.add_row(["Traceroute", f"Error: {str(e)}"])
 
-            if dns_lookup:
-                asyncio.run(dns_lookup_operation(ip_addresses, table))
+                if dns_lookup:
+                    try:
+                        await dns_lookup_operation(ip_addresses, table)
+                    except Exception as e:
+                        table.add_row(["DNS Lookup", f"Error: {str(e)}"])
 
-            if verbos_dns_lookup:
-                asyncio.run(verbose_dns_lookup_operation(ip_addresses, table))
+                if verbos_dns_lookup:
+                    try:
+                        await verbose_dns_lookup_operation(ip_addresses, table)
+                    except Exception as e:
+                        table.add_row(["Verbose DNS Lookup", f"Error: {str(e)}"])
 
-            if snmp_walk:
-                # Call the advanced_snmp_walk function with the necessary parameters
-                asyncio.run(advanced_snmp_walk(
-                    ip_addresses,
-                    snmp_version=request.POST.get("snmp_version"),
-                    community_strings=request.POST.getlist("community_strings", ["public", "private"]),
-                    username=request.POST.get("username"),
-                    password=request.POST.get("password"),
-                    authentication_type=request.POST.get("authentication_type", "SHA"),
-                    encryption_type=request.POST.get("encryption_type", "AES"),
-                    encryption_key=request.POST.get("encryption_key"),
-                    oid=request.POST.get("oid"),
-                    snmp_port=161,  # Default SNMP port
-                    table=table
-                ))
-                
+                if snmp_walk:
+                    try:
+                        await advanced_snmp_walk(
+                            ip_addresses,
+                            snmp_version=request.POST.get("snmp_version"),
+                            community_strings=request.POST.getlist("community_strings", ["public", "private"]),
+                            username=request.POST.get("username"),
+                            password=request.POST.get("password"),
+                            authentication_type=request.POST.get("authentication_type", "SHA"),
+                            encryption_type=request.POST.get("encryption_type", "AES"),
+                            encryption_key=request.POST.get("encryption_key"),
+                            oid=request.POST.get("oid"),
+                            snmp_port=161,
+                            table=table
+                        )
+                    except Exception as e:
+                        table.add_row(["Advanced SNMP Walk", f"Error: {str(e)}"])
 
-            if is_simple_snmp_walk:
-                # Call the simple_snmp_walk function with the necessary parameters
-                asyncio.run(simple_snmp_walk(ip_addresses, '161', table))
+                if is_simple_snmp_walk:
+                    try:
+                        await simple_snmp_walk(ip_addresses, '161', table)
+                    except Exception as e:
+                        table.add_row(["Simple SNMP Walk", f"Error: {str(e)}"])
 
+                if mtr:  # Check if MTR was selected
+                    try:
+                        await mtr_operation(ip_addresses, table)  # Run the MTR operation
+                    except Exception as e:
+                        table.add_row(["MTR", f"Error: {str(e)}"])
 
+            asyncio.run(perform_operations())
 
-            # If no valid SNMP response, render ping.html
             return render(request, "ping.html", {"table": table})
 
         except Exception as e:
-            error_message = f"An error occurred: {str(e)}"
-            logger.error(f"Network operation failed: {error_message}")
-            return render(request, "ping.html", {"error_message": error_message})
-    else:
-        return render(request, "ping.html")
+            logger.exception("Unexpected error in network operations")
+            return render(request, "ping.html", {"error_message": f"An unexpected error occurred: {str(e)}"})
 
-
+    return render(request, "ping.html")
 def snmp_results(request):
     return render(request, "snmp_results.html")
 
