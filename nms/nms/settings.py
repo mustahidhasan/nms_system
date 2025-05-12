@@ -145,6 +145,8 @@ AZURE_CLIENT_SECRET = "xbe8Q~MAh700oUTNaQ0lBn2rPmHZHhodg4kGYb9F"
 
 # Redirect URI (must be registered in Azure AD App Portal)
 AZURE_REDIRECT_URI = "http://localhost:8000/oauth2/callback/"
+POST_LOGOUT_REDIRECT_URI = "http://localhost:8000/"
+
 
 # Microsoft Identity Platform endpoints
 AZURE_AUTHORITY = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"

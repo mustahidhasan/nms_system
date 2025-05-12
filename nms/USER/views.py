@@ -76,3 +76,18 @@ def azure_callback(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+from django.contrib.auth import logout
+
+def azure_logout(request):
+    """
+    Logs the user out of the Django app and optionally logs out of Azure AD.
+    """
+    logout(request)  # Django logout (clears session)
+    
+    # Optional: Redirect to Azure logout to also clear Azure AD session
+    azure_logout_url = (
+        f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/oauth2/v2.0/logout"
+        f"?post_logout_redirect_uri={settings.POST_LOGOUT_REDIRECT_URI}"
+    )
+    return redirect(azure_logout_url)
