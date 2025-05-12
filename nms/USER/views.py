@@ -1,12 +1,17 @@
 import urllib.parse
 import requests
 from django.conf import settings
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.contrib.auth import login
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 
 User = get_user_model()
+def login_view(request):
+    """
+    Renders the login page with the 'Login via SSO' button.
+    """
+    return render(request, 'login.html')
 
 def azure_login(request):
     """
