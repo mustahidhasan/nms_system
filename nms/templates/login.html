@@ -19,7 +19,53 @@
     integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/ping.css' %}" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* Main Content Styles */
+.container {
+    margin-top: 80px; /* Ensure there is space below the navbar */
+    padding: 20px;
+    background-color: #ffffff; /* White background for the content */
+    border-radius: 10px; /* Rounded corners for the container */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
 
+h1 {
+    font-size: 30px;
+    margin-bottom: 15px;
+    color: #333; /* Dark color for the heading */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+p {
+    font-size: 18px;
+    color: #555; /* Lighter text for the paragraph */
+}
+
+button {
+    padding: 12px 25px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 20px; /* Add some space above the button */
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+.row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin-top: 20px; /* Add space above the content */
+}
+
+    </style>
 </head>
 
 <body>
@@ -137,12 +183,15 @@
   </nav>
 
   <div class="container col-12 mt-1">
-    <h1>Welcome to the Login Page</h1>
-    <p>Click the button below to login via Microsoft Azure SSO:</p>
-    <form method="get" action="{% url 'azure_login' %}">
-        <button type="submit">Login via SSO</button>
-    </form>
-  </div>
+        <div class="row">
+            <h1>Welcome to the Login Page</h1>
+        <p>Click the button below to login via Microsoft Azure SSO:</p>
+        <form method="get" action="{% url 'azure_login' %}">
+            <button type="submit">Login via SSO</button>
+        </form>
+        </div>
+        
+    </div>
 
 
 
