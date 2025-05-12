@@ -77,6 +77,13 @@ def azure_callback(request):
 
         # Log the user in
         login(request, user)
+        # Record login activity
+        UserActivity.objects.create(
+            user=user,
+            activity_type='login',
+            timestamp=now(),
+            session_status=True,
+        )
         return redirect('ping_operation')  # Replace with your post-login view
 
     except Exception as e:
@@ -84,13 +91,39 @@ def azure_callback(request):
     
 from django.contrib.auth import logout
 
+from USER.models import UserActivity
+
 def azure_logout(request):
-    """
-    Logs the user out of the Django app and optionally logs out of Azure AD.
-    """
-    logout(request)  # Django logout (clears session)
-    
-    # Optional: Redirect to Azure logout to also clear Azure AD session
+    user = request.user
+
+    # Find the most recent login session for this user
+    try:
+        last_login_activity = UserActivity.objects.filter(
+            user=user,
+            activity_type='login',
+            session_status=True
+        ).latest('timestamp')
+
+        # Calculate duration
+        duration_seconds = (now() - last_login_activity.timestamp).total_seconds()
+
+        # Update the login activity to mark session closed and duration
+        last_login_activity.session_status = False
+        last_login_activity.duration = duration_seconds
+        last_login_activity.save()
+
+        # Record logout activity (optional)
+        UserActivity.objects.create(
+            user=user,
+            activity_type='logout',
+            timestamp=now(),
+            duration=0
+        )
+    except UserActivity.DoesNotExist:
+        pass  # No login activity found, skip tracking
+
+    logout(request)  # Django logout
+
     azure_logout_url = (
         f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/oauth2/v2.0/logout"
         f"?post_logout_redirect_uri={settings.POST_LOGOUT_REDIRECT_URI}"
