@@ -96,3 +96,33 @@ def azure_logout(request):
         f"?post_logout_redirect_uri={settings.POST_LOGOUT_REDIRECT_URI}"
     )
     return redirect(azure_logout_url)
+
+from django.contrib.auth.decorators import login_required
+from django.utils.timezone import now, timedelta
+from django.shortcuts import render
+from USER.models import UserActivity
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+@login_required
+def active_users_dashboard(request):
+    """
+    Shows the dashboard of currently active users and their activity logs.
+    """
+
+    # Users active in the last 15 minutes
+    recent_threshold = now() - timedelta(minutes=15)
+    recent_activities = UserActivity.objects.filter(timestamp__gte=recent_threshold)
+    active_users = User.objects.filter(id__in=recent_activities.values_list('user_id', flat=True)).distinct()
+
+    # Recent activity logs (latest 100 for performance, can be adjusted)
+    user_activities = UserActivity.objects.select_related('user').order_by('-timestamp')[:100]
+
+    context = {
+        'active_users': active_users,
+        'active_user_count': active_users.count(),
+        'user_activities': user_activities,
+    }
+
+    return render(request, 'active_users_dashboard.html', context)
