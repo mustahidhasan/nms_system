@@ -391,6 +391,25 @@ async def simple_snmp_walk(ip_addresses, snmp_port, table):
             table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', '\n'.join(snmp_result_v3)])
         else:
             table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', snmp_result_v3])
+
+# New function to perform MTR
+async def mtr_operation(ip_addresses, table):
+    try:
+        # Prepare the command for mtr, we are using '-r' for reporting and '-c' for count
+        # The '-r' flag outputs results in a human-readable format
+        command = ['mtr', '-r', '-c', '10', *ip_addresses]  # Run 10 probes for each IP address
+
+        # Run the command and capture the output
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = await asyncio.to_thread(process.communicate)
+
+        if stderr:
+            table.add_row(["MTR", f"Error: {stderr.decode('utf-8')}"])
+        else:
+            table.add_row(["MTR", stdout.decode('utf-8')])
+    except Exception as e:
+        table.add_row(["MTR", f"Error: {str(e)}"])
+
 @login_required
 def ping_operation(request):
     if request.method == "POST":
@@ -404,6 +423,7 @@ def ping_operation(request):
         verbos_dns_lookup = request.POST.get("verbos_dns_lookup")
         snmp_walk = request.POST.get("snmp_walk")
         is_simple_snmp_walk = request.POST.get("simple_snmp_walk")
+        mtr = request.POST.get("mtr")  # Capture the MTR option from the form
 
         # Validate the IP addresses / hostnames
         ip_addresses = validate_ip_addresses(get_ip_address_all, request)
@@ -423,7 +443,7 @@ def ping_operation(request):
                     try:
                         await enable_ping_operation(ip_addresses, os_name, table)
                     except Exception as e:
-                        table.add_row(["Enable Ping", f"Error: {str(e)}"] )
+                        table.add_row(["Enable Ping", f"Error: {str(e)}"])
 
                 if verbose_ping:
                     try:
@@ -472,6 +492,12 @@ def ping_operation(request):
                         await simple_snmp_walk(ip_addresses, '161', table)
                     except Exception as e:
                         table.add_row(["Simple SNMP Walk", f"Error: {str(e)}"])
+
+                if mtr:  # Check if MTR was selected
+                    try:
+                        await mtr_operation(ip_addresses, table)  # Run the MTR operation
+                    except Exception as e:
+                        table.add_row(["MTR", f"Error: {str(e)}"])
 
             asyncio.run(perform_operations())
 
