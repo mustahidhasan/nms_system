@@ -38,8 +38,6 @@ def azure_callback(request):
     fetches user info from Microsoft Graph, and logs the user into Django.
     """
     code = request.GET.get('code')
-    if not code:
-        return JsonResponse({'error': 'No authorization code returned from Microsoft'}, status=400)
 
     # Exchange authorization code for access token
     token_data = {
