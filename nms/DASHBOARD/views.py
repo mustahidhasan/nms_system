@@ -393,22 +393,22 @@ async def simple_snmp_walk(ip_addresses, snmp_port, table):
             table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', snmp_result_v3])
 
 # New function to perform MTR
-async def mtr_operation(ip_addresses, table):
+async def run_mtr_for_ip(ip, table):
     try:
-        for ip in ip_addresses:
-            # Command to run mtr for a single IP
-            command = ['mtr', '-r', '-c', '10', ip]
+        command = ['mtr', '-r', '-c', '10', ip]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = await asyncio.to_thread(process.communicate)
 
-            # Run the command and capture the output
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = await asyncio.to_thread(process.communicate)
-
-            if stderr:
-                table.add_row([f"MTR - {ip}", f"Error: {stderr.decode('utf-8')}"])
-            else:
-                table.add_row([f"MTR - {ip}", stdout.decode('utf-8')])
+        if stderr:
+            table.add_row([f"MTR - {ip}", f"Error: {stderr.decode('utf-8')}"])
+        else:
+            table.add_row([f"MTR - {ip}", stdout.decode('utf-8')])
     except Exception as e:
-        table.add_row(["MTR", f"Error: {str(e)}"])
+        table.add_row([f"MTR - {ip}", f"Exception: {str(e)}"])
+
+async def mtr_operation(ip_addresses, table):
+    tasks = [asyncio.create_task(run_mtr_for_ip(ip, table)) for ip in ip_addresses]
+    await asyncio.gather(*tasks)
 
 @login_required
 def ping_operation(request):
