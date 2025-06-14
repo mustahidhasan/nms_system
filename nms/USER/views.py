@@ -70,7 +70,10 @@ def azure_callback(request):
         # Create or get user in Django
         user, created = User.objects.get_or_create(
             email=email,
-            defaults={'first_name': name}
+            defaults={
+                'username': email, 
+                'first_name': name,
+            }
         )
 
         # Log the user in
