@@ -2,10 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.login_view, name='login'),
-    path('azure-login/', views.azure_login, name='azure_login'),
-    path('oauth2/callback/', views.azure_callback, name='azure_callback'),
-    path('logout/', views.azure_logout, name='azure_logout'),  # Add this line
-    path('active-users/', views.active_users_dashboard, name='active_users_dashboard'),
-
+    path('api/auth/login_url/', views.get_azure_login_url, name='azure_login_url'),
+    path('api/auth/callback/', views.azure_callback, name='azure_callback'),
+    path('oauth2/callback/', views.azure_callback, name='azure_callback_alt'),  # Add this!
+    path('api/auth/logout/', views.azure_logout, name='azure_logout'),
+    path('api/active-users/', views.active_users_api, name='active_users_api'),
 ]
+

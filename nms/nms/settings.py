@@ -32,7 +32,6 @@ DEBUG = True
 # Application definition
 
 INSTALLED_APPS = [
-    "corsheaders",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -155,3 +154,14 @@ AZURE_TOKEN_ENDPOINT = f"{AZURE_AUTHORITY}/oauth2/v2.0/token"
 
 # Scopes to request from Microsoft Graph
 AZURE_SCOPES = "openid profile email offline_access User.Read"
+
+INSTALLED_APPS += ['corsheaders']
+MIDDLEWARE = ['corsheaders.middleware.CorsMiddleware'] + MIDDLEWARE
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]

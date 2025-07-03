@@ -1,45 +1,31 @@
 import urllib.parse
 import requests
 from django.conf import settings
-from django.shortcuts import redirect, render
-from django.contrib.auth import login
-from django.contrib.auth import get_user_model
+from django.contrib.auth import login, logout, get_user_model
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.timezone import now, timedelta
+from django.contrib.auth.decorators import login_required
+from django.db.models import F
+
+from .models import UserActivity
 
 User = get_user_model()
-def login_view(request):
-    """
-    Renders the login page with the 'Login via SSO' button.
-    """
-    return render(request, 'login.html')
 
-def azure_login(request):
-    """
-    Initiates the Microsoft Azure login by redirecting the user
-    to the Microsoft authorization endpoint.
-    """
+def get_azure_login_url(request):
     params = {
         'client_id': settings.AZURE_CLIENT_ID,
         'response_type': 'code',
         'redirect_uri': settings.AZURE_REDIRECT_URI,
         'response_mode': 'query',
         'scope': settings.AZURE_SCOPES,
-        'state': 'some_random_state',  # Optional but recommended for CSRF
+        'state': 'xyz',
     }
-
     login_url = f"{settings.AZURE_AUTHORIZE_ENDPOINT}?{urllib.parse.urlencode(params)}"
-    return redirect(login_url)
-
+    return JsonResponse({'login_url': login_url})
 
 def azure_callback(request):
-    """
-    Handles the callback from Azure after successful login.
-    Exchanges the authorization code for an access token,
-    fetches user info from Microsoft Graph, and logs the user into Django.
-    """
     code = request.GET.get('code')
-
-    # Exchange authorization code for access token
     token_data = {
         'client_id': settings.AZURE_CLIENT_ID,
         'scope': settings.AZURE_SCOPES,
@@ -56,7 +42,6 @@ def azure_callback(request):
         if 'access_token' not in tokens:
             return JsonResponse({'error': 'Token exchange failed', 'details': tokens}, status=400)
 
-        # Get user info from Microsoft Graph
         headers = {'Authorization': f"Bearer {tokens['access_token']}"}
         graph_response = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers)
         user_info = graph_response.json()
@@ -65,98 +50,60 @@ def azure_callback(request):
         name = user_info.get('displayName') or email
 
         if not email:
-            return JsonResponse({'error': 'Could not retrieve user email from Microsoft Graph'}, status=400)
+            return JsonResponse({'error': 'Email not found from Azure'}, status=400)
 
-        # Create or get user in Django
         user, created = User.objects.get_or_create(
             email=email,
-            defaults={
-                'username': email, 
-                'first_name': name,
-            }
+            defaults={'username': email, 'first_name': name}
         )
 
-        # Log the user in
         login(request, user)
-        # Record login activity
+
         UserActivity.objects.create(
             user=user,
             activity_type='login',
             timestamp=now(),
             session_status=True,
         )
-        return redirect('ping_operation')  # Replace with your post-login view
 
+        return JsonResponse({'message': 'Login successful', 'user': {'email': user.email, 'first_name': user.first_name}})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-    
-from django.contrib.auth import logout
 
-from USER.models import UserActivity
-
+@csrf_exempt
 def azure_logout(request):
     user = request.user
-
-    # Find the most recent login session for this user
     try:
-        last_login_activity = UserActivity.objects.filter(
-            user=user,
-            activity_type='login',
-            session_status=True
-        ).latest('timestamp')
+        last_login = UserActivity.objects.filter(user=user, activity_type='login', session_status=True).latest('timestamp')
+        duration = (now() - last_login.timestamp).total_seconds()
+        last_login.session_status = False
+        last_login.duration = duration
+        last_login.save()
 
-        # Calculate duration
-        duration_seconds = (now() - last_login_activity.timestamp).total_seconds()
-
-        # Update the login activity to mark session closed and duration
-        last_login_activity.session_status = False
-        last_login_activity.duration = duration_seconds
-        last_login_activity.save()
-
-        # Record logout activity (optional)
-        UserActivity.objects.create(
-            user=user,
-            activity_type='logout',
-            timestamp=now(),
-            duration=0
-        )
+        UserActivity.objects.create(user=user, activity_type='logout', timestamp=now(), duration=0)
     except UserActivity.DoesNotExist:
-        pass  # No login activity found, skip tracking
+        pass
 
-    logout(request)  # Django logout
-
-    azure_logout_url = (
-        f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/oauth2/v2.0/logout"
-        f"?post_logout_redirect_uri={settings.POST_LOGOUT_REDIRECT_URI}"
-    )
-    return redirect(azure_logout_url)
-
-from django.contrib.auth.decorators import login_required
-from django.utils.timezone import now, timedelta
-from django.shortcuts import render
-from USER.models import UserActivity
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
+    logout(request)
+    return JsonResponse({'message': 'Logout successful'})
 
 @login_required
-def active_users_dashboard(request):
-    """
-    Shows the dashboard of currently active users and their activity logs.
-    """
+def active_users_api(request):
+    threshold = now() - timedelta(minutes=15)
+    recent_activities = UserActivity.objects.filter(timestamp__gte=threshold)
+    active_user_ids = recent_activities.values_list('user_id', flat=True).distinct()
+    active_users = list(User.objects.filter(id__in=active_user_ids).values('first_name', 'email', 'is_active'))
 
-    # Users active in the last 15 minutes
-    recent_threshold = now() - timedelta(minutes=15)
-    recent_activities = UserActivity.objects.filter(timestamp__gte=recent_threshold)
-    active_users = User.objects.filter(id__in=recent_activities.values_list('user_id', flat=True)).distinct()
+    logs = UserActivity.objects.select_related('user').order_by('-timestamp')[:100].values(
+        user__id=F('user__id'),
+        user__username=F('user__username'),
+        timestamp=F('timestamp'),
+        activity_type=F('activity_type'),
+        duration=F('duration'),
+    )
 
-    # Recent activity logs (latest 100 for performance, can be adjusted)
-    user_activities = UserActivity.objects.select_related('user').order_by('-timestamp')[:100]
-
-    context = {
+    return JsonResponse({
+        'active_user_count': len(active_users),
         'active_users': active_users,
-        'active_user_count': active_users.count(),
-        'user_activities': user_activities,
-    }
-
-    return render(request, 'active_users_dashboard.html', context)
+        'user_activities': list(logs),
+    })

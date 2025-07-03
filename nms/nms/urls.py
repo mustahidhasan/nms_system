@@ -1,8 +1,6 @@
-from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("", include("USER.urls")),  # Include the login app URLs
-    path("dashboard/", include("DASHBOARD.urls")),
+    # Your other urls ...
+    path('', include('USER.urls')),  # or prefix with 'api/' if you prefer
 ]
