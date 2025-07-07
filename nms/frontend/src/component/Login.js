@@ -1,5 +1,6 @@
 // src/component/Login.js
 import React from 'react';
+import '../assets/Login.css'; // Import the CSS file
 
 function Login() {
   const handleSSOLogin = async () => {
@@ -17,9 +18,13 @@ function Login() {
   };
 
   return (
-    <div className="login-page">
-      <h2>Login</h2>
-      <button onClick={handleSSOLogin}>Login with Azure SSO</button>
+    <div className="login-container">
+    <div className="login-box">
+        <img src="logo_left.png" className="logo-left" alt="LOGO1" />
+        <img src="logo_right.png" className="logo-right" alt="LOGO2" />
+        <h1>Log In</h1>
+        <button onClick={handleSSOLogin}>LOGIN VIA SSO</button>
+    </div>
     </div>
   );
 }
