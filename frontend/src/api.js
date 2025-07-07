@@ -5,9 +5,12 @@ const API_BASE = 'http://localhost:8000'; // Adjust if needed
 export async function getAzureLoginUrl() {
   const res = await fetch(`${API_BASE}/api/auth/login_url/`);
   if (!res.ok) throw new Error('Failed to get login URL');
+
   const data = await res.json();
+  console.log("Backend login_url response:", data); // ✅ Add this
   return data.login_url;
 }
+
 
 export async function azureCallback(code) {
   const res = await fetch(`${API_BASE}/api/auth/callback/?code=${encodeURIComponent(code)}`, {

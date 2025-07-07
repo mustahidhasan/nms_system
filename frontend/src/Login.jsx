@@ -23,14 +23,20 @@ export default function Login() {
     }
   }, [searchParams, navigate]);
 
-  const handleLoginClick = async () => {
+  async function handleLoginClick() {
     try {
-      const data = await getAzureLoginUrl();
-      window.location.href = data.login_url;
+      const url = await getAzureLoginUrl();
+      console.log("Azure Login URL:", url); // ✅ Debug this
+      if (!url || typeof url !== 'string') {
+        throw new Error('Login URL is missing or invalid');
+      }
+      window.location.href = url;
     } catch (e) {
+      console.error("Error during login:", e);
       alert('Failed to get login URL');
     }
-  };
+  }
+
 
   return (
     <div className="login-container">
