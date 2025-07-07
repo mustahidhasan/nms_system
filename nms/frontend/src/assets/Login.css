@@ -28,10 +28,12 @@
   position: absolute;
   top: 20px;
   width: 70px;
-  height: auto;
+  height: 70px; /* Force square dimensions */
+  object-fit: contain; /* Maintain aspect ratio */
   border: 2px solid #4CAF50;
   padding: 5px;
   border-radius: 10px;
+  background-color: white; /* optional for contrast */
 }
 
 /* Adjust logo positions */
@@ -69,6 +71,7 @@
   .logo-left,
   .logo-right {
     width: 50px;
+    height: 50px; /* Add this */
     top: 10px;
   }
 
