@@ -1,13 +1,12 @@
-// src/Login.jsx
 import React, { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { getAzureLoginUrl, azureCallback } from './api';
+import './Login.css'; // We'll create this for custom styles
 
 export default function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // If redirected back with code, call callback API
   useEffect(() => {
     const code = searchParams.get('code');
     if (code) {
@@ -15,7 +14,7 @@ export default function Login() {
         try {
           const data = await azureCallback(code);
           localStorage.setItem('user', JSON.stringify(data.user));
-          navigate('/dashboard'); // Redirect after login success
+          navigate('/dashboard');
         } catch (e) {
           alert('Login failed: ' + e.message);
         }
@@ -23,7 +22,6 @@ export default function Login() {
     }
   }, [searchParams, navigate]);
 
-  // On button click, fetch login url and redirect browser
   async function handleLoginClick() {
     try {
       const url = await getAzureLoginUrl();
@@ -34,11 +32,16 @@ export default function Login() {
   }
 
   return (
-    <div className="container mt-5 text-center">
-      <h1>Login with Microsoft Azure SSO</h1>
-      <button className="btn btn-success mt-3" onClick={handleLoginClick}>
-        Login via SSO
-      </button>
+    <div className="login-container d-flex align-items-center justify-content-center vh-100">
+      <div className="login-box text-center position-relative p-5 bg-white rounded shadow">
+        <img src="/logo1.png" alt="Logo Left" className="logo-left" />
+        <img src="/logo2.png" alt="Logo Right" className="logo-right" />
+
+        <h2 className="mb-4 text-success fw-bold">Log In</h2>
+        <button className="btn btn-success btn-lg rounded-pill px-5" onClick={handleLoginClick}>
+          LOGIN VIA SSO
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,27 @@
+.login-container {
+  background: #f0f0f0;
+}
+
+.login-box {
+  width: 500px;
+  position: relative;
+}
+
+.logo-left,
+.logo-right {
+  position: absolute;
+  top: 20px;
+  width: 80px;
+  height: auto;
+  border: 2px solid #4CAF50;
+  padding: 5px;
+  border-radius: 10px;
+}
+
+.logo-left {
+  left: 20px;
+}
+
+.logo-right {
+  right: 20px;
+}
