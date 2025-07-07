@@ -23,9 +23,21 @@ def get_azure_login_url(request):
     }
     login_url = f"{settings.AZURE_AUTHORIZE_ENDPOINT}?{urllib.parse.urlencode(params)}"
     return JsonResponse({'login_url': login_url})
+import requests
+from django.conf import settings
+from django.contrib.auth import login
+from django.http import JsonResponse
+from django.utils.timezone import now
+from django.contrib.auth.models import User
+
+# Optional: your UserActivity model import if you track login activity
+
 
 def azure_callback(request):
     code = request.GET.get('code')
+    if not code:
+        return JsonResponse({'error': 'Missing authorization code'}, status=400)
+
     token_data = {
         'client_id': settings.AZURE_CLIENT_ID,
         'scope': settings.AZURE_SCOPES,
@@ -36,13 +48,17 @@ def azure_callback(request):
     }
 
     try:
+        # Exchange code for tokens
         token_response = requests.post(settings.AZURE_TOKEN_ENDPOINT, data=token_data)
         tokens = token_response.json()
 
         if 'access_token' not in tokens:
             return JsonResponse({'error': 'Token exchange failed', 'details': tokens}, status=400)
 
-        headers = {'Authorization': f"Bearer {tokens['access_token']}"}
+        access_token = tokens['access_token']
+
+        # Get user info from Microsoft Graph
+        headers = {'Authorization': f"Bearer {access_token}"}
         graph_response = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers)
         user_info = graph_response.json()
 
@@ -50,15 +66,18 @@ def azure_callback(request):
         name = user_info.get('displayName') or email
 
         if not email:
-            return JsonResponse({'error': 'Email not found from Azure'}, status=400)
+            return JsonResponse({'error': 'Email not found in Azure response'}, status=400)
 
+        # Get or create Django user
         user, created = User.objects.get_or_create(
             email=email,
             defaults={'username': email, 'first_name': name}
         )
 
+        # Log the user in (creates a session)
         login(request, user)
 
+        # Optional: Track user login activity
         UserActivity.objects.create(
             user=user,
             activity_type='login',
@@ -66,7 +85,14 @@ def azure_callback(request):
             session_status=True,
         )
 
-        return JsonResponse({'message': 'Login successful', 'user': {'email': user.email, 'first_name': user.first_name}})
+        return JsonResponse({
+            'message': 'Login successful',
+            'user': {
+                'email': user.email,
+                'first_name': user.first_name,
+            }
+        })
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
