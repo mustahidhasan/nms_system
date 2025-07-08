@@ -14,6 +14,7 @@ function Ping() {
     'snmp_walk',
   ];
 
+  // Initial state: all major options false, including snmp_walk
   const [operations, setOperations] = useState(() =>
     Object.fromEntries(allOps.map((op) => [op, false]))
   );
@@ -35,22 +36,54 @@ function Ping() {
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     console.log(`Checkbox changed — name: ${name}, checked: ${checked}`);
-    setOperations((prev) => ({
-      ...prev,
-      [name]: checked,
-    }));
+
+    if (name === 'snmp_walk') {
+      // When snmp_walk toggled:
+      // If checked, uncheck all other ops.
+      // If unchecked, no effect on others.
+      setOperations((prev) => {
+        if (checked) {
+          return { ...Object.fromEntries(allOps.map((op) => [op, false])), snmp_walk: true };
+        } else {
+          return { ...prev, snmp_walk: false };
+        }
+      });
+    } else {
+      // If snmp_walk is checked, ignore other checkboxes (hidden anyway)
+      if (operations.snmp_walk) {
+        return;
+      }
+      setOperations((prev) => ({
+        ...prev,
+        [name]: checked,
+      }));
+    }
   };
 
   const handleSelectAll = () => {
-    const allSelected = allOps.every((op) => operations[op]);
+    // Select all except snmp_walk only if snmp_walk is not selected
+    if (operations.snmp_walk) {
+      // ignore select all when snmp_walk selected
+      return;
+    }
+    const allMajorSelected = allOps
+      .filter((op) => op !== 'snmp_walk')
+      .every((op) => operations[op]);
     const newOps = {};
     allOps.forEach((op) => {
-      newOps[op] = !allSelected;
+      if (op === 'snmp_walk') {
+        newOps[op] = false;
+      } else {
+        newOps[op] = !allMajorSelected;
+      }
     });
     setOperations(newOps);
   };
 
-  const isSelectAllChecked = allOps.every((op) => operations[op]);
+  // Select All checkbox status: true if all major (non-snmp_walk) are selected
+  const isSelectAllChecked = allOps
+    .filter((op) => op !== 'snmp_walk')
+    .every((op) => operations[op]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -147,28 +180,28 @@ function Ping() {
 
         {(snmpVersion === '2c' || snmpVersion === '3') && (
           <>
-            <div>🔹 Community String</div>
+            <div> Community String</div>
             <input name="community_string" placeholder="public" />
-            <div>🔹 Timeout (ms)</div>
+            <div> Timeout (ms)</div>
             <input name="timeout" placeholder="1000" />
           </>
         )}
 
         {snmpVersion === '3' && (
           <>
-            <div>🔒 Username</div>
+            <div> Username</div>
             <input name="v3_username" />
-            <div>🔒 Auth Protocol</div>
+            <div> Auth Protocol</div>
             <input name="auth_protocol" />
-            <div>🔒 Auth Password</div>
+            <div> Auth Password</div>
             <input name="auth_password" type="password" />
-            <div>🔒 Privacy Protocol</div>
+            <div> Privacy Protocol</div>
             <input name="priv_protocol" />
-            <div>🔒 Privacy Password</div>
+            <div> Privacy Password</div>
             <input name="priv_password" type="password" />
-            <div>🔒 Security Level</div>
+            <div> Security Level</div>
             <input name="security_level" />
-            <div>🔒 Context Name</div>
+            <div> Context Name</div>
             <input name="context_name" />
           </>
         )}
@@ -204,24 +237,45 @@ function Ping() {
                   name="select_all"
                   checked={isSelectAllChecked}
                   onChange={handleSelectAll}
+                  disabled={operations.snmp_walk} // disable select all if snmp_walk is selected
                 />
                 Select All
               </label>
 
-              {allOps.map((op) => (
-                <label key={op} htmlFor={`chk_${op}`} className="checkbox-label">
-                  <input
-                    id={`chk_${op}`}
-                    type="checkbox"
-                    name={op}
-                    checked={operations[op]}
-                    onChange={handleCheckboxChange}
-                  />
-                  {op.replace(/_/g, ' ')}
-                </label>
-              ))}
+              {/* Show all major options except snmp_walk if snmp_walk unchecked */}
+              {!operations.snmp_walk &&
+                allOps
+                  .filter((op) => op !== 'snmp_walk')
+                  .map((op) => (
+                    <label key={op} htmlFor={`chk_${op}`} className="checkbox-label">
+                      <input
+                        id={`chk_${op}`}
+                        type="checkbox"
+                        name={op}
+                        checked={operations[op]}
+                        onChange={handleCheckboxChange}
+                      />
+                      {op.replace(/_/g, ' ')}
+                    </label>
+                  ))}
 
-              {/* ✅ Only show SNMP options when checkbox is enabled */}
+              {/* Show snmp_walk option checkbox always */}
+              <label
+                key="snmp_walk"
+                htmlFor={`chk_snmp_walk`}
+                className="checkbox-label"
+              >
+                <input
+                  id={`chk_snmp_walk`}
+                  type="checkbox"
+                  name="snmp_walk"
+                  checked={operations.snmp_walk}
+                  onChange={handleCheckboxChange}
+                />
+                snmp walk
+              </label>
+
+              {/* Show SNMP fields only if snmp_walk selected */}
               {renderSNMPFields()}
             </div>
 
@@ -244,7 +298,9 @@ function Ping() {
                 required
               />
               <button type="submit">Submit</button>
-              <button type="button" onClick={clearForm}>Clear</button>
+              <button type="button" onClick={clearForm}>
+                Clear
+              </button>
             </div>
           </form>
 
