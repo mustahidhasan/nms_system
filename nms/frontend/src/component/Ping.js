@@ -76,7 +76,7 @@ function Ping() {
   };
 
   return (
-    <div className="ping-container">
+    <div className="ping-containe full-screenr">
       <div className="topbar">
         <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
           ☰
