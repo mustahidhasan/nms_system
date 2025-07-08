@@ -28,6 +28,8 @@ function Ping({ apiBaseUrl }) {
   const [showAbout, setShowAbout] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
+  const [loading, setLoading] = useState(false);
+
 
   useEffect(() => {
     const storedIp = sessionStorage.getItem('ip_address');
@@ -112,52 +114,54 @@ function Ping({ apiBaseUrl }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const formData = new FormData();
-    formData.append('start_ip_address', startIp);
-    Object.entries(operations).forEach(([key, value]) => {
-      if (value) formData.append(key, '1');
-    });
-    formData.append('snmp_version', snmpVersion);
-
-    if (operations.snmp_walk) {
-      formData.append('community_strings', document.querySelector('input[name="community_string"]')?.value || 'public');
-      formData.append('timeout', document.querySelector('input[name="timeout"]')?.value || '1000');
-
-      if (snmpVersion === '3') {
-        formData.append('username', document.querySelector('input[name="v3_username"]')?.value || '');
-        formData.append('authentication_type', document.querySelector('input[name="auth_protocol"]')?.value || '');
-        formData.append('password', document.querySelector('input[name="auth_password"]')?.value || '');
-        formData.append('encryption_type', document.querySelector('input[name="priv_protocol"]')?.value || '');
-        formData.append('encryption_key', document.querySelector('input[name="priv_password"]')?.value || '');
-        formData.append('security_level', document.querySelector('input[name="security_level"]')?.value || '');
-        formData.append('context_name', document.querySelector('input[name="context_name"]')?.value || '');
-      }
-    }
-
+    setLoading(true);
     try {
-      const csrfToken = getCookie('csrftoken');
+        const formData = new FormData();
+        formData.append('start_ip_address', startIp);
+        Object.entries(operations).forEach(([key, value]) => {
+        if (value) formData.append(key, '1');
+        });
+        formData.append('snmp_version', snmpVersion);
 
-      const response = await fetch(`${apiBaseUrl}/dashboard/`, {
+        if (operations.snmp_walk) {
+        formData.append('community_strings', document.querySelector('input[name="community_string"]')?.value || 'public');
+        formData.append('timeout', document.querySelector('input[name="timeout"]')?.value || '1000');
+
+        if (snmpVersion === '3') {
+            formData.append('username', document.querySelector('input[name="v3_username"]')?.value || '');
+            formData.append('authentication_type', document.querySelector('input[name="auth_protocol"]')?.value || '');
+            formData.append('password', document.querySelector('input[name="auth_password"]')?.value || '');
+            formData.append('encryption_type', document.querySelector('input[name="priv_protocol"]')?.value || '');
+            formData.append('encryption_key', document.querySelector('input[name="priv_password"]')?.value || '');
+            formData.append('security_level', document.querySelector('input[name="security_level"]')?.value || '');
+            formData.append('context_name', document.querySelector('input[name="context_name"]')?.value || '');
+        }
+        }
+
+        const csrfToken = getCookie('csrftoken');
+        const response = await fetch(`${apiBaseUrl}/dashboard/`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
         headers: {
-          'X-CSRFToken': csrfToken,
+            'X-CSRFToken': csrfToken,
         },
-      });
+        });
 
-      const data = await response.json();
-      console.log(data);
-      if (data.success) {
+        const data = await response.json();
+        console.log(data);
+        if (data.success) {
         setResults(data.results);
-      } else {
+        } else {
         alert(data.error || 'Error processing the request.');
-      }
+        }
     } catch (error) {
-      console.error('Network error:', error);
+        console.error('Network error:', error);
+    } finally {
+        setLoading(false); // hide spinner
     }
-  };
+    };
+
 
   const handleSendEmail = async () => {
     const emailArray = emailList
@@ -286,6 +290,12 @@ function Ping({ apiBaseUrl }) {
       </div>
 
       <div className="main-layout">
+        {loading && (
+        <div className="spinner-overlay">
+            <div className="spinner" />
+        </div>
+        )}
+
         {sidebarOpen && (
           <aside className="sidebar">
             <div className="operation-checkboxes">
