@@ -14,7 +14,7 @@ function Ping() {
     'snmp_walk',
   ];
 
-  // Initial state: all major options false, including snmp_walk
+  // Initial state: all false
   const [operations, setOperations] = useState(() =>
     Object.fromEntries(allOps.map((op) => [op, false]))
   );
@@ -33,26 +33,40 @@ function Ping() {
     sessionStorage.setItem('ip_address', startIp);
   }, [startIp]);
 
+  // Helper to read CSRF token cookie
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        // Does this cookie string begin with the name we want?
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     console.log(`Checkbox changed — name: ${name}, checked: ${checked}`);
 
     if (name === 'snmp_walk') {
-      // When snmp_walk toggled:
-      // If checked, uncheck all other ops.
-      // If unchecked, no effect on others.
       setOperations((prev) => {
         if (checked) {
+          // When snmp_walk selected, uncheck all others
           return { ...Object.fromEntries(allOps.map((op) => [op, false])), snmp_walk: true };
         } else {
           return { ...prev, snmp_walk: false };
         }
       });
     } else {
-      // If snmp_walk is checked, ignore other checkboxes (hidden anyway)
-      if (operations.snmp_walk) {
-        return;
-      }
+      // If snmp_walk selected, ignore other ops toggling (hidden anyway)
+      if (operations.snmp_walk) return;
+
       setOperations((prev) => ({
         ...prev,
         [name]: checked,
@@ -61,26 +75,20 @@ function Ping() {
   };
 
   const handleSelectAll = () => {
-    // Select all except snmp_walk only if snmp_walk is not selected
-    if (operations.snmp_walk) {
-      // ignore select all when snmp_walk selected
-      return;
-    }
+    if (operations.snmp_walk) return; // ignore select all when snmp_walk selected
+
     const allMajorSelected = allOps
       .filter((op) => op !== 'snmp_walk')
       .every((op) => operations[op]);
+
     const newOps = {};
     allOps.forEach((op) => {
-      if (op === 'snmp_walk') {
-        newOps[op] = false;
-      } else {
-        newOps[op] = !allMajorSelected;
-      }
+      if (op === 'snmp_walk') newOps[op] = false;
+      else newOps[op] = !allMajorSelected;
     });
     setOperations(newOps);
   };
 
-  // Select All checkbox status: true if all major (non-snmp_walk) are selected
   const isSelectAllChecked = allOps
     .filter((op) => op !== 'snmp_walk')
     .every((op) => operations[op]);
@@ -97,13 +105,43 @@ function Ping() {
 
     formData.append('snmp_version', snmpVersion);
 
+    if (operations.snmp_walk) {
+      // Grab SNMP fields from DOM since they are uncontrolled inputs
+      const communityString =
+        document.querySelector('input[name="community_string"]')?.value || 'public';
+      formData.append('community_strings', communityString);
+
+      const timeout = document.querySelector('input[name="timeout"]')?.value || '1000';
+      formData.append('timeout', timeout);
+
+      if (snmpVersion === '3') {
+        formData.append('username', document.querySelector('input[name="v3_username"]')?.value || '');
+        formData.append(
+          'authentication_type',
+          document.querySelector('input[name="auth_protocol"]')?.value || ''
+        );
+        formData.append('password', document.querySelector('input[name="auth_password"]')?.value || '');
+        formData.append('encryption_type', document.querySelector('input[name="priv_protocol"]')?.value || '');
+        formData.append('encryption_key', document.querySelector('input[name="priv_password"]')?.value || '');
+        formData.append('security_level', document.querySelector('input[name="security_level"]')?.value || '');
+        formData.append('context_name', document.querySelector('input[name="context_name"]')?.value || '');
+      }
+    }
+
     try {
-      const response = await fetch('http://localhost:8000/ping-operation/', {
+      const csrfToken = getCookie('csrftoken'); // Get CSRF token from cookie
+
+      const response = await fetch('http://localhost:8000/dashboard/', {
         method: 'POST',
         body: formData,
         credentials: 'include',
+        headers: {
+          'X-CSRFToken': csrfToken,
+        },
       });
+
       const data = await response.json();
+      console.log(data)
       if (data.success) {
         setResults(data.results);
       } else {
@@ -128,12 +166,17 @@ function Ping() {
     });
 
     try {
-      await fetch('http://localhost:8000/send-email/', {
+      const res = await fetch('http://localhost:8000/send-email/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email_list: emailArray, email_body: bodyText }),
       });
-      console.log('Email sent successfully');
+      const json = await res.json();
+      if (json.success) {
+        console.log('Email sent successfully');
+      } else {
+        console.error('Email sending failed:', json.message);
+      }
     } catch (error) {
       console.error('Email sending failed:', error);
     }
@@ -180,28 +223,28 @@ function Ping() {
 
         {(snmpVersion === '2c' || snmpVersion === '3') && (
           <>
-            <div> Community String</div>
+            <div>Community String</div>
             <input name="community_string" placeholder="public" />
-            <div> Timeout (ms)</div>
+            <div>Timeout (ms)</div>
             <input name="timeout" placeholder="1000" />
           </>
         )}
 
         {snmpVersion === '3' && (
           <>
-            <div> Username</div>
+            <div>Username</div>
             <input name="v3_username" />
-            <div> Auth Protocol</div>
+            <div>Auth Protocol</div>
             <input name="auth_protocol" />
-            <div> Auth Password</div>
+            <div>Auth Password</div>
             <input name="auth_password" type="password" />
-            <div> Privacy Protocol</div>
+            <div>Privacy Protocol</div>
             <input name="priv_protocol" />
-            <div> Privacy Password</div>
+            <div>Privacy Password</div>
             <input name="priv_password" type="password" />
-            <div> Security Level</div>
+            <div>Security Level</div>
             <input name="security_level" />
-            <div> Context Name</div>
+            <div>Context Name</div>
             <input name="context_name" />
           </>
         )}
@@ -213,10 +256,7 @@ function Ping() {
     <div className="ping-container full-screen">
       <div className="topbar">
         <div className="left-section">
-          <button
-            className="menu-toggle"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
+          <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
             ☰
           </button>
           <img src="logo_left.png" alt="Left Logo" className="logo" />
@@ -237,7 +277,7 @@ function Ping() {
                   name="select_all"
                   checked={isSelectAllChecked}
                   onChange={handleSelectAll}
-                  disabled={operations.snmp_walk} // disable select all if snmp_walk is selected
+                  disabled={operations.snmp_walk}
                 />
                 Select All
               </label>
@@ -260,11 +300,7 @@ function Ping() {
                   ))}
 
               {/* Show snmp_walk option checkbox always */}
-              <label
-                key="snmp_walk"
-                htmlFor={`chk_snmp_walk`}
-                className="checkbox-label"
-              >
+              <label key="snmp_walk" htmlFor={`chk_snmp_walk`} className="checkbox-label">
                 <input
                   id={`chk_snmp_walk`}
                   type="checkbox"

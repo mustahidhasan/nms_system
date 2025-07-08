@@ -161,3 +161,10 @@ AZURE_SCOPES = "openid profile email offline_access User.Read"
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',  # your React dev URL
 ]
+# settings.py
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    # add your other frontend origins here if any
+]
+CORS_ALLOW_CREDENTIALS = True  # important to allow sending cookies
