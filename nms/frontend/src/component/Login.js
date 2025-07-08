@@ -3,19 +3,17 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../assets/Login.css';
 
-function Login() {
+function Login({ apiBaseUrl }) {
   const navigate = useNavigate();
 
   const handleSSOLogin = async () => {
     try {
-      const response = await fetch('http://localhost:8000/azure-login/');
+      const response = await fetch(`${apiBaseUrl}/azure-login/`);
       const data = await response.json();
       if (data.login_url) {
-        // Redirect to Azure login
         window.location.href = data.login_url;
       } else if (data.success) {
-        // If backend says login is already successful
-        navigate('/dashboard'); // Go to the dashboard route
+        navigate('/dashboard');
       } else {
         alert('Login failed or no login URL provided.');
       }

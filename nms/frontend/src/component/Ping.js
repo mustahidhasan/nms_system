@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import '../assets/Ping.css';
 
-function Ping() {
+function Ping({ apiBaseUrl }) {
   const allOps = [
     'enable_ping',
     'verbose_ping',
@@ -14,7 +14,6 @@ function Ping() {
     'snmp_walk',
   ];
 
-  // Initial state: all false
   const [operations, setOperations] = useState(() =>
     Object.fromEntries(allOps.map((op) => [op, false]))
   );
@@ -33,14 +32,12 @@ function Ping() {
     sessionStorage.setItem('ip_address', startIp);
   }, [startIp]);
 
-  // Helper to read CSRF token cookie
   function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
       const cookies = document.cookie.split(';');
       for (let i = 0; i < cookies.length; i++) {
         const cookie = cookies[i].trim();
-        // Does this cookie string begin with the name we want?
         if (cookie.startsWith(name + '=')) {
           cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
           break;
@@ -52,21 +49,16 @@ function Ping() {
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    console.log(`Checkbox changed — name: ${name}, checked: ${checked}`);
-
     if (name === 'snmp_walk') {
       setOperations((prev) => {
         if (checked) {
-          // When snmp_walk selected, uncheck all others
           return { ...Object.fromEntries(allOps.map((op) => [op, false])), snmp_walk: true };
         } else {
           return { ...prev, snmp_walk: false };
         }
       });
     } else {
-      // If snmp_walk selected, ignore other ops toggling (hidden anyway)
       if (operations.snmp_walk) return;
-
       setOperations((prev) => ({
         ...prev,
         [name]: checked,
@@ -75,16 +67,13 @@ function Ping() {
   };
 
   const handleSelectAll = () => {
-    if (operations.snmp_walk) return; // ignore select all when snmp_walk selected
-
+    if (operations.snmp_walk) return;
     const allMajorSelected = allOps
       .filter((op) => op !== 'snmp_walk')
       .every((op) => operations[op]);
-
     const newOps = {};
     allOps.forEach((op) => {
-      if (op === 'snmp_walk') newOps[op] = false;
-      else newOps[op] = !allMajorSelected;
+      newOps[op] = op === 'snmp_walk' ? false : !allMajorSelected;
     });
     setOperations(newOps);
   };
@@ -98,28 +87,18 @@ function Ping() {
 
     const formData = new FormData();
     formData.append('start_ip_address', startIp);
-
     Object.entries(operations).forEach(([key, value]) => {
       if (value) formData.append(key, '1');
     });
-
     formData.append('snmp_version', snmpVersion);
 
     if (operations.snmp_walk) {
-      // Grab SNMP fields from DOM since they are uncontrolled inputs
-      const communityString =
-        document.querySelector('input[name="community_string"]')?.value || 'public';
-      formData.append('community_strings', communityString);
-
-      const timeout = document.querySelector('input[name="timeout"]')?.value || '1000';
-      formData.append('timeout', timeout);
+      formData.append('community_strings', document.querySelector('input[name="community_string"]')?.value || 'public');
+      formData.append('timeout', document.querySelector('input[name="timeout"]')?.value || '1000');
 
       if (snmpVersion === '3') {
         formData.append('username', document.querySelector('input[name="v3_username"]')?.value || '');
-        formData.append(
-          'authentication_type',
-          document.querySelector('input[name="auth_protocol"]')?.value || ''
-        );
+        formData.append('authentication_type', document.querySelector('input[name="auth_protocol"]')?.value || '');
         formData.append('password', document.querySelector('input[name="auth_password"]')?.value || '');
         formData.append('encryption_type', document.querySelector('input[name="priv_protocol"]')?.value || '');
         formData.append('encryption_key', document.querySelector('input[name="priv_password"]')?.value || '');
@@ -129,9 +108,9 @@ function Ping() {
     }
 
     try {
-      const csrfToken = getCookie('csrftoken'); // Get CSRF token from cookie
+      const csrfToken = getCookie('csrftoken');
 
-      const response = await fetch('http://localhost:8000/dashboard/', {
+      const response = await fetch(`${apiBaseUrl}/dashboard/`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -141,7 +120,7 @@ function Ping() {
       });
 
       const data = await response.json();
-      console.log(data)
+      console.log(data);
       if (data.success) {
         setResults(data.results);
       } else {
@@ -166,7 +145,7 @@ function Ping() {
     });
 
     try {
-      const res = await fetch('http://localhost:8000/send-email/', {
+      const res = await fetch(`${apiBaseUrl}/send-email/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email_list: emailArray, email_body: bodyText }),
@@ -282,7 +261,6 @@ function Ping() {
                 Select All
               </label>
 
-              {/* Show all major options except snmp_walk if snmp_walk unchecked */}
               {!operations.snmp_walk &&
                 allOps
                   .filter((op) => op !== 'snmp_walk')
@@ -299,7 +277,6 @@ function Ping() {
                     </label>
                   ))}
 
-              {/* Show snmp_walk option checkbox always */}
               <label key="snmp_walk" htmlFor={`chk_snmp_walk`} className="checkbox-label">
                 <input
                   id={`chk_snmp_walk`}
@@ -311,7 +288,6 @@ function Ping() {
                 snmp walk
               </label>
 
-              {/* Show SNMP fields only if snmp_walk selected */}
               {renderSNMPFields()}
             </div>
 
