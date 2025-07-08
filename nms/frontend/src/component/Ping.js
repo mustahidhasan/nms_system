@@ -1,4 +1,3 @@
-// src/component/Ping.js
 import React, { useState } from 'react';
 import '../assets/Ping.css';
 
@@ -7,15 +6,15 @@ function Ping() {
   const [operations, setOperations] = useState({});
   const [results, setResults] = useState([]);
   const [emailList, setEmailList] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    setOperations((prev) => ({ ...prev, [name]: checked }));
+    setOperations(prev => ({ ...prev, [name]: checked }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const formData = new FormData();
     formData.append('start_ip_address', startIp);
     Object.entries(operations).forEach(([key, value]) => {
@@ -40,7 +39,7 @@ function Ping() {
   };
 
   const handleSendEmail = async () => {
-    const emailArray = emailList.split(',').map((e) => e.trim()).filter(Boolean);
+    const emailArray = emailList.split(',').map(e => e.trim()).filter(Boolean);
     if (!emailArray.length) return;
 
     let bodyText = 'Results:\n\n';
@@ -52,7 +51,7 @@ function Ping() {
       await fetch('http://localhost:8000/send-email/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email_list: emailArray, email_body: bodyText })
+        body: JSON.stringify({ email_list: emailArray, email_body: bodyText }),
       });
     } catch (error) {
       console.error('Email sending failed:', error);
@@ -75,62 +74,105 @@ function Ping() {
 
   return (
     <div className="ping-container">
-      <h2>Dashboard</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={startIp}
-          onChange={(e) => setStartIp(e.target.value)}
-          placeholder="Start IP Address"
-          required
-        />
-        <div className="checkbox-group">
-          {['enable_ping', 'verbose_ping', 'traceroute', 'dns_lookup', 'verbos_dns_lookup', 'snmp_walk', 'simple_snmp_walk', 'mtr'].map((op) => (
-            <label key={op}>
-              <input
-                type="checkbox"
-                name={op}
-                checked={!!operations[op]}
-                onChange={handleCheckboxChange}
-              />
-              {op.replace(/_/g, ' ')}
-            </label>
-          ))}
-        </div>
-        <button type="submit">Submit</button>
-      </form>
+      <div className="topbar">
+        <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          ☰
+        </button>
+        <img src="/logo-left.png" alt="Left Logo" className="logo" />
+        <h2>Dashboard</h2>
+        <img src="/logo-right.png" alt="Right Logo" className="logo" />
+      </div>
 
-      {results.length > 0 && (
-        <div className="results-section">
-          <h3>Results</h3>
-          <div>
-            <input
-              type="text"
-              placeholder="Email addresses (comma separated)"
-              value={emailList}
-              onChange={(e) => setEmailList(e.target.value)}
-            />
-            <button onClick={handleSendEmail}>Send Email</button>
-            <button onClick={downloadCSV}>Download CSV</button>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Operation</th>
-                <th>Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((res, i) => (
-                <tr key={i}>
-                  <td>{res.operation}</td>
-                  <td><pre>{res.result}</pre></td>
-                </tr>
+      <div className="main-layout">
+        {sidebarOpen && (
+          <aside className="sidebar">
+            <div>
+              <div className="menu-title">MENU</div>
+              <div className="menu-item">PING</div>
+              <div className="menu-item">VERBOSE PING</div>
+              <div className="menu-item">DNS</div>
+            </div>
+            <div className="footer-icons">
+              <div>ℹ️ ABOUT</div>
+              <div>↩ LOGOUT</div>
+            </div>
+          </aside>
+        )}
+
+        <main className="main-content">
+          <form onSubmit={handleSubmit}>
+            <div className="input-section">
+              <input
+                type="text"
+                value={startIp}
+                onChange={(e) => setStartIp(e.target.value)}
+                placeholder="Start IP Address"
+                required
+              />
+              <button type="submit">Submit</button>
+            </div>
+
+            <div className="checkbox-group">
+              {[
+                'enable_ping',
+                'verbose_ping',
+                'traceroute',
+                'dns_lookup',
+                'verbos_dns_lookup',
+                'snmp_walk',
+                'simple_snmp_walk',
+                'mtr',
+              ].map((op) => (
+                <label key={op}>
+                  <input
+                    type="checkbox"
+                    name={op}
+                    checked={!!operations[op]}
+                    onChange={handleCheckboxChange}
+                  />
+                  {op.replace(/_/g, ' ')}
+                </label>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </div>
+          </form>
+
+          {results.length > 0 && (
+            <section className="results-section">
+              <h3>Results</h3>
+
+              <div className="email-actions">
+                <input
+                  type="text"
+                  placeholder="Email addresses (comma separated)"
+                  value={emailList}
+                  onChange={(e) => setEmailList(e.target.value)}
+                />
+                <button onClick={handleSendEmail}>Send Email</button>
+                <button onClick={downloadCSV}>Download CSV</button>
+              </div>
+
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Operation</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map(({ operation, result }, i) => (
+                    <tr key={i}>
+                      <td>{operation}</td>
+                      <td>
+                        <pre>{result}</pre>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
