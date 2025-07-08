@@ -10,7 +10,7 @@ function Ping() {
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    setOperations(prev => ({ ...prev, [name]: checked }));
+    setOperations((prev) => ({ ...prev, [name]: checked }));
   };
 
   const handleSubmit = async (e) => {
@@ -39,7 +39,10 @@ function Ping() {
   };
 
   const handleSendEmail = async () => {
-    const emailArray = emailList.split(',').map(e => e.trim()).filter(Boolean);
+    const emailArray = emailList
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean);
     if (!emailArray.length) return;
 
     let bodyText = 'Results:\n\n';
@@ -92,6 +95,30 @@ function Ping() {
               <div className="menu-item">VERBOSE PING</div>
               <div className="menu-item">DNS</div>
             </div>
+
+            <div className="operation-checkboxes">
+              {[
+                'enable_ping',
+                'verbose_ping',
+                'traceroute',
+                'dns_lookup',
+                'verbos_dns_lookup',
+                'snmp_walk',
+                'simple_snmp_walk',
+                'mtr',
+              ].map((op) => (
+                <label key={op} className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name={op}
+                    checked={!!operations[op]}
+                    onChange={handleCheckboxChange}
+                  />
+                  {op.replace(/_/g, ' ')}
+                </label>
+              ))}
+            </div>
+
             <div className="footer-icons">
               <div>ℹ️ ABOUT</div>
               <div>↩ LOGOUT</div>
@@ -111,35 +138,11 @@ function Ping() {
               />
               <button type="submit">Submit</button>
             </div>
-
-            <div className="checkbox-group">
-              {[
-                'enable_ping',
-                'verbose_ping',
-                'traceroute',
-                'dns_lookup',
-                'verbos_dns_lookup',
-                'snmp_walk',
-                'simple_snmp_walk',
-                'mtr',
-              ].map((op) => (
-                <label key={op}>
-                  <input
-                    type="checkbox"
-                    name={op}
-                    checked={!!operations[op]}
-                    onChange={handleCheckboxChange}
-                  />
-                  {op.replace(/_/g, ' ')}
-                </label>
-              ))}
-            </div>
           </form>
 
           {results.length > 0 && (
             <section className="results-section">
               <h3>Results</h3>
-
               <div className="email-actions">
                 <input
                   type="text"
