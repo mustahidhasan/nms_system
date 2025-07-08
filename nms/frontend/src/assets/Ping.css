@@ -220,3 +220,64 @@ button:hover {
   max-height: 200px;
   overflow-y: auto;
 }
+
+/* src/assets/Ping.css */
+
+/* Container for SNMP fields */
+.snmp-fields {
+  margin-top: 15px;
+  padding: 12px;
+  border: 1px solid #3a8dde;
+  background-color: #e9f2fc;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1a3a6e;
+}
+
+/* Label styling */
+.snmp-fields label,
+.snmp-fields div {
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+  color: #145a96;
+}
+
+/* Inputs inside SNMP fields */
+.snmp-fields input,
+.snmp-fields select {
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 12px;
+  border: 1px solid #3a8dde;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #0b2e5a;
+  background-color: white;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.snmp-fields input:focus,
+.snmp-fields select:focus {
+  border-color: #1a5bb8;
+  outline: none;
+}
+
+/* Optional: icons before text */
+.snmp-fields > div {
+  display: flex;
+  align-items: center;
+}
+
+.snmp-fields > div::before {
+  content: '🔹';
+  margin-right: 6px;
+}
+
+/* For the v3 locked items */
+.snmp-fields div:nth-child(n+7)::before {
+  content: '🔒';
+  margin-right: 6px;
+  color: #1962d1;
+}
