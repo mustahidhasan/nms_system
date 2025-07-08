@@ -79,13 +79,18 @@ function Ping() {
   return (
     <div className="ping-container full-screen">
       <div className="topbar">
-        <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          ☰
-        </button>
-        <img src="logo_left.png" alt="Left Logo" className="logo" />
-        <h2>Dashboard</h2>
-        <img src="logo_right.png" alt="Right Logo" className="logo" />
-      </div>
+            <div className="left-section">
+                <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                ☰
+                </button>
+                <img src="logo_left.png" alt="Left Logo" className="logo" />
+            </div>
+            <h2 className="title">Dashboard</h2>
+            <div className="right-section">
+                <img src="logo_right.png" alt="Right Logo" className="logo" />
+            </div>
+        </div>
+
 
       <div className="main-layout">
         {sidebarOpen && (
