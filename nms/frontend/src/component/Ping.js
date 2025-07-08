@@ -1,8 +1,10 @@
 // src/components/Ping.js
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../assets/Ping.css';
 
 function Ping({ apiBaseUrl }) {
+  const navigate = useNavigate();
   const allOps = [
     'enable_ping',
     'verbose_ping',
@@ -22,6 +24,7 @@ function Ping({ apiBaseUrl }) {
   const [emailList, setEmailList] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [snmpVersion, setSnmpVersion] = useState('2c');
+  const [showAbout, setShowAbout] = useState(false);
 
   useEffect(() => {
     const storedIp = sessionStorage.getItem('ip_address');
@@ -46,6 +49,28 @@ function Ping({ apiBaseUrl }) {
     }
     return cookieValue;
   }
+
+  const handleLogout = async () => {
+    try {
+      const csrfToken = getCookie('csrftoken');
+      const response = await fetch(`${apiBaseUrl}/logout/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'X-CSRFToken': csrfToken,
+        },
+      });
+
+      const data = await response.json();
+      if (data.success || response.ok) {
+        navigate('/');
+      } else {
+        console.error('Logout failed:', data.message || 'Unknown error');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
@@ -292,8 +317,8 @@ function Ping({ apiBaseUrl }) {
             </div>
 
             <div className="footer-icons">
-              <div>ℹ️ ABOUT</div>
-              <div>↩ LOGOUT</div>
+              <div style={{ cursor: 'pointer' }} onClick={() => setShowAbout(true)}>ℹ️ ABOUT</div>
+              <div style={{ cursor: 'pointer' }} onClick={handleLogout}>↩ LOGOUT</div>
             </div>
           </aside>
         )}
@@ -352,6 +377,22 @@ function Ping({ apiBaseUrl }) {
             </section>
           )}
         </main>
+
+        {showAbout && (
+          <div className="about-popup">
+            <div className="popup-overlay" onClick={() => setShowAbout(false)}></div>
+            <div className="popup-content">
+              <button className="close-btn" onClick={() => setShowAbout(false)}>✖</button>
+              <iframe
+                src="/about.pdf"
+                title="About PDF"
+                width="100%"
+                height="500px"
+                frameBorder="0"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
