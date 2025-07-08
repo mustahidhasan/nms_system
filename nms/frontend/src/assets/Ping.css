@@ -1,0 +1,97 @@
+/* src/component/Ping.css */
+.ping-container {
+  max-width: 1000px;
+  margin: 30px auto;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.ping-container h2 {
+  text-align: center;
+  color: #247e00;
+  margin-bottom: 20px;
+  font-size: 28px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input[type="text"] {
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.checkbox-group label {
+  background-color: #e9ecef;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s ease-in-out;
+  width: fit-content;
+}
+
+button:hover {
+  background-color: #45a049;
+  transform: scale(1.02);
+}
+
+.results-section {
+  margin-top: 30px;
+}
+
+.results-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.results-section th,
+.results-section td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-family: monospace;
+  text-align: left;
+  vertical-align: top;
+}
+
+.results-section pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.results-section input[type="text"] {
+  margin-bottom: 10px;
+  width: 60%;
+}
+
+.results-section button {
+  margin-right: 10px;
+}
