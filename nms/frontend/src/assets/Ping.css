@@ -1,35 +1,28 @@
-/* Full screen container, flex column layout */
 .ping-container.full-screen {
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   margin: 0;
-  padding: 20px;
+  padding: 0;
   box-sizing: border-box;
   background-color: #f8f9fa;
-  border-radius: 0;
-  box-shadow: none;
   font-family: 'Segoe UI', sans-serif;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.ping-container.full-screen h2 {
-  text-align: center;
-  color: #247e00;
-  margin-bottom: 20px;
-  font-size: 28px;
-}
-
-/* Topbar - full width inside container */
 .topbar {
-  display: flex;
-  align-items: center;
-  padding: 10px 20px;
-  border-bottom: 1px solid #ddd;
-  gap: 15px;
-  background-color: #f8f9fa;
-  width: 100%;
-  box-sizing: border-box;
+    display: flex;
+    padding: 10px 20px;
+    border-bottom: 1px solid #ddd;
+    gap: 15px;
+    background-color: #f8f9fa;
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
 }
 
 .menu-toggle {
@@ -40,7 +33,6 @@
   color: #247e00;
 }
 
-/* Logos same size */
 .logo {
   width: 60px;
   height: 60px;
@@ -50,9 +42,9 @@
 .main-layout {
   flex: 1;
   display: flex;
-  margin-top: 15px;
-  height: auto;
-  min-height: 0; /* for proper flexbox scrolling */
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -90,7 +82,6 @@
   cursor: pointer;
 }
 
-/* Footer buttons styled */
 .footer-icons {
   display: flex;
   justify-content: space-around;
@@ -110,23 +101,22 @@
   width: 100px;
   text-align: center;
   color: white;
-  font-size: 14px;
 }
 
 .footer-icons div:first-child {
-  background-color: #ffc107; /* yellow */
+  background-color: #ffc107;
 }
 
 .footer-icons div:first-child:hover {
-  background-color: #e0a800; /* darker yellow */
+  background-color: #e0a800;
 }
 
 .footer-icons div:last-child {
-  background-color: #dc3545; /* red */
+  background-color: #dc3545;
 }
 
 .footer-icons div:last-child:hover {
-  background-color: #b02a37; /* darker red */
+  background-color: #b02a37;
 }
 
 .main-content {

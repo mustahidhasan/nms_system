@@ -1,3 +1,4 @@
+// src/components/Ping.js
 import React, { useState } from 'react';
 import '../assets/Ping.css';
 
