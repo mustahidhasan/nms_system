@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../assets/Ping.css';
+import UserActivity from './UserActivity';
 
 function Ping({ apiBaseUrl }) {
   const navigate = useNavigate();
@@ -25,6 +26,8 @@ function Ping({ apiBaseUrl }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [snmpVersion, setSnmpVersion] = useState('2c');
   const [showAbout, setShowAbout] = useState(false);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [showUserActivity, setShowUserActivity] = useState(false);
 
   useEffect(() => {
     const storedIp = sessionStorage.getItem('ip_address');
@@ -268,6 +271,17 @@ function Ping({ apiBaseUrl }) {
         <h2 className="title">Network Operations</h2>
         <div className="right-section">
           <img src="logo_right.png" alt="Right Logo" className="logo" />
+          <div className="settings-wrapper">
+            <span className="settings-icon" onClick={() => setShowSettingsDropdown((prev) => !prev)}>⚙️</span>
+            {showSettingsDropdown && (
+              <div className="settings-dropdown">
+                <div onClick={() => {
+                  setShowUserActivity(true);
+                  setShowSettingsDropdown(false);
+                }}>👤 User</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -390,6 +404,16 @@ function Ping({ apiBaseUrl }) {
                 height="500px"
                 frameBorder="0"
               />
+            </div>
+          </div>
+        )}
+
+        {showUserActivity && (
+          <div className="user-activity-modal">
+            <div className="popup-overlay" onClick={() => setShowUserActivity(false)}></div>
+            <div className="popup-content">
+              <button className="close-btn" onClick={() => setShowUserActivity(false)}>✖</button>
+              <UserActivity />
             </div>
           </div>
         )}
