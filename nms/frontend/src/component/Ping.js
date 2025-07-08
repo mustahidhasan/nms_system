@@ -3,11 +3,25 @@ import React, { useState, useEffect } from 'react';
 import '../assets/Ping.css';
 
 function Ping() {
+  const allOps = [
+    'enable_ping',
+    'verbose_ping',
+    'traceroute',
+    'dns_lookup',
+    'verbos_dns_lookup',
+    'simple_snmp_walk',
+    'mtr',
+    'snmp_walk',
+  ];
+
+  const [operations, setOperations] = useState(() =>
+    Object.fromEntries(allOps.map((op) => [op, false]))
+  );
   const [startIp, setStartIp] = useState('');
-  const [operations, setOperations] = useState({});
   const [results, setResults] = useState([]);
   const [emailList, setEmailList] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [snmpVersion, setSnmpVersion] = useState('2c');
 
   useEffect(() => {
     const storedIp = sessionStorage.getItem('ip_address');
@@ -20,33 +34,35 @@ function Ping() {
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    setOperations((prev) => ({ ...prev, [name]: checked }));
-  };
-
-  const handleSelectAll = () => {
-    const isAllSelected = Object.keys(operations).length === 7 && Object.values(operations).every(Boolean);
-    const newOps = {
-      enable_ping: !isAllSelected,
-      verbose_ping: !isAllSelected,
-      traceroute: !isAllSelected,
-      dns_lookup: !isAllSelected,
-      verbos_dns_lookup: !isAllSelected,
-      simple_snmp_walk: !isAllSelected,
-      mtr: !isAllSelected,
-    };
+    console.log(`Checkbox changed — name: ${name}, checked: ${checked}`);
     setOperations((prev) => ({
-      ...newOps,
-      snmp_walk: prev.snmp_walk || false, // exclude snmp_walk
+      ...prev,
+      [name]: checked,
     }));
   };
 
+  const handleSelectAll = () => {
+    const allSelected = allOps.every((op) => operations[op]);
+    const newOps = {};
+    allOps.forEach((op) => {
+      newOps[op] = !allSelected;
+    });
+    setOperations(newOps);
+  };
+
+  const isSelectAllChecked = allOps.every((op) => operations[op]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const formData = new FormData();
     formData.append('start_ip_address', startIp);
+
     Object.entries(operations).forEach(([key, value]) => {
       if (value) formData.append(key, '1');
     });
+
+    formData.append('snmp_version', snmpVersion);
 
     try {
       const response = await fetch('http://localhost:8000/ping-operation/', {
@@ -70,6 +86,7 @@ function Ping() {
       .split(',')
       .map((e) => e.trim())
       .filter(Boolean);
+
     if (!emailArray.length) return;
 
     let bodyText = 'Results:\n\n';
@@ -83,6 +100,7 @@ function Ping() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email_list: emailArray, email_body: bodyText }),
       });
+      console.log('Email sent successfully');
     } catch (error) {
       console.error('Email sending failed:', error);
     }
@@ -104,17 +122,70 @@ function Ping() {
 
   const clearForm = () => {
     setStartIp('');
-    setOperations({});
+    setOperations(Object.fromEntries(allOps.map((op) => [op, false])));
     setResults([]);
     setEmailList('');
     sessionStorage.removeItem('ip_address');
+  };
+
+  const renderSNMPFields = () => {
+    if (!operations['snmp_walk']) return null;
+
+    return (
+      <div id="snmp_fields" className="snmp-fields">
+        <label htmlFor="snmp_version">SNMP Version</label>
+        <select
+          name="snmp_version"
+          id="snmp_version"
+          value={snmpVersion}
+          onChange={(e) => setSnmpVersion(e.target.value)}
+        >
+          <option value="1">v1</option>
+          <option value="2c">v2c</option>
+          <option value="3">v3</option>
+        </select>
+
+        {(snmpVersion === '2c' || snmpVersion === '3') && (
+          <>
+            <div>🔹 Community String</div>
+            <input name="community_string" placeholder="public" />
+            <div>🔹 Timeout (ms)</div>
+            <input name="timeout" placeholder="1000" />
+          </>
+        )}
+
+        {snmpVersion === '3' && (
+          <>
+            <div>🔒 Username</div>
+            <input name="v3_username" />
+            <div>🔒 Auth Protocol</div>
+            <input name="auth_protocol" />
+            <div>🔒 Auth Password</div>
+            <input name="auth_password" type="password" />
+            <div>🔒 Privacy Protocol</div>
+            <input name="priv_protocol" />
+            <div>🔒 Privacy Password</div>
+            <input name="priv_password" type="password" />
+            <div>🔒 Security Level</div>
+            <input name="security_level" />
+            <div>🔒 Context Name</div>
+            <input name="context_name" />
+          </>
+        )}
+      </div>
+    );
   };
 
   return (
     <div className="ping-container full-screen">
       <div className="topbar">
         <div className="left-section">
-          <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+          <button
+            className="menu-toggle"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            ☰
+          </button>
           <img src="logo_left.png" alt="Left Logo" className="logo" />
         </div>
         <h2 className="title">Network Operations</h2>
@@ -130,34 +201,28 @@ function Ping() {
               <label className="checkbox-label">
                 <input
                   type="checkbox"
-                  checked={
-                    ['enable_ping', 'verbose_ping', 'traceroute', 'dns_lookup', 'verbos_dns_lookup', 'simple_snmp_walk', 'mtr']
-                      .every(op => operations[op])
-                  }
+                  name="select_all"
+                  checked={isSelectAllChecked}
                   onChange={handleSelectAll}
                 />
                 Select All
               </label>
-              {[
-                'enable_ping',
-                'verbose_ping',
-                'traceroute',
-                'dns_lookup',
-                'verbos_dns_lookup',
-                'simple_snmp_walk',
-                'mtr',
-                'snmp_walk',
-              ].map((op) => (
-                <label key={op} className="checkbox-label">
+
+              {allOps.map((op) => (
+                <label key={op} htmlFor={`chk_${op}`} className="checkbox-label">
                   <input
+                    id={`chk_${op}`}
                     type="checkbox"
                     name={op}
-                    checked={!!operations[op]}
+                    checked={operations[op]}
                     onChange={handleCheckboxChange}
                   />
                   {op.replace(/_/g, ' ')}
                 </label>
               ))}
+
+              {/* ✅ Only show SNMP options when checkbox is enabled */}
+              {renderSNMPFields()}
             </div>
 
             <div className="footer-icons">
@@ -171,6 +236,7 @@ function Ping() {
           <form onSubmit={handleSubmit}>
             <div className="input-section">
               <input
+                name="start_ip"
                 type="text"
                 value={startIp}
                 onChange={(e) => setStartIp(e.target.value)}
@@ -188,6 +254,7 @@ function Ping() {
               <div className="email-actions">
                 <input
                   type="text"
+                  name="email_list"
                   placeholder="Email addresses (comma separated)"
                   value={emailList}
                   onChange={(e) => setEmailList(e.target.value)}
