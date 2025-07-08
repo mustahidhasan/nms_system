@@ -410,137 +410,144 @@ async def mtr_operation(ip_addresses, table):
     tasks = [asyncio.create_task(run_mtr_for_ip(ip, table)) for ip in ip_addresses]
     await asyncio.gather(*tasks)
 
+from django.conf import settings
+from django.http import JsonResponse
+
+
 @login_required
 def ping_operation(request):
-    if request.method == "POST":
-        get_ip_address_start = request.POST.get("start_ip_address")
-        get_ip_address_all = generate_ip_list(get_ip_address_start)
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed."}, status=405)
 
-        enable_ping = request.POST.get("enable_ping")
-        verbose_ping = request.POST.get("verbose_ping")
-        traceroute = request.POST.get("traceroute")
-        dns_lookup = request.POST.get("dns_lookup")
-        verbos_dns_lookup = request.POST.get("verbos_dns_lookup")
-        snmp_walk = request.POST.get("snmp_walk")
-        is_simple_snmp_walk = request.POST.get("simple_snmp_walk")
-        mtr = request.POST.get("mtr")  # Capture the MTR option from the form
+    get_ip_address_start = request.POST.get("start_ip_address")
+    get_ip_address_all = generate_ip_list(get_ip_address_start)
 
-        # Validate the IP addresses / hostnames
-        ip_addresses = validate_ip_addresses(get_ip_address_all, request)
-        if not ip_addresses:
-            return render(request, "ping.html", {
-                "error_message": "No valid IP address or hostname found."
+    enable_ping = request.POST.get("enable_ping")
+    verbose_ping = request.POST.get("verbose_ping")
+    traceroute = request.POST.get("traceroute")
+    dns_lookup = request.POST.get("dns_lookup")
+    verbos_dns_lookup = request.POST.get("verbos_dns_lookup")
+    snmp_walk = request.POST.get("snmp_walk")
+    is_simple_snmp_walk = request.POST.get("simple_snmp_walk")
+    mtr = request.POST.get("mtr")
+
+    ip_addresses = validate_ip_addresses(get_ip_address_all, request)
+    print("line 435", ip_addresses)
+    if not ip_addresses:
+        return JsonResponse({"error": "No valid IP address or hostname found."}, status=400)
+
+    os_name = platform.system()
+    table = PrettyTable()
+    table.field_names = ["Operation", "Result"]
+    results = []
+
+    try:
+        async def perform_operations():
+            if enable_ping:
+                try:
+                    await enable_ping_operation(ip_addresses, os_name, table)
+                except Exception as e:
+                    results.append({"operation": "Enable Ping", "result": f"Error: {str(e)}"})
+
+            if verbose_ping:
+                try:
+                    await verbose_ping_operation(ip_addresses, os_name, table)
+                except Exception as e:
+                    results.append({"operation": "Verbose Ping", "result": f"Error: {str(e)}"})
+
+            if traceroute:
+                try:
+                    await traceroute_operation(ip_addresses, os_name, table)
+                except Exception as e:
+                    results.append({"operation": "Traceroute", "result": f"Error: {str(e)}"})
+
+            if dns_lookup:
+                try:
+                    await dns_lookup_operation(ip_addresses, table)
+                except Exception as e:
+                    results.append({"operation": "DNS Lookup", "result": f"Error: {str(e)}"})
+
+            if verbos_dns_lookup:
+                try:
+                    await verbose_dns_lookup_operation(ip_addresses, table)
+                except Exception as e:
+                    results.append({"operation": "Verbose DNS Lookup", "result": f"Error: {str(e)}"})
+
+            if snmp_walk:
+                try:
+                    await advanced_snmp_walk(
+                        ip_addresses,
+                        snmp_version=request.POST.get("snmp_version"),
+                        community_strings=request.POST.getlist("community_strings", ["public", "private"]),
+                        username=request.POST.get("username"),
+                        password=request.POST.get("password"),
+                        authentication_type=request.POST.get("authentication_type", "SHA"),
+                        encryption_type=request.POST.get("encryption_type", "AES"),
+                        encryption_key=request.POST.get("encryption_key"),
+                        oid=request.POST.get("oid"),
+                        snmp_port=161,
+                        table=table
+                    )
+                except Exception as e:
+                    results.append({"operation": "Advanced SNMP Walk", "result": f"Error: {str(e)}"})
+
+            if is_simple_snmp_walk:
+                try:
+                    await simple_snmp_walk(ip_addresses, '161', table)
+                except Exception as e:
+                    results.append({"operation": "Simple SNMP Walk", "result": f"Error: {str(e)}"})
+
+            if mtr:
+                try:
+                    await mtr_operation(ip_addresses, table)
+                except Exception as e:
+                    results.append({"operation": "MTR", "result": f"Error: {str(e)}"})
+
+        asyncio.run(perform_operations())
+
+        # Convert PrettyTable to list of rows
+        for row in table._rows:
+            results.append({
+                "operation": row[0],
+                "result": row[1],
             })
+        print("line 513", results)
+        return JsonResponse({"success": True, "results": results})
 
-        os_name = platform.system()
+    except Exception as e:
+        logger.exception("Unexpected error in network operations")
+        return JsonResponse({
+            "success": False,
+            "error": f"An unexpected error occurred: {str(e)}"
+        }, status=500)
 
-        table = PrettyTable()
-        table.field_names = ["Operation", "Result"]
 
-        try:
-            async def perform_operations():
-                if enable_ping:
-                    try:
-                        await enable_ping_operation(ip_addresses, os_name, table)
-                    except Exception as e:
-                        table.add_row(["Enable Ping", f"Error: {str(e)}"])
-
-                if verbose_ping:
-                    try:
-                        await verbose_ping_operation(ip_addresses, os_name, table)
-                    except Exception as e:
-                        table.add_row(["Verbose Ping", f"Error: {str(e)}"])
-
-                if traceroute:
-                    try:
-                        await traceroute_operation(ip_addresses, os_name, table)
-                    except Exception as e:
-                        table.add_row(["Traceroute", f"Error: {str(e)}"])
-
-                if dns_lookup:
-                    try:
-                        await dns_lookup_operation(ip_addresses, table)
-                    except Exception as e:
-                        table.add_row(["DNS Lookup", f"Error: {str(e)}"])
-
-                if verbos_dns_lookup:
-                    try:
-                        await verbose_dns_lookup_operation(ip_addresses, table)
-                    except Exception as e:
-                        table.add_row(["Verbose DNS Lookup", f"Error: {str(e)}"])
-
-                if snmp_walk:
-                    try:
-                        await advanced_snmp_walk(
-                            ip_addresses,
-                            snmp_version=request.POST.get("snmp_version"),
-                            community_strings=request.POST.getlist("community_strings", ["public", "private"]),
-                            username=request.POST.get("username"),
-                            password=request.POST.get("password"),
-                            authentication_type=request.POST.get("authentication_type", "SHA"),
-                            encryption_type=request.POST.get("encryption_type", "AES"),
-                            encryption_key=request.POST.get("encryption_key"),
-                            oid=request.POST.get("oid"),
-                            snmp_port=161,
-                            table=table
-                        )
-                    except Exception as e:
-                        table.add_row(["Advanced SNMP Walk", f"Error: {str(e)}"])
-
-                if is_simple_snmp_walk:
-                    try:
-                        await simple_snmp_walk(ip_addresses, '161', table)
-                    except Exception as e:
-                        table.add_row(["Simple SNMP Walk", f"Error: {str(e)}"])
-
-                if mtr:  # Check if MTR was selected
-                    try:
-                        await mtr_operation(ip_addresses, table)  # Run the MTR operation
-                    except Exception as e:
-                        table.add_row(["MTR", f"Error: {str(e)}"])
-
-            asyncio.run(perform_operations())
-
-            return render(request, "ping.html", {"table": table})
-
-        except Exception as e:
-            logger.exception("Unexpected error in network operations")
-            return render(request, "ping.html", {"error_message": f"An unexpected error occurred: {str(e)}"})
-
-    return render(request, "ping.html")
 def snmp_results(request):
-    return render(request, "snmp_results.html")
-
+    return JsonResponse({"message": "This would return SNMP results if implemented"})
 
 
 @csrf_exempt
 def send_email(request):
-    if request.method == 'POST':
-        try:
-            # Parse the JSON request body
-            data = json.loads(request.body)
-            email_list = data.get('email_list', [])
-            email_body = data.get('email_body', '')
-
-            if not email_list or not email_body:
-                return JsonResponse({'success': False, 'message': 'Invalid input'}, status=400)
-
-            # Send email to all email addresses in the list
-            print("line 535, ", email_list)
-            print("line 536", email_body)
-            send_mail(
-                subject="Results from Web Page",
-                message=email_body,
-                from_email=settings.DEFAULT_FROM_EMAIL,  # Use the same email as in settings
-                recipient_list=email_list,
-            )
-
-            return JsonResponse({'success': True, 'message': 'Email sent successfully!'})
-        
-        except Exception as e:
-            # Log the error for debugging
-            print(f"Error sending email: {str(e)}")
-            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
-    else:
+    if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
 
+    try:
+        data = json.loads(request.body)
+        email_list = data.get('email_list', [])
+        email_body = data.get('email_body', '')
+
+        if not email_list or not email_body:
+            return JsonResponse({'success': False, 'message': 'Invalid input'}, status=400)
+
+        send_mail(
+            subject="Results from Web Page",
+            message=email_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=email_list,
+        )
+
+        return JsonResponse({'success': True, 'message': 'Email sent successfully!'})
+
+    except Exception as e:
+        logger.exception("Error sending email")
+        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)

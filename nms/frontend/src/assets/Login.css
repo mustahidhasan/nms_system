@@ -1,0 +1,99 @@
+.login-container {
+  background: #f0f0f0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px; /* padding for small devices */
+}
+
+.login-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+  padding: 40px 20px;
+  border-left: 6px solid #4CAF50;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+  box-sizing: border-box;
+}
+
+/* Logos positioned inside the card */
+.logo-left,
+.logo-right {
+  position: absolute;
+  top: 20px;
+  width: 70px;
+  height: 70px; /* Force square dimensions */
+  object-fit: contain; /* Maintain aspect ratio */
+  border: 2px solid #4CAF50;
+  padding: 5px;
+  border-radius: 10px;
+  background-color: white; /* optional for contrast */
+}
+
+/* Adjust logo positions */
+.logo-left {
+  left: 20px;
+}
+
+.logo-right {
+  right: 20px;
+}
+
+.login-box h1 {
+  margin: 60px 0 20px 0;
+  font-size: 28px;
+  color: #4CAF50;
+}
+
+.login-box button {
+  padding: 12px 25px;
+  font-size: 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.login-box button:hover {
+  background-color: #45a049;
+}
+
+/* Responsive tweaks for small screens */
+@media (max-width: 576px) {
+  .logo-left,
+  .logo-right {
+    width: 50px;
+    height: 50px; /* Add this */
+    top: 10px;
+  }
+
+  .logo-left {
+    left: 10px;
+  }
+
+  .logo-right {
+    right: 10px;
+  }
+
+  .login-box {
+    padding: 30px 15px;
+  }
+
+  .login-box h1 {
+    font-size: 24px;
+    margin-top: 50px;
+  }
+
+  .login-box button {
+    width: 100%;
+    font-size: 14px;
+  }
+}
