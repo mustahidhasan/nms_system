@@ -355,11 +355,11 @@ function Ping({ apiBaseUrl }) {
                 type="text"
                 value={startIp}
                 onChange={(e) => setStartIp(e.target.value)}
-                placeholder="Start IP Address"
+                placeholder="Enter Your IP Address"
                 required
               />
               <button type="submit">Submit</button>
-              <button type="button" onClick={clearForm}>
+              <button  style={{background:"red"}} type="button" onClick={clearForm}>
                 Clear
               </button>
             </div>
