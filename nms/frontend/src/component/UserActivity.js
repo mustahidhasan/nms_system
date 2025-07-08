@@ -1,8 +1,10 @@
 // src/components/UserActivity.js
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // import useNavigate
 import '../assets/UserActivity.css';
 
 function UserActivity({ apiBaseUrl }) {
+  const navigate = useNavigate(); // initialize navigate
   const [loading, setLoading] = useState(true);
   const [activeUsers, setActiveUsers] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -35,6 +37,14 @@ function UserActivity({ apiBaseUrl }) {
 
   return (
     <div className="user-activity-container">
+      <button
+        className="back-to-home-btn"
+        onClick={() => navigate('/dashboard')}
+        style={{ marginBottom: '20px', padding: '8px 16px', cursor: 'pointer' }}
+      >
+        ← Back to Home
+      </button>
+
       <h3>Active Users ({activeUserCount})</h3>
       <ul className="active-user-list">
         {activeUsers.map((user) => (
