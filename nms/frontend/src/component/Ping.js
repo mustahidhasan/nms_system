@@ -280,7 +280,7 @@ function Ping({ apiBaseUrl }) {
             {showSettingsDropdown && (
               <div className="settings-dropdown">
                 <div onClick={() => {
-                  setShowUserActivity(true);
+                  navigate('/user-activity');
                   setShowSettingsDropdown(false);
                 }}>👤 User</div>
               </div>

@@ -1,0 +1,75 @@
+// src/components/UserActivity.js
+import React, { useEffect, useState } from 'react';
+
+function UserActivity({ apiBaseUrl }) {
+  const [loading, setLoading] = useState(true);
+  const [activeUsers, setActiveUsers] = useState([]);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [activeUserCount, setActiveUserCount] = useState(0);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch(`${apiBaseUrl}/active-users/`, {
+      credentials: 'include',
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch user activity');
+        return res.json();
+      })
+      .then((data) => {
+        setActiveUsers(data.active_users || []);
+        setActivityLogs(data.user_activities || []);
+        setActiveUserCount(data.active_user_count || 0);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError(err.message || 'Error loading activity');
+        setLoading(false);
+      });
+  }, [apiBaseUrl]);
+
+  if (loading) return <div className="activity-loader">Loading...</div>;
+  if (error) return <div className="activity-error">Error: {error}</div>;
+
+  return (
+    <div className="user-activity-container">
+      <h3>Active Users ({activeUserCount})</h3>
+      <ul className="active-user-list">
+        {activeUsers.map((user) => (
+          <li key={user.id}>
+            <strong>{user.name || 'N/A'}</strong> ({user.email})
+          </li>
+        ))}
+      </ul>
+
+      <h4>Recent Activity Logs</h4>
+      <table className="activity-table">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Email</th>
+            <th>Activity Type</th>
+            <th>Timestamp</th>
+            <th>Duration</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {activityLogs.map((log, index) => (
+            <tr key={index}>
+              <td>{log.user_id}</td>
+              <td>{log.email}</td>
+              <td>{log.activity_type}</td>
+              <td>{new Date(log.timestamp).toLocaleString()}</td>
+              <td>{log.duration}</td>
+              <td>{log.session_status}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default UserActivity;
