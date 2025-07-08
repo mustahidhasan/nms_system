@@ -75,7 +75,7 @@ function Ping() {
 
   return (
     <div className="ping-container">
-      <h2>Network Operations Dashboard</h2>
+      <h2>Dashboard</h2>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
