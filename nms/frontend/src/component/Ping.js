@@ -57,6 +57,7 @@ function Ping({ apiBaseUrl }) {
 
   const handleLogout = async () => {
     try {
+      setLoading(true);
       const csrfToken = getCookie('csrftoken');
       const response = await fetch(`${apiBaseUrl}/logout/`, {
         method: 'POST',
@@ -74,6 +75,8 @@ function Ping({ apiBaseUrl }) {
       }
     } catch (error) {
       console.error('Logout error:', error);
+    }finally{
+      setLoading(false);
     }
   };
 
