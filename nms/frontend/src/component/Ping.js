@@ -1,5 +1,5 @@
 // src/components/Ping.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../assets/Ping.css';
 
 function Ping() {
@@ -9,9 +9,35 @@ function Ping() {
   const [emailList, setEmailList] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  useEffect(() => {
+    const storedIp = sessionStorage.getItem('ip_address');
+    if (storedIp) setStartIp(storedIp);
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('ip_address', startIp);
+  }, [startIp]);
+
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     setOperations((prev) => ({ ...prev, [name]: checked }));
+  };
+
+  const handleSelectAll = () => {
+    const isAllSelected = Object.keys(operations).length === 7 && Object.values(operations).every(Boolean);
+    const newOps = {
+      enable_ping: !isAllSelected,
+      verbose_ping: !isAllSelected,
+      traceroute: !isAllSelected,
+      dns_lookup: !isAllSelected,
+      verbos_dns_lookup: !isAllSelected,
+      simple_snmp_walk: !isAllSelected,
+      mtr: !isAllSelected,
+    };
+    setOperations((prev) => ({
+      ...newOps,
+      snmp_walk: prev.snmp_walk || false, // exclude snmp_walk
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -76,35 +102,51 @@ function Ping() {
     link.click();
   };
 
+  const clearForm = () => {
+    setStartIp('');
+    setOperations({});
+    setResults([]);
+    setEmailList('');
+    sessionStorage.removeItem('ip_address');
+  };
+
   return (
     <div className="ping-container full-screen">
       <div className="topbar">
-            <div className="left-section">
-                <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
-                ☰
-                </button>
-                <img src="logo_left.png" alt="Left Logo" className="logo" />
-            </div>
-            <h2 className="title">Dashboard</h2>
-            <div className="right-section">
-                <img src="logo_right.png" alt="Right Logo" className="logo" />
-            </div>
+        <div className="left-section">
+          <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+          <img src="logo_left.png" alt="Left Logo" className="logo" />
         </div>
-
+        <h2 className="title">Network Operations</h2>
+        <div className="right-section">
+          <img src="logo_right.png" alt="Right Logo" className="logo" />
+        </div>
+      </div>
 
       <div className="main-layout">
         {sidebarOpen && (
           <aside className="sidebar">
             <div className="operation-checkboxes">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={
+                    ['enable_ping', 'verbose_ping', 'traceroute', 'dns_lookup', 'verbos_dns_lookup', 'simple_snmp_walk', 'mtr']
+                      .every(op => operations[op])
+                  }
+                  onChange={handleSelectAll}
+                />
+                Select All
+              </label>
               {[
                 'enable_ping',
                 'verbose_ping',
                 'traceroute',
                 'dns_lookup',
                 'verbos_dns_lookup',
-                'snmp_walk',
                 'simple_snmp_walk',
                 'mtr',
+                'snmp_walk',
               ].map((op) => (
                 <label key={op} className="checkbox-label">
                   <input
@@ -136,6 +178,7 @@ function Ping() {
                 required
               />
               <button type="submit">Submit</button>
+              <button type="button" onClick={clearForm}>Clear</button>
             </div>
           </form>
 
