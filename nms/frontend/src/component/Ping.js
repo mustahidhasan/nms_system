@@ -76,7 +76,7 @@ function Ping() {
   };
 
   return (
-    <div className="ping-containe full-screenr">
+    <div className="ping-container full-screen">
       <div className="topbar">
         <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
           ☰
@@ -89,7 +89,6 @@ function Ping() {
       <div className="main-layout">
         {sidebarOpen && (
           <aside className="sidebar">
-
             <div className="operation-checkboxes">
               {[
                 'enable_ping',
