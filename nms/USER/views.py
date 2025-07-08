@@ -6,6 +6,8 @@ from django.http import JsonResponse
 from django.utils.timezone import now, timedelta
 from django.contrib.auth.decorators import login_required
 from USER.models import UserActivity
+from django.shortcuts import redirect
+
 
 User = get_user_model()
 
@@ -70,14 +72,15 @@ def azure_callback(request):
             session_status=True,
         )
 
-        return JsonResponse({
-            "message": "Login successful",
-            "user": {
-                "email": user.email,
-                "name": user.first_name,
-                "created": created
-            }
-        })
+        # return JsonResponse({
+        #     "message": "Login successful",
+        #     "user": {
+        #         "email": user.email,
+        #         "name": user.first_name,
+        #         "created": created
+        #     }
+        # })
+        return redirect("http://localhost:3000/dashboard")
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

@@ -1,16 +1,23 @@
 // src/component/Login.js
 import React from 'react';
-import '../assets/Login.css'; // Import the CSS file
+import { useNavigate } from 'react-router-dom';
+import '../assets/Login.css';
 
 function Login() {
+  const navigate = useNavigate();
+
   const handleSSOLogin = async () => {
     try {
       const response = await fetch('http://localhost:8000/azure-login/');
       const data = await response.json();
       if (data.login_url) {
+        // Redirect to Azure login
         window.location.href = data.login_url;
+      } else if (data.success) {
+        // If backend says login is already successful
+        navigate('/dashboard'); // Go to the dashboard route
       } else {
-        alert('No login URL received.');
+        alert('Login failed or no login URL provided.');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -19,12 +26,12 @@ function Login() {
 
   return (
     <div className="login-container">
-    <div className="login-box">
+      <div className="login-box">
         <img src="logo_left.png" className="logo-left" alt="LOGO1" />
         <img src="logo_right.png" className="logo-right" alt="LOGO2" />
         <h1>Log In</h1>
         <button onClick={handleSSOLogin}>LOGIN VIA SSO</button>
-    </div>
+      </div>
     </div>
   );
 }
