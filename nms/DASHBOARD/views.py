@@ -432,6 +432,7 @@ def ping_operation(request):
     mtr = request.POST.get("mtr")
 
     ip_addresses = validate_ip_addresses(get_ip_address_all, request)
+    print("line 435", ip_addresses)
     if not ip_addresses:
         return JsonResponse({"error": "No valid IP address or hostname found."}, status=400)
 
@@ -510,7 +511,7 @@ def ping_operation(request):
                 "operation": row[0],
                 "result": row[1],
             })
-
+        print("line 513", results)
         return JsonResponse({"success": True, "results": results})
 
     except Exception as e:

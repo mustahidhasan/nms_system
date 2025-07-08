@@ -1,0 +1,362 @@
+.ping-container.full-screen {
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+  background-color: #f8f9fa;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 10px;
+}
+
+.left-section,
+.right-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  font-size: 24px;
+  color: #247e00;
+  margin: 0;
+}
+
+
+.menu-toggle {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #247e00;
+}
+
+.logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+.main-layout {
+  flex: 1;
+  display: flex;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 220px;
+  background-color: #e9ecef;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 15px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.operation-checkboxes {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkbox-label {
+  background-color: #d4edda;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.footer-icons {
+  display: flex;
+  justify-content: space-around;
+  font-size: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #ccc;
+  gap: 12px;
+}
+
+.footer-icons div {
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  user-select: none;
+  transition: background-color 0.3s ease;
+  width: 100px;
+  text-align: center;
+  color: white;
+}
+
+.footer-icons div:first-child {
+  background-color: #ffc107;
+}
+
+.footer-icons div:first-child:hover {
+  background-color: #e0a800;
+}
+
+.footer-icons div:last-child {
+  background-color: #dc3545;
+}
+
+.footer-icons div:last-child:hover {
+  background-color: #b02a37;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.input-section {
+  display: flex;
+  gap: 10px;
+}
+
+input[type="text"] {
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  flex: 1;
+}
+
+button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s ease-in-out;
+  width: fit-content;
+}
+
+button:hover {
+  background-color: #45a049;
+  transform: scale(1.02);
+}
+
+.results-section {
+  margin-top: 30px;
+  overflow-y: auto;
+}
+
+.results-section h3 {
+  color: #247e00;
+}
+
+.email-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.email-actions input[type="text"] {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.result-table th,
+.result-table td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-family: monospace;
+  text-align: left;
+  vertical-align: top;
+}
+
+.result-table pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* src/assets/Ping.css */
+
+/* Container for SNMP fields */
+.snmp-fields {
+  margin-top: 15px;
+  padding: 12px;
+  border: 1px solid #3a8dde;
+  background-color: #e9f2fc;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1a3a6e;
+}
+
+/* Label styling */
+.snmp-fields label,
+.snmp-fields div {
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+  color: #145a96;
+}
+
+/* Inputs inside SNMP fields */
+.snmp-fields input,
+.snmp-fields select {
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 12px;
+  border: 1px solid #3a8dde;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #0b2e5a;
+  background-color: white;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.snmp-fields input:focus,
+.snmp-fields select:focus {
+  border-color: #1a5bb8;
+  outline: none;
+}
+
+/* Optional: icons before text */
+.snmp-fields > div {
+  display: flex;
+  align-items: center;
+}
+
+.snmp-fields > div::before {
+  content: '🔹';
+  margin-right: 6px;
+}
+
+/* For the v3 locked items */
+.snmp-fields div:nth-child(n+7)::before {
+  content: '🔒';
+  margin-right: 6px;
+  color: #1962d1;
+}
+
+.about-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999;
+}
+
+.popup-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+}
+
+.popup-content {
+  position: relative;
+  width: 80%;
+  max-width: 900px;
+  margin: 5% auto;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  z-index: 1000;
+}
+
+.close-btn {
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  font-size: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+
+.settings-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.settings-icon {
+  font-size: 22px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.settings-dropdown {
+  position: absolute;
+  top: 35px;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-width: 100px;
+  z-index: 999;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.settings-dropdown div {
+  padding: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: background-color 0.3s;
+}
+
+.settings-dropdown div:hover {
+  background-color: #f0f0f0;
+}
+
+.user-activity-modal .popup-content {
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
