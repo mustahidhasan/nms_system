@@ -1,5 +1,6 @@
 // src/components/UserActivity.js
 import React, { useEffect, useState } from 'react';
+import '../assets/UserActivity.css';
 
 function UserActivity({ apiBaseUrl }) {
   const [loading, setLoading] = useState(true);
