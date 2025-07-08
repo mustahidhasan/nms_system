@@ -1,4 +1,4 @@
-# steps to run this project
+# steps to run this project backend:
 - python3 -m venv env
 - source env/bin/activate
 
@@ -20,3 +20,9 @@ username: admin
 password: 1234
 
 sudo apt-get install mtr
+
+
+# steps to run the project front end
+
+1. cd frontend
+2. npm start
