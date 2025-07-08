@@ -81,20 +81,14 @@ function Ping() {
         <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
           ☰
         </button>
-        <img src="/logo-left.png" alt="Left Logo" className="logo" />
+        <img src="logo_left.png" alt="Left Logo" className="logo" />
         <h2>Dashboard</h2>
-        <img src="/logo-right.png" alt="Right Logo" className="logo" />
+        <img src="logo_right.png" alt="Right Logo" className="logo" />
       </div>
 
       <div className="main-layout">
         {sidebarOpen && (
           <aside className="sidebar">
-            <div>
-              <div className="menu-title">MENU</div>
-              <div className="menu-item">PING</div>
-              <div className="menu-item">VERBOSE PING</div>
-              <div className="menu-item">DNS</div>
-            </div>
 
             <div className="operation-checkboxes">
               {[
