@@ -1,24 +1,39 @@
-# Build stage
+# Stage 1: Build React app
 FROM node:20 AS build
 
+# Set working directory
 WORKDIR /app
 
-# Copy dependencies first for caching
+# Copy package.json and package-lock.json
 COPY package.json package-lock.json ./
+
+# Install dependencies
 RUN npm install
 
-# Copy all frontend code and build React app
+# Copy the rest of the frontend source code
 COPY . .
+
+# Symlink the .env from project root
+# Assuming you mount or copy .env from nms/.env when building via docker-compose
+RUN ln -s /app/../.env .env
+
+# Build React app
 RUN npm run build
 
-# Production stage
+# Stage 2: Serve with nginx
 FROM nginx:stable-alpine
 
-# Copy React build
-COPY --from=build /app/build /usr/share/nginx/html
+# Set working directory
+WORKDIR /usr/share/nginx/html
 
-# Copy custom Nginx config
+# Copy build output from Stage 1
+COPY --from=build /app/build .
+
+# Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Expose port 80
 EXPOSE 80
+
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
