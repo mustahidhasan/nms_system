@@ -1,17 +1,12 @@
-version: '3.9'
-
 services:
   backend:
     build:
-      context: ./  # nms/
+      context: ./ 
       dockerfile: Dockerfile
-      args:
-        ENV_FILE: ${ENV_FILE:-.env.local}
     container_name: django
     env_file:
-      - ${ENV_FILE:-.env.local}
+      - .env
     volumes:
-      - ./:/app
       - ./staticfiles:/app/staticfiles
     ports:
       - "8000:8000"
@@ -22,15 +17,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: ${FRONTEND_TARGET:-dev}  # dev or prod
-      args:
-        ENV_FILE: ${ENV_FILE:-.env.local}
+      target: prod
     container_name: react
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
 
@@ -40,9 +28,9 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./frontend/build:/usr/share/nginx/html
       - ./staticfiles:/app/staticfiles
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - backend
       - frontend
