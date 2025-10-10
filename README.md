@@ -1,8 +1,4 @@
-````markdown
 # 🚀 NMS Project – Production Deployment (AWS EC2)
-
-This guide explains how to deploy the **NMS** project to an **AWS EC2 instance** for production use.
-
 ---
 
 ## 🧩 1. Upload the project to the server
@@ -122,47 +118,8 @@ REACT_APP_API_BASE_URL=http://backend:8000/api
 
 ---
 
-## 🧱 5. Update `docker-compose.yml` (Production)
 
-```yaml
-version: '3.9'
-
-services:
-  backend:
-    build:
-      context: ./  # NMS backend folder
-      dockerfile: Dockerfile
-    container_name: django
-    volumes:
-      - ./:/app
-      - ./db.sqlite3:/app/db.sqlite3
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    depends_on:
-      - redis
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: react
-    ports:
-      - "80:80"  # Serve React on host port 80
-    depends_on:
-      - backend
-
-  redis:
-    image: redis:latest
-    container_name: redis
-    ports:
-      - "6379:6379"
-```
-
----
-
-## 🏗 6. Build and run Docker containers
+## 🏗 5. Build and run Docker containers
 
 ```bash
 cd ~/nms
@@ -184,7 +141,7 @@ docker-compose logs -f
 
 ---
 
-## ✅ 7. Access Your App
+## ✅ 6. Access Your App
 
 Open your browser and visit:
 
