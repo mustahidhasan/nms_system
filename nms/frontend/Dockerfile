@@ -1,33 +1,37 @@
-# Stage 1: build
+# Stage 1: Build
 FROM node:20 AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm install
 
 COPY src ./src
 COPY public ./public
 
-ARG ENV_FILE=.env.local
-RUN if [ "$ENV_FILE" = ".env.prod" ]; then cp ../.env.prod .env; else cp ../.env.local .env; fi
+ARG ENV_FILE=.env
+RUN cp ${ENV_FILE} .env
 
 RUN npm run build
 
-# Stage 2: prod server
+# Stage 2: Production server (nginx)
 FROM nginx:stable-alpine AS prod
-WORKDIR /usr/share/nginx/html
-COPY --from=build /app/build .
-COPY ../nginx.conf /etc/nginx/conf.d/default.conf
+
+COPY --from=build /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 
-# Stage dev
+# Stage 3: Dev
 FROM node:20 AS dev
+
 WORKDIR /app
-COPY package.json package-lock.json ./
+
+COPY package*.json ./
 RUN npm install
+
 COPY src ./src
 COPY public ./public
+
 EXPOSE 3000
 CMD ["npm", "start"]
