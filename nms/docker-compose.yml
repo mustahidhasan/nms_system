@@ -6,13 +6,13 @@ services:
       context: ./  # nms/
       dockerfile: Dockerfile
       args:
-        ENV_FILE: ${ENV_FILE:-local}
+        ENV_FILE: ${ENV_FILE:-.env.local}
     container_name: django
-    volumes:
-      - ./:/app                 # Mount for live editing
-      - ./staticfiles:/app/staticfiles
     env_file:
-      - ${ENV_FILE_FILE:-.env.local}
+      - ${ENV_FILE:-.env.local}
+    volumes:
+      - ./:/app
+      - ./staticfiles:/app/staticfiles
     ports:
       - "8000:8000"
     depends_on:
@@ -24,7 +24,7 @@ services:
       dockerfile: Dockerfile
       target: ${FRONTEND_TARGET:-dev}  # dev or prod
       args:
-        ENV_FILE: ${ENV_FILE:-local}
+        ENV_FILE: ${ENV_FILE:-.env.local}
     container_name: react
     volumes:
       - ./frontend/src:/app/src

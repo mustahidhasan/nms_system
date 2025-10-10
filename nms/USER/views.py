@@ -5,9 +5,8 @@ from django.contrib.auth import login, logout, get_user_model
 from django.http import JsonResponse
 from django.utils.timezone import now, timedelta
 from django.contrib.auth.decorators import login_required
-from USER.models import UserActivity
 from django.shortcuts import redirect
-
+from USER.models import UserActivity
 
 User = get_user_model()
 
@@ -31,6 +30,7 @@ def azure_login(request):
 
 def azure_callback(request):
     code = request.GET.get('code')
+    next_url = request.GET.get('next', '/dashboard')
 
     token_data = {
         'client_id': settings.AZURE_CLIENT_ID,
@@ -56,13 +56,11 @@ def azure_callback(request):
         name = user_info.get('displayName') or email
 
         if not email:
-            return JsonResponse({'error': 'Could not retrieve user email from Microsoft Graph'}, status=400)
+            return JsonResponse({'error': 'Could not retrieve user email'}, status=400)
 
         user, created = User.objects.get_or_create(
-            email=email,
-            defaults={'username': email, 'first_name': name}
+            email=email, defaults={'username': email, 'first_name': name}
         )
-
         login(request, user)
 
         UserActivity.objects.create(
@@ -72,15 +70,8 @@ def azure_callback(request):
             session_status=True,
         )
 
-        # return JsonResponse({
-        #     "message": "Login successful",
-        #     "user": {
-        #         "email": user.email,
-        #         "name": user.first_name,
-        #         "created": created
-        #     }
-        # })
-        return redirect("http://localhost:3000/dashboard")
+        safe_redirect = next_url if next_url.startswith('/') else '/dashboard'
+        return redirect(f"{settings.FRONTEND_URL}{safe_redirect}")
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -123,7 +114,10 @@ def azure_logout(request):
 def active_users_dashboard(request):
     recent_threshold = now() - timedelta(minutes=15)
     recent_activities = UserActivity.objects.filter(timestamp__gte=recent_threshold)
-    active_users = User.objects.filter(id__in=recent_activities.values_list('user_id', flat=True)).distinct()
+    active_users = User.objects.filter(
+        id__in=recent_activities.values_list('user_id', flat=True)
+    ).distinct()
+
     user_activities = UserActivity.objects.select_related('user').order_by('-timestamp')[:100]
 
     return JsonResponse({
