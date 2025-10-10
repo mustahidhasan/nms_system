@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   backend:
     build:
@@ -5,8 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: django
     volumes:
-      - ./:/app   # Mount entire backend for live editing
-      - ./db.sqlite3:/app/db.sqlite3  # Persist SQLite
+      - ./:/app
+      - ./db.sqlite3:/app/db.sqlite3
     ports:
       - "8000:8000"
     env_file:
@@ -20,7 +22,7 @@ services:
       dockerfile: Dockerfile
     container_name: react
     ports:
-      - "3000:80"
+      - "80:80"  # Serve React on default HTTP port
     depends_on:
       - backend
 
