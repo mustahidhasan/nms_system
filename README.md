@@ -1,242 +1,119 @@
-## 🟢 Production Deployment (AWS EC2)
-
-This guide explains how to deploy the **NMS** project on an **AWS EC2 instance**.
+Got it! Here’s the **clean, updated README** focusing only on **single `.env`** and **two Docker Compose files** for dev and prod, without repeating full Dockerfile or nginx configs:
 
 ---
 
-### 1️⃣ Upload Project to EC2
+# NMS Project - Deployment & Local Setup
 
-Use `scp` to copy your project folder (or zip) to the EC2 instance:
-
-```bash
-scp -i your-key.pem -r /path/to/your/project ec2-user@EC2_PUBLIC_IP:~/nms
-```
-
-> Replace:
->
-> * `your-key.pem` → your SSH key file
-> * `/path/to/your/project` → local path to your NMS project
-> * `EC2_PUBLIC_IP` → your instance public IP
-
-If you zipped the project:
-
-```bash
-scp -i your-key.pem /path/to/nms.zip ec2-user@EC2_PUBLIC_IP:~/
-```
+This guide explains how to run **NMS** locally and on **AWS EC2** using Docker.
 
 ---
 
-### 2️⃣ Connect to EC2
+## 1️⃣ Prerequisites
 
-```bash
-ssh -i your-key.pem ec2-user@EC2_PUBLIC_IP
-cd ~/
-unzip nms.zip   # Only if uploaded as zip
-cd nms
-```
+* Docker & Docker Compose installed
+* AWS EC2 instance (for production)
+* `.env` file with configuration
 
 ---
 
-### 3️⃣ Install Docker & Docker Compose (Amazon Linux 2023)
+## 2️⃣ Environment Variables
 
-```bash
-sudo dnf update -y
-sudo dnf install docker -y
-sudo systemctl enable docker
-sudo systemctl start docker
-sudo usermod -aG docker ec2-user
-```
-
-> Log out and reconnect to apply Docker group permissions:
-
-```bash
-exit
-ssh -i your-key.pem ec2-user@EC2_PUBLIC_IP
-docker ps
-```
-
-Install Docker Compose:
-
-```bash
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-docker-compose --version
-```
-
----
-
-### 4️⃣ Configure `.env` for Production
+Create a single `.env` file in the project root:
 
 ```env
-# -----------------------------
-# Host & ports
-# -----------------------------
-HOST_URL=http://54.211.170.64
-FRONTEND_PORT=80
-BACKEND_PORT=8000
-
-# -----------------------------
-# Django backend settings
-# -----------------------------
-DJANGO_SECRET_KEY=your-secret-key
-DEBUG=False
-ALLOWED_HOSTS=54.211.170.64
-
-# Azure AD credentials
-AZURE_TENANT_ID=<your-tenant-id>
-AZURE_CLIENT_ID=<your-client-id>
-AZURE_CLIENT_SECRET=<your-client-secret>
-
-# Redirect URIs
-AZURE_REDIRECT_URI=${HOST_URL}/oauth2/callback/
-POST_LOGOUT_REDIRECT_URI=${HOST_URL}/
-
-# -----------------------------
-# CORS & CSRF
-# -----------------------------
-CORS_ALLOWED_ORIGINS=${HOST_URL}
-CSRF_TRUSTED_ORIGINS=${HOST_URL}
-
-# -----------------------------
-# React frontend settings
-# -----------------------------
-REACT_APP_AZURE_CLIENT_ID=<your-client-id>
-REACT_APP_AZURE_TENANT_ID=<your-tenant-id>
-REACT_APP_REDIRECT_URI=${HOST_URL}/oauth2/callback/
-REACT_APP_SCOPES=openid profile email offline_access User.Read
-REACT_APP_API_BASE_URL=http://backend:8000/api
-```
-
-> ✅ Using `${HOST_URL}` reduces repetition—change only the IP/hostname if needed.
-
----
-
-### 5️⃣ Build & Run Docker Containers
-
-```bash
-docker-compose build --no-cache --build-arg ENV_FILE=prod
-docker-compose up -d
-```
-
-Check containers:
-
-```bash
-docker ps
-docker-compose logs -f
-```
-
----
-
-### 6️⃣ Access the App
-
-Frontend (React):
-
-```
-http://54.211.170.64/
-```
-
-Backend Admin:
-
-```
-http://54.211.170.64/admin/
-```
-
-> React communicates with backend via Docker network (`http://backend:8000/api`).
-
----
-
-### ⚡ Notes
-
-* For HTTPS, configure Nginx + Let’s Encrypt and update `.env` accordingly.
-* Ensure EC2 **security group** allows ports: 80, 443, 8000, 6379.
-* For production, consider **PostgreSQL/MySQL** instead of SQLite.
-
----
-
-## 🟡 Local Development
-
-### 1️⃣ Clone Project
-
-```bash
-git clone <your-repo-url>
-cd nms
-```
-
----
-
-### 2️⃣ Configure `.env.local`
-
-```env
-# -----------------------------
-# Host & ports
-# -----------------------------
-HOST_URL=http://localhost
+HOST_URL=http://localhost       # Change to EC2 IP in prod
 FRONTEND_PORT=3000
 BACKEND_PORT=8000
-
-# -----------------------------
-# Django backend settings
-# -----------------------------
-DJANGO_SECRET_KEY=your-local-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost
-
-# Azure AD credentials
+DJANGO_SECRET_KEY=<your-secret-key>
+DEBUG=True                       # Set False in prod
+ALLOWED_HOSTS=localhost,127.0.0.1   # Set EC2 IP in prod
 AZURE_TENANT_ID=<your-tenant-id>
 AZURE_CLIENT_ID=<your-client-id>
 AZURE_CLIENT_SECRET=<your-client-secret>
-
-# Redirect URIs
 AZURE_REDIRECT_URI=${HOST_URL}:${BACKEND_PORT}/oauth2/callback/
 POST_LOGOUT_REDIRECT_URI=${HOST_URL}:${BACKEND_PORT}/
-
-# -----------------------------
-# CORS & CSRF
-# -----------------------------
 CORS_ALLOWED_ORIGINS=${HOST_URL}:${FRONTEND_PORT}
 CSRF_TRUSTED_ORIGINS=${HOST_URL}:${FRONTEND_PORT}
 CORS_ALLOW_CREDENTIALS=True
-
-# -----------------------------
-# React frontend settings
-# -----------------------------
 REACT_APP_AZURE_CLIENT_ID=<your-client-id>
 REACT_APP_AZURE_TENANT_ID=<your-tenant-id>
 REACT_APP_REDIRECT_URI=${HOST_URL}:${FRONTEND_PORT}/oauth2/callback/
 REACT_APP_SCOPES=openid profile email offline_access User.Read
-REACT_APP_API_BASE_URL=http://localhost:8000
+REACT_APP_API_BASE_URL=${HOST_URL}:${BACKEND_PORT}/api
 ```
+
+> Change `HOST_URL`, ports, and credentials for production.
 
 ---
 
-### 3️⃣ Build & Run Docker Containers (Local)
+## 3️⃣ Docker Compose Files
+
+### Development (`docker-compose.dev.yml`)
+
+* Backend: local dev, hot-reload
+* Frontend: React dev server on `3000`
+* Redis included
 
 ```bash
-docker-compose build --no-cache --build-arg ENV_FILE=local
-docker-compose up -d
+docker-compose -f docker-compose.dev.yml up --build
 ```
 
-Check logs:
+* Frontend: `http://localhost:3000`
+* Backend: `http://localhost:8000`
+
+---
+
+### Production (`docker-compose.prod.yml`)
+
+* Backend: Django via Gunicorn + Uvicorn
+* Frontend: React build served by Nginx
+* Redis included
 
 ```bash
-docker-compose logs -f
+docker-compose -f docker-compose.prod.yml up --build -d
+docker-compose -f docker-compose.prod.yml logs -f
 ```
 
-Frontend (React):
+* Frontend: `http://<EC2_PUBLIC_IP>`
+* Backend API proxied via Nginx `/api`
+* Backend admin: `http://<EC2_PUBLIC_IP>/admin/`
 
-```
-http://localhost:3000
-```
+---
 
-Backend Admin:
+## 4️⃣ Switching Between Dev and Prod
 
-```
-http://localhost:8000/admin/
+Single `.env` allows switching by **choosing compose file**:
+
+```bash
+# Development
+docker-compose -f docker-compose.dev.yml up --build
+
+# Production
+docker-compose -f docker-compose.prod.yml up --build -d
 ```
 
 ---
 
-This README now clearly separates **production** and **local** setups, uses environment variables for host/IP, and ensures the backend and frontend communicate correctly via Docker.
+## 5️⃣ AWS EC2 Deployment Notes
+
+1. Upload project via `scp`.
+2. Install Docker & Docker Compose (Amazon Linux 2023).
+3. Update `.env` for **EC2 IP** and set `DEBUG=False`.
+4. Open ports **80, 443, 8000, 6379** in security group.
+5. Run production compose:
+
+```bash
+docker-compose -f docker-compose.prod.yml up --build -d
+```
+
+6. Optional: Setup HTTPS with Let’s Encrypt.
 
 ---
 
+✅ This README now supports **single `.env`**, two separate compose files for dev/prod, and clear Docker build/run instructions.
+
+---
+
+If you want, I can also write a **one-liner command** to automatically switch between dev and prod with **environment variables**, so you don’t have to type two separate compose commands.
+
+Do you want me to do that?
