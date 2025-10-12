@@ -16,10 +16,17 @@ else
   COMPOSE_FILE="docker-compose.dev.yml"
 fi
 
+# Export for use inside containers if needed
 export ENV_FILE
 export HOST_IP
 
-docker-compose -f $COMPOSE_FILE build
+echo "Building containers with ENV_FILE=$ENV_FILE..."
+
+# Build with build-args
+docker-compose -f $COMPOSE_FILE build \
+  --build-arg ENV_FILE=$ENV_FILE
+
+# Start the containers
 docker-compose -f $COMPOSE_FILE up -d
 
 echo "$ENV environment is up!"
