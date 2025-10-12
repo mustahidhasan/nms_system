@@ -1,35 +1,18 @@
+## 1️⃣ Upload Project to Server
 
----
-
-## 🟢 Production Deployment (AWS EC2)
-
-This guide explains how to deploy the **NMS** project on an **AWS EC2 instance**.
-
----
-
-### 1️⃣ Upload Project to EC2
-
-Use `scp` to copy your project folder (or zip) to the EC2 instance:
+Use `scp` to copy your project folder (or zip) to the server:
 
 ```bash
 scp -i your-key.pem -r /path/to/your/project ec2-user@EC2_PUBLIC_IP:~/nms
 ```
 
-> Replace:
->
-> * `your-key.pem` → your SSH key file
-> * `/path/to/your/project` → local path to your NMS project
-> * `EC2_PUBLIC_IP` → your instance public IP
-
-If you zipped the project:
+> Or upload a zip:
 
 ```bash
 scp -i your-key.pem /path/to/nms.zip ec2-user@EC2_PUBLIC_IP:~/
 ```
 
----
-
-### 2️⃣ Connect to EC2
+Connect to the server:
 
 ```bash
 ssh -i your-key.pem ec2-user@EC2_PUBLIC_IP
@@ -40,7 +23,7 @@ cd nms
 
 ---
 
-### 3️⃣ Install Docker & Docker Compose (Amazon Linux 2023)
+## 2️⃣ Install Docker & Docker Compose (Amazon Linux 2023)
 
 ```bash
 sudo dnf update -y
@@ -68,66 +51,54 @@ docker-compose --version
 
 ---
 
-### 4️⃣ Configure `.env`
+## 3️⃣ Configure `.env` Files
 
-Use a **single `.env` file** for both local and production. Update only the `HOST_URL` and `ALLOWED_HOSTS` for production:
+You have **two environment files**:
+
+* **`.env.dev`** → for local development
+* **`.env.prod`** → for production
+
+### **.env.prod (example)**
 
 ```env
-# -----------------------------
 # Host & ports
-# -----------------------------
-HOST_URL=http://54.211.170.64    # <- Update this to EC2 IP for production
+HOST_URL=http://50.17.3.155
 FRONTEND_PORT=80
 BACKEND_PORT=8000
-
-# -----------------------------
-# Django backend settings
-# -----------------------------
-DJANGO_SECRET_KEY=your-secret-key
 DEBUG=False
-ALLOWED_HOSTS=54.211.170.64     # <- Update this to EC2 IP for production
-
-# Azure AD credentials
-AZURE_TENANT_ID=<your-tenant-id>
-AZURE_CLIENT_ID=<your-client-id>
-AZURE_CLIENT_SECRET=<your-client-secret>
-
-# Redirect URIs
-AZURE_REDIRECT_URI=${HOST_URL}/oauth2/callback/
-POST_LOGOUT_REDIRECT_URI=${HOST_URL}/
-
-# -----------------------------
-# CORS & CSRF
-# -----------------------------
-CORS_ALLOWED_ORIGINS=${HOST_URL}
-CSRF_TRUSTED_ORIGINS=${HOST_URL}
-
-# -----------------------------
-# React frontend settings
-# -----------------------------
-REACT_APP_AZURE_CLIENT_ID=<your-client-id>
-REACT_APP_AZURE_TENANT_ID=<your-tenant-id>
-REACT_APP_REDIRECT_URI=${HOST_URL}/oauth2/callback/
-REACT_APP_SCOPES=openid profile email offline_access User.Read
-REACT_APP_API_BASE_URL=http://backend:8000/api
+ALLOWED_HOSTS=50.17.3.155
 ```
 
-> For local development, set `HOST_URL=http://localhost` and `ALLOWED_HOSTS=localhost,127.0.0.1`.
+> For local development, use `.env.dev`:
+
+```env
+HOST_URL=http://localhost
+FRONTEND_PORT=3000
+BACKEND_PORT=8000
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
 
 ---
 
-### 5️⃣ Build & Run Docker Containers
+## 4️⃣ Build & Run Containers Using `build.sh`
 
+You now use the **`build.sh` script** to build and start containers for dev or prod. This handles environment variables and static files automatically.
+
+**make sure `build.sh` is executable:**
+```bash
+chmod +x build.sh
+```
 **Local Development:**
 
 ```bash
-docker-compose -f docker-compose.dev.yml up --build -d
+./build.sh dev
 ```
 
-**Production (AWS EC2):**
+**Production (server, e.g., 50.17.3.155):**
 
 ```bash
-docker-compose -f docker-compose.prod.yml up --build -d
+./build.sh prod
 ```
 
 Check logs:
@@ -138,32 +109,14 @@ docker-compose logs -f
 
 ---
 
-### 6️⃣ Access the App
+## 5️⃣ Access the App
 
-**Frontend (React):**
+* **Frontend (React):**
 
-```
-Local: http://localhost:3000
-Production: http://54.211.170.64/
-```
+  * Local: `http://localhost:3000`
+  * Production: `http://50.17.3.155/`
 
-**Backend Admin:**
+* **Backend Admin:**
 
-```
-Local: http://localhost:8000/admin/
-Production: http://54.211.170.64/admin/
-```
-
-> React communicates with backend via Docker network (`http://backend:8000/api`).
-
----
-
-### ⚡ Notes
-
-* For HTTPS, configure Nginx + Let’s Encrypt and update `.env` accordingly.
-* Ensure EC2 **security group** allows ports: 80, 443, 8000, 6379.
-* For production, consider **PostgreSQL/MySQL** instead of SQLite.
-* `.env` file now controls both local and production; only `HOST_URL` and `ALLOWED_HOSTS` need changes.
-
----
-
+  * Local: `http://localhost:8000/admin/`
+  * Production: `http://50.17.3.155:8000/admin/`
