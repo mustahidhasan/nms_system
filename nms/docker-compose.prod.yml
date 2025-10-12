@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile
       target: prod
       args:
-        ENV_FILE=../.env.prod
+        ENV_FILE: ../.env.prod
     container_name: react
     depends_on:
       - backend
