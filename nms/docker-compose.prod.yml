@@ -35,6 +35,8 @@ services:
     depends_on:
       - backend
       - frontend
+    volumes:
+      - ./staticfiles:/app/staticfiles  # <-- this exposes Django static to Nginx
 
   redis:
     image: redis:latest
