@@ -7,7 +7,7 @@ if [ "$ENV" = "prod" ]; then
   echo "Building Production Environment..."
   ENV_FILE_BE=".env.prod.be"
   ENV_FILE_FE=".env.prod.fe"
-  HOST_IP="50.17.3.155"
+  HOST_IP="54.242.248.245"
   COMPOSE_FILE="docker-compose.prod.yml"
 else
   echo "Building Development Environment..."
