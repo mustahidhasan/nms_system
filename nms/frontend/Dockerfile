@@ -1,43 +1,35 @@
-# Stage 1: Build
-FROM node:20 AS build
-
-# Set build argument for environment file (default to .env.dev)
-ARG ENV_FILE=.env.dev
+# Stage 1: Build React app
+FROM node:20 as build
 WORKDIR /app
 
-# Copy package.json and install dependencies
+# Copy package.json & package-lock.json & install dependencies
 COPY package*.json ./
 RUN npm install
 
 # Copy source code
-COPY src ./src
-COPY public ./public
+COPY . .
 
-# Copy environment file safely if it exists
+# Copy environment file for production
+ARG ENV_FILE=.env.prod.fe
 COPY ${ENV_FILE} .env
 
-# Build the React app
+# Build React app
 RUN npm run build
 
-# Stage 2: Production (Nginx)
-FROM nginx:stable-alpine AS prod
-# Copy build output
+# Stage 2: Serve with Nginx
+FROM nginx:stable-alpine as prod
+
+# Remove default nginx website
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy built React app
 COPY --from=build /app/build /usr/share/nginx/html
-# Copy nginx config
+
+# Copy custom Nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
 EXPOSE 80
+
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
-
-# Stage 3: Development
-FROM node:20 AS dev
-WORKDIR /app
-
-# Copy package.json and install dependencies
-COPY package*.json ./
-RUN npm install
-
-# Copy source code for live dev
-COPY src ./src
-COPY public ./public
-EXPOSE 3000
-CMD ["npm", "start"]

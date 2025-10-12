@@ -1,32 +1,33 @@
 #!/bin/bash
-
 # Usage: ./build.sh dev OR ./build.sh prod
 
 ENV=${1:-dev}
 
 if [ "$ENV" = "prod" ]; then
   echo "Building Production Environment..."
-  ENV_FILE=".env.prod"
+  ENV_FILE_BE=".env.prod.be"
+  ENV_FILE_FE=".env.prod.fe"
   HOST_IP="50.17.3.155"
   COMPOSE_FILE="docker-compose.prod.yml"
 else
   echo "Building Development Environment..."
-  ENV_FILE=".env.dev"
+  ENV_FILE_BE=".env.dev.be"
+  ENV_FILE_FE=".env.dev.fe"
   HOST_IP="localhost"
   COMPOSE_FILE="docker-compose.dev.yml"
 fi
 
-# Export for use inside containers if needed
-export ENV_FILE
 export HOST_IP
 
-echo "Building containers with ENV_FILE=$ENV_FILE..."
+echo "Building backend container with $ENV_FILE_BE..."
+docker-compose -f $COMPOSE_FILE build backend \
+  --build-arg ENV_FILE=$ENV_FILE_BE
 
-# Build with build-args
-docker-compose -f $COMPOSE_FILE build \
-  --build-arg ENV_FILE=$ENV_FILE
+echo "Building frontend container with $ENV_FILE_FE..."
+docker-compose -f $COMPOSE_FILE build frontend \
+  --build-arg ENV_FILE=$ENV_FILE_FE
 
-# Start the containers
+echo "Starting all containers..."
 docker-compose -f $COMPOSE_FILE up -d
 
 echo "$ENV environment is up!"
