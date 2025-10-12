@@ -61,18 +61,18 @@ There are **two `.env` files**:
 ### **Backend example (`nms/.env.prod.be`)**
 
 ```env
-HOST_URL=http://54.242.248.245
+HOST_URL=http://<PUBLIC IP>
 BACKEND_PORT=8000
 DEBUG=False
-ALLOWED_HOSTS=54.242.248.245
+ALLOWED_HOSTS=<PUBLIC IP>
 DJANGO_SECRET_KEY=your-secret-key
 ```
 
 ### **Frontend example (`nms/frontend/.env.prod.fe`)**
 
 ```env
-REACT_APP_API_URL=http://54.242.248.245/api
-REACT_APP_FRONTEND_URL=http://54.242.248.245
+REACT_APP_API_URL=http://<PUBLIC IP>/api
+REACT_APP_FRONTEND_URL=http://<PUBLIC IP>
 ```
 
 ---
@@ -103,5 +103,5 @@ docker-compose logs -f
 
 ## 5️⃣ Access the App
 
-* **Frontend (React SPA):** `http://54.242.248.245/`
-* **Backend Admin:** `http://54.242.248.245/admin/login/?next=/admin/`
+* **Frontend (React SPA):** `http://<PUBLIC IP>/`
+* **Backend Admin:** `http://<PUBLIC IP>/admin/login/?next=/admin/`
