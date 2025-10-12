@@ -10,10 +10,11 @@ services:
       - .env.prod.be
     volumes:
       - ./staticfiles:/app/staticfiles
-    ports:
-      - "8000:8000"
     depends_on:
       - redis
+    # optional port mapping if needed externally
+    ports:
+      - "8000:8000"
 
   frontend:
     build:
@@ -22,21 +23,12 @@ services:
       target: prod
       args:
         ENV_FILE: .env.prod.fe
-    image: nms-frontend          # ✅ Tag it explicitly so nginx uses this image
+    image: nms-frontend
     container_name: frontend
     depends_on:
       - backend
-
-  nginx:
-    image: nms-frontend          # ✅ Use the same built image that has React + nginx
-    container_name: nginx
     ports:
-      - "80:80"
-    volumes:
-      - ./staticfiles:/app/staticfiles
-    depends_on:
-      - backend
-      - frontend
+      - "80:80"   # React + Nginx
 
   redis:
     image: redis:latest
