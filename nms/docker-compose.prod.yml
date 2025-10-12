@@ -5,8 +5,7 @@ services:
     build:
       context: ./ 
       dockerfile: Dockerfile
-      args:
-        HOST_IP: 50.17.3.155
+    container_name: django
     env_file:
       - .env.prod
     volumes:
