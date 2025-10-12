@@ -1,7 +1,9 @@
 FROM python:3.12-slim
 
+ARG HOST_IP
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV HOST_IP=${HOST_IP}
 
 WORKDIR /app
 
@@ -13,6 +15,9 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . .
+
+# Collect static files
+RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
