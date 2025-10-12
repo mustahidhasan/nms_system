@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   backend:
     build:
@@ -5,12 +7,12 @@ services:
       dockerfile: Dockerfile
     container_name: django
     env_file:
-      - .env
+      - .env.dev
     volumes:
       - ./:/app
       - ./staticfiles:/app/staticfiles
     ports:
-      - "${BACKEND_PORT}:8000"
+      - "8000:8000"
     depends_on:
       - redis
 
@@ -19,12 +21,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: dev
+      args:
+        ENV_FILE: .env.dev
     container_name: react
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
     ports:
-      - "${FRONTEND_PORT}:3000"
+      - "3000:3000"
     depends_on:
       - backend
 

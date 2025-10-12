@@ -5,15 +5,19 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
+# Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     iputils-ping traceroute dnsutils mtr netcat-openbsd build-essential curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Python packages
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
+# Copy project
 COPY . .
 
 EXPOSE 8000
 
-CMD ["gunicorn", "nms.asgi:application", "--bind", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker"]
+# Collect static files at container start, then run Gunicorn
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn nms.asgi:application --bind 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker"]
