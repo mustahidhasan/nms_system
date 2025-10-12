@@ -3,11 +3,11 @@ version: "3.9"
 services:
   backend:
     build:
-      context: ./
+      context: ./ 
       dockerfile: Dockerfile
     container_name: backend
     env_file:
-      - .env.prod
+      - .env.prod.be
     volumes:
       - ./staticfiles:/app/staticfiles
     ports:
@@ -21,8 +21,8 @@ services:
       dockerfile: Dockerfile
       target: prod
       args:
-        ENV_FILE: ../.env.prod
-    container_name: react
+        ENV_FILE: .env.prod.fe
+    container_name: frontend
     depends_on:
       - backend
 
