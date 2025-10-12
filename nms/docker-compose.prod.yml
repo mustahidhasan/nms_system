@@ -9,7 +9,7 @@ services:
     env_file:
       - .env.prod.be
     volumes:
-      - ./staticfiles:/app/staticfiles
+      - ./staticfiles:/app/staticfiles  # Django static files
     ports:
       - "8000:8000"
     depends_on:
@@ -28,12 +28,10 @@ services:
       - backend
 
   nginx:
-    image: nms-frontend
+    image: nms-frontend   # Uses the frontend image with React + nginx
     container_name: nginx
     ports:
       - "80:80"
-    volumes:
-      - ./staticfiles:/app/staticfiles  # Django static files
     depends_on:
       - backend
       - frontend
