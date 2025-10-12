@@ -3,9 +3,9 @@ version: "3.9"
 services:
   backend:
     build:
-      context: ./ 
+      context: ./
       dockerfile: Dockerfile
-    container_name: django
+    container_name: backend
     env_file:
       - .env.prod
     volumes:
@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile
       target: prod
       args:
-        ENV_FILE: .env.prod
+        ENV_FILE=../.env.prod
     container_name: react
     depends_on:
       - backend
