@@ -51,55 +51,47 @@ docker-compose --version
 
 ---
 
-## 3️⃣ Configure `.env` Files
+## 3️⃣ Configure `.env` Files for Production
 
-You have **two environment files**:
+There are **two `.env` files**:
 
-* **`.env.dev`** → for local development
-* **`.env.prod`** → for production
+1. **Backend `.env.prod.be`** → located at `nms/`
+2. **Frontend `.env.prod.fe`** → located at `nms/frontend/`
 
-### **.env.prod (example)**
+### **Backend example (`nms/.env.prod.be`)**
 
 ```env
-# Host & ports
 HOST_URL=http://50.17.3.155
-FRONTEND_PORT=80
 BACKEND_PORT=8000
 DEBUG=False
 ALLOWED_HOSTS=50.17.3.155
+DJANGO_SECRET_KEY=your-secret-key
 ```
 
-> For local development, use `.env.dev`:
+### **Frontend example (`nms/frontend/.env.prod.fe`)**
 
 ```env
-HOST_URL=http://localhost
-FRONTEND_PORT=3000
-BACKEND_PORT=8000
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
+REACT_APP_API_URL=http://50.17.3.155/api
+REACT_APP_FRONTEND_URL=http://50.17.3.155
 ```
 
 ---
 
-## 4️⃣ Build & Run Containers Using `build.sh`
+## 4️⃣ Build & Run Production Containers
 
-You now use the **`build.sh` script** to build and start containers for dev or prod. This handles environment variables and static files automatically.
+Use the **`build.sh` script**. Make sure it’s executable:
 
-**make sure `build.sh` is executable:**
 ```bash
 chmod +x build.sh
 ```
-**Local Development:**
 
-```bash
-./build.sh dev
-```
-
-**Production (server, e.g., 50.17.3.155):**
+Run production:
 
 ```bash
 ./build.sh prod
 ```
+
+> This will build React, collect Django static files, and start all Docker containers including Nginx, backend, frontend, and Redis.
 
 Check logs:
 
@@ -111,12 +103,5 @@ docker-compose logs -f
 
 ## 5️⃣ Access the App
 
-* **Frontend (React):**
-
-  * Local: `http://localhost:3000`
-  * Production: `http://50.17.3.155/`
-
-* **Backend Admin:**
-
-  * Local: `http://localhost:8000/admin/`
-  * Production: `http://50.17.3.155:8000/admin/`
+* **Frontend (React SPA):** `http://50.17.3.155/`
+* **Backend Admin:** `http://50.17.3.155/admin/login/?next=/admin/`
