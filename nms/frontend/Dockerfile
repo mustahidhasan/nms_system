@@ -1,8 +1,7 @@
 # Stage 1: Build
 FROM node:20 AS build
 
-# Set build argument for environment file (default to .env.dev)
-ARG ENV_FILE=../.env.prod
+ARG ENV_FILE=.env.dev
 WORKDIR /app
 
 # Copy package.json and install dependencies
@@ -13,10 +12,10 @@ RUN npm install
 COPY src ./src
 COPY public ./public
 
-# Copy env from parent folder
-COPY ${ENV_FILE} .env
+# Copy frontend env from parent directory
+COPY ../${ENV_FILE} .env
 
-# Build React app
+# Build the React app
 RUN npm run build
 
 # Stage 2: Production (Nginx)
