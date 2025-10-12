@@ -2,7 +2,7 @@
 FROM node:20 as build
 WORKDIR /app
 
-# Copy package.json & install deps
+# Install dependencies
 COPY package*.json ./
 RUN npm install
 
@@ -10,8 +10,8 @@ RUN npm install
 COPY . .
 
 # Copy environment file for production
-ARG ENV_FILE
-COPY $ENV_FILE .env
+ARG ENV_FILE=.env.prod.fe
+COPY ${ENV_FILE} .env
 
 # Build React app
 RUN npm run build
@@ -19,7 +19,10 @@ RUN npm run build
 # Stage 2: Serve with Nginx
 FROM nginx:stable-alpine as prod
 
-# Copy built React app
+# Remove default Nginx content
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy React build to Nginx
 COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy custom Nginx config

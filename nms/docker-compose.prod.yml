@@ -10,11 +10,10 @@ services:
       - .env.prod.be
     volumes:
       - ./staticfiles:/app/staticfiles
-    depends_on:
-      - redis
-    # optional port mapping if needed externally
     ports:
       - "8000:8000"
+    depends_on:
+      - redis
 
   frontend:
     build:
@@ -27,8 +26,17 @@ services:
     container_name: frontend
     depends_on:
       - backend
+
+  nginx:
+    image: nms-frontend
+    container_name: nginx
     ports:
-      - "80:80"   # React + Nginx
+      - "80:80"
+    volumes:
+      - ./staticfiles:/app/staticfiles  # Django static files
+    depends_on:
+      - backend
+      - frontend
 
   redis:
     image: redis:latest
