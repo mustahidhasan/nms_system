@@ -28,15 +28,20 @@ services:
       - backend
 
   nginx:
-    image: nms-frontend   # Uses the frontend image with React + nginx
+    image: nms-frontend         # keep using frontend image
     container_name: nginx
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - backend
       - frontend
     volumes:
-      - ./staticfiles:/app/staticfiles  # <-- this exposes Django static to Nginx
+      - ./frontend/build:/usr/share/nginx/html         # React build
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf    # Nginx config
+      - ./certs:/etc/ssl/private                       # Self-signed SSL certs
+      - ./staticfiles:/app/staticfiles                 # Django static files
+    restart: always
 
   redis:
     image: redis:latest
