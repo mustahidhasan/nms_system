@@ -71,8 +71,8 @@ DJANGO_SECRET_KEY=your-secret-key
 ### **Frontend example (`nms/frontend/.env.prod.fe`)**
 
 ```env
-REACT_APP_API_URL=http://<PUBLIC IP>/api
-REACT_APP_FRONTEND_URL=http://<PUBLIC IP>
+REACT_APP_API_BASE_URL=http://<PUBLIC IP>/api
+REACT_APP_SCOPES=openid profile email offline_access User.Read
 ```
 
 ---
