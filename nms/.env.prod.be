@@ -1,5 +1,5 @@
 # Backend
-HOST_URL=http://54.242.248.245
+HOST_URL=https://54.242.248.245
 BACKEND_PORT=8000
 DJANGO_SECRET_KEY=prod-secret-key
 DEBUG=False
