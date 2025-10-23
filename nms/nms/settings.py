@@ -89,8 +89,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Frontend URL
 HOST_URL = config("HOST_URL", default="http://localhost")
-FRONTEND_PORT = config("FRONTEND_PORT", default="3000")
-FRONTEND_URL = f"{HOST_URL}:{FRONTEND_PORT}" if FRONTEND_PORT not in ["80", "443"] else HOST_URL
+# FRONTEND_PORT = config("FRONTEND_PORT", default="3000")
+FRONTEND_URL = f"{HOST_URL}"
 
 # Azure AD OAuth2
 AZURE_TENANT_ID = config("AZURE_TENANT_ID")
