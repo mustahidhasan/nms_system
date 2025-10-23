@@ -73,7 +73,7 @@ WSGI_APPLICATION = "nms.wsgi.application"
 # -------------------------------
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",  # Change to PostgreSQL/MySQL in real production
+        "ENGINE": "django.db.backends.sqlite3",  # Replace with PostgreSQL/MySQL in real prod
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
@@ -113,9 +113,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # FRONTEND URLS (CORS & CSRF)
 # -------------------------------
 HOST_URL = config("HOST_URL")
-FRONTEND_PORT = config("FRONTEND_PORT", default=None)
-
-FRONTEND_URL = HOST_URL if FRONTEND_PORT in [None, "", "80", "443"] else f"{HOST_URL}:{FRONTEND_PORT}"
+FRONTEND_URL = HOST_URL  # No port needed in production
 
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default=FRONTEND_URL).split(",")
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default=FRONTEND_URL).split(",")
