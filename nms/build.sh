@@ -9,6 +9,20 @@ if [ "$ENV" = "prod" ]; then
   ENV_FILE_FE=".env.prod.fe"
   HOST_IP="3.90.164.200"
   COMPOSE_FILE="docker-compose.prod.yml"
+
+  # Generate self-signed SSL certs if they don't exist
+  CERT_DIR="./certs"
+  mkdir -p $CERT_DIR
+  if [ ! -f "$CERT_DIR/selfsigned.crt" ] || [ ! -f "$CERT_DIR/selfsigned.key" ]; then
+    echo "Generating self-signed SSL certificate..."
+    sudo openssl req -x509 -nodes -days 365 \
+      -newkey rsa:2048 \
+      -keyout "$CERT_DIR/selfsigned.key" \
+      -out "$CERT_DIR/selfsigned.crt" \
+      -subj "/CN=$HOST_IP"
+  else
+    echo "SSL certificates already exist. Skipping generation."
+  fi
 else
   echo "Building Development Environment..."
   ENV_FILE_BE=".env.dev.be"

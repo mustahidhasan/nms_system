@@ -1,7 +1,3 @@
-* Private IP / public IP support
-* HTTPS with self-signed SSL
-* Dockerized React + Django + Nginx + Redis
-* Azure SSO configuration
 
 ---
 
@@ -9,7 +5,7 @@
 
 ---
 
-## 1️⃣ Upload Project to Server
+## 1 Upload Project to Server
 
 Copy your project folder or zip to the EC2 instance:
 
@@ -34,7 +30,7 @@ cd nms
 
 ---
 
-## 2️⃣ Install Docker & Docker Compose (Amazon Linux 2023)
+## 2 Install Docker & Docker Compose (Amazon Linux 2023)
 
 ```bash
 sudo dnf update -y
@@ -62,7 +58,7 @@ docker-compose --version
 
 ---
 
-## 3️⃣ Configure `.env` Files for Production
+## 3 Configure `.env` Files for Production
 
 There are **two `.env` files**:
 
@@ -92,27 +88,7 @@ REACT_APP_SCOPES=openid profile email offline_access User.Read
 > Replace `3.90.164.200` with your instance’s IP (private or public depending on your setup).
 > Ensure the SSL certificate CN matches this IP.
 
----
-
-## 4️⃣ Generate Self-Signed SSL Certificate [do it from the compose.yml directory]
-``` bash
-cd /home/ec2-user/nms_system/nms
-```
-Generate certs with OpenSSL:
-```bash
-mkdir -p certs
-sudo openssl req -x509 -nodes -days 365 \
-  -newkey rsa:2048 \
-  -keyout certs/selfsigned.key \
-  -out certs/selfsigned.crt \
-  -subj "/CN=3.90.164.200"
-
-```
-
-> Nginx will use these certs to serve HTTPS.
-
-
-## 7️⃣ Build & Run Production Containers
+## 4 Build & Run Production Containers
 
 Make the build script executable:
 
@@ -129,7 +105,7 @@ docker-compose -f docker-compose.prod.yml logs -f --tail=100
 
 ---
 
-## 8️⃣ Access the App
+## 5 Access the App
 
 | Component     | URL                                          |
 | ------------- | -------------------------------------------- |
@@ -141,7 +117,7 @@ docker-compose -f docker-compose.prod.yml logs -f --tail=100
 
 ---
 
-## 9️⃣ Azure SSO
+## 6 Azure SSO
 
 * **Backend redirect URI**: `https://3.90.164.200:8000/oauth2/callback/`
 * **Frontend scopes**: `openid profile email offline_access User.Read`
