@@ -119,7 +119,7 @@ docker-compose -f docker-compose.prod.yml logs -f --tail=100
 
 ## 6 Azure SSO
 
-* **Backend redirect URI**: `https://3.90.164.200:8000/oauth2/callback/`
+* **Backend redirect URI**: `https://3.90.164.200/oauth2/callback/`
 * **Frontend scopes**: `openid profile email offline_access User.Read`
 
 > Azure must be able to reach the IP — if using a **private IP**, only internal networks or VPN can access it.
