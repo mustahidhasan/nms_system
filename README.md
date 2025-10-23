@@ -94,7 +94,7 @@ REACT_APP_SCOPES=openid profile email offline_access User.Read
 
 ---
 
-## 4️⃣ Generate Self-Signed SSL Certificate
+## 4️⃣ Generate Self-Signed SSL Certificate [do it from the compose.yml directory]
 
 ```bash
 mkdir -p ./certs
