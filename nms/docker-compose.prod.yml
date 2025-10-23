@@ -28,7 +28,7 @@ services:
       - backend
 
   nginx:
-    image: nms-frontend  # ✅ Use same frontend image with nginx
+    image: nms-frontend  # Using frontend image
     container_name: nginx
     ports:
       - "80:80"
@@ -37,13 +37,13 @@ services:
       - backend
       - frontend
     volumes:
-      # ✅ Mount React build
+      # React build
       - ./frontend/build:/usr/share/nginx/html
-      # ✅ Mount correct Nginx config file
+      # Custom Nginx config
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
-      # ✅ Mount SSL certs (self-signed)
+      # SSL certs (self-signed)
       - ./certs:/etc/ssl/private
-      # ✅ Mount Django static files
+      # Django static files
       - ./staticfiles:/app/staticfiles
     restart: always
 
