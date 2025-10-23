@@ -2,14 +2,21 @@ from pathlib import Path
 import os
 from decouple import config
 
+# -------------------------------
+# BASE DIRECTORY
+# -------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Security
-SECRET_KEY = config("DJANGO_SECRET_KEY", default="fallback_secret")
-DEBUG = config("DEBUG", default=True, cast=bool)
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="*").split(",")
+# -------------------------------
+# SECURITY
+# -------------------------------
+SECRET_KEY = config("DJANGO_SECRET_KEY")
+DEBUG = config("DEBUG", default=False, cast=bool)
+ALLOWED_HOSTS = config("ALLOWED_HOSTS").split(",")
 
-# Installed apps
+# -------------------------------
+# INSTALLED APPS
+# -------------------------------
 INSTALLED_APPS = [
     "corsheaders",
     "jazzmin",
@@ -23,7 +30,9 @@ INSTALLED_APPS = [
     "DASHBOARD",
 ]
 
-# Middleware
+# -------------------------------
+# MIDDLEWARE
+# -------------------------------
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -36,7 +45,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# URLs and templates
+# -------------------------------
+# URLS AND TEMPLATES
+# -------------------------------
 ROOT_URLCONF = "nms.urls"
 
 TEMPLATES = [
@@ -57,15 +68,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "nms.wsgi.application"
 
-# Database (SQLite for now)
+# -------------------------------
+# DATABASE
+# -------------------------------
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
+        "ENGINE": "django.db.backends.sqlite3",  # Change to PostgreSQL/MySQL in real production
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
-# Password validation
+# -------------------------------
+# PASSWORD VALIDATION
+# -------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -73,38 +88,56 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# Internationalization
+# -------------------------------
+# INTERNATIONALIZATION
+# -------------------------------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# -------------------------------
+# STATIC FILES
+# -------------------------------
 STATIC_URL = '/static-django/'
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# -------------------------------
+# DEFAULT AUTO FIELD
+# -------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Frontend URL
-HOST_URL = config("HOST_URL", default="http://localhost")
-FRONTEND_PORT = config("FRONTEND_PORT", default="3000")
-FRONTEND_URL = f"{HOST_URL}:{FRONTEND_PORT}" if FRONTEND_PORT not in ["80", "443"] else HOST_URL
+# -------------------------------
+# FRONTEND URLS (CORS & CSRF)
+# -------------------------------
+HOST_URL = config("HOST_URL")
+FRONTEND_PORT = config("FRONTEND_PORT", default=None)
 
-# Azure AD OAuth2
+FRONTEND_URL = HOST_URL if FRONTEND_PORT in [None, "", "80", "443"] else f"{HOST_URL}:{FRONTEND_PORT}"
+
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default=FRONTEND_URL).split(",")
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default=FRONTEND_URL).split(",")
+CORS_ALLOW_CREDENTIALS = True
+
+# -------------------------------
+# AZURE AD OAUTH2 CONFIG
+# -------------------------------
 AZURE_TENANT_ID = config("AZURE_TENANT_ID")
 AZURE_CLIENT_ID = config("AZURE_CLIENT_ID")
 AZURE_CLIENT_SECRET = config("AZURE_CLIENT_SECRET")
 AZURE_REDIRECT_URI = config("AZURE_REDIRECT_URI")
-POST_LOGOUT_REDIRECT_URI = config("POST_LOGOUT_REDIRECT_URI")
+POST_LOGOUT_REDIRECT_URI = config("POST_LOGOUT_REDIRECT_URI", default=HOST_URL)
 
 AZURE_AUTHORITY = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
 AZURE_AUTHORIZE_ENDPOINT = f"{AZURE_AUTHORITY}/oauth2/v2.0/authorize"
 AZURE_TOKEN_ENDPOINT = f"{AZURE_AUTHORITY}/oauth2/v2.0/token"
 AZURE_SCOPES = config("REACT_APP_SCOPES", default="openid profile email offline_access User.Read")
 
-# CORS and CSRF
-CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default=FRONTEND_URL).split(",")
-CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default=FRONTEND_URL).split(",")
-CORS_ALLOW_CREDENTIALS = True
+# -------------------------------
+# SSL SETTINGS
+# -------------------------------
+SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
+SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=True, cast=bool)
+CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=True, cast=bool)
