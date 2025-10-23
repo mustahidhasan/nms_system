@@ -26,17 +26,23 @@ services:
     container_name: frontend
     depends_on:
       - backend
+    # no volumes needed; build is inside Docker
 
   nginx:
-    image: nms-frontend   # Uses the frontend image with React + nginx
+    image: nms-frontend
     container_name: nginx
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - backend
       - frontend
     volumes:
-      - ./staticfiles:/app/staticfiles  # <-- this exposes Django static to Nginx
+      # Only mount config and SSL, NOT the build folder
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./certs:/etc/ssl/private
+      - ./staticfiles:/app/staticfiles
+    restart: always
 
   redis:
     image: redis:latest

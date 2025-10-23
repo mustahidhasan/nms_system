@@ -1,29 +1,36 @@
-## 1️⃣ Upload Project to Server
 
-Use `scp` to copy your project folder (or zip) to the server:
+---
+
+# 🚀 Production Deployment Guide (Docker + Private/Public IP + HTTPS + Azure SSO)
+
+---
+
+## 1 Upload Project to Server
+
+Copy your project folder or zip to the EC2 instance:
 
 ```bash
-scp -i your-key.pem -r /path/to/your/project ec2-user@EC2_PUBLIC_IP:~/nms
-```
+# Copy folder
+scp -i your-key.pem -r /path/to/your/project ec2-user@3.90.164.200:~/nms
 
-> Or upload a zip:
-
-```bash
-scp -i your-key.pem /path/to/nms.zip ec2-user@EC2_PUBLIC_IP:~/
+# Or copy zip
+scp -i your-key.pem /path/to/nms.zip ec2-user@3.90.164.200:~/
 ```
 
 Connect to the server:
 
 ```bash
-ssh -i your-key.pem ec2-user@EC2_PUBLIC_IP
+ssh -i your-key.pem ec2-user@3.90.164.200
 cd ~/
 unzip nms.zip   # Only if uploaded as zip
 cd nms
 ```
 
+> Replace `3.90.164.200` with your **private or public IP** depending on your environment.
+
 ---
 
-## 2️⃣ Install Docker & Docker Compose (Amazon Linux 2023)
+## 2 Install Docker & Docker Compose (Amazon Linux 2023)
 
 ```bash
 sudo dnf update -y
@@ -33,11 +40,11 @@ sudo systemctl start docker
 sudo usermod -aG docker ec2-user
 ```
 
-> Log out and reconnect to apply Docker group permissions:
+> Log out and reconnect for Docker group permissions:
 
 ```bash
 exit
-ssh -i your-key.pem ec2-user@EC2_PUBLIC_IP
+ssh -i your-key.pem ec2-user@3.90.164.200
 docker ps
 ```
 
@@ -51,57 +58,69 @@ docker-compose --version
 
 ---
 
-## 3️⃣ Configure `.env` Files for Production
+## 3 Configure `.env` Files for Production
 
 There are **two `.env` files**:
 
-1. **Backend `.env.prod.be`** → located at `nms/`
-2. **Frontend `.env.prod.fe`** → located at `nms/frontend/`
+1. **Backend `.env.prod.be`** → `nms/.env.prod.be`
+2. **Frontend `.env.prod.fe`** → `nms/frontend/.env.prod.fe`
 
-### **Backend example (`nms/.env.prod.be`)**
+### Backend Example
 
 ```env
-HOST_URL=http://<PUBLIC IP>
+HOST_URL=https://3.90.164.200       # Use private or public IP
 BACKEND_PORT=8000
 DEBUG=False
-ALLOWED_HOSTS=<PUBLIC IP>
+ALLOWED_HOSTS=3.90.164.200,localhost
 DJANGO_SECRET_KEY=your-secret-key
+
+# Azure SSO redirect
+AZURE_REDIRECT_URI=https://3.90.164.200:8000/oauth2/callback/
 ```
 
-### **Frontend example (`nms/frontend/.env.prod.fe`)**
+### Frontend Example
 
 ```env
-REACT_APP_API_URL=http://<PUBLIC IP>/api
-REACT_APP_FRONTEND_URL=http://<PUBLIC IP>
+REACT_APP_API_BASE_URL=https://3.90.164.200/api
+REACT_APP_SCOPES=openid profile email offline_access User.Read
 ```
 
----
+> Replace `3.90.164.200` with your instance’s IP (private or public depending on your setup).
+> Ensure the SSL certificate CN matches this IP.
 
-## 4️⃣ Build & Run Production Containers
+## 4 Build & Run Production Containers
 
-Use the **`build.sh` script**. Make sure it’s executable:
+Make the build script executable:
 
 ```bash
 chmod +x build.sh
-```
-
-Run production:
-
-```bash
 ./build.sh prod
 ```
-
-> This will build React, collect Django static files, and start all Docker containers including Nginx, backend, frontend, and Redis.
 
 Check logs:
 
 ```bash
-docker-compose logs -f
+docker-compose -f docker-compose.prod.yml logs -f --tail=100
 ```
 
 ---
 
-## 5️⃣ Access the App
+## 5 Access the App
 
-* **Frontend (React SPA):** `http://<PUBLIC IP>/`
-* **Backend Admin:** `http://<PUBLIC IP>/admin/login/?next=/admin/`
+| Component     | URL                                          |
+| ------------- | -------------------------------------------- |
+| Frontend SPA  | `https://3.90.164.200/`                          |
+| Backend Admin | `https://3.90.164.200/admin/login/?next=/admin/` |
+
+> Browser will warn about the **self-signed SSL certificate**.
+> Import the `.crt` into your system/browser if you want to remove the warning.
+
+---
+
+## 6 Azure SSO
+
+* **Backend redirect URI**: `https://3.90.164.200/oauth2/callback/`
+* **Frontend scopes**: `openid profile email offline_access User.Read`
+
+> Azure must be able to reach the IP — if using a **private IP**, only internal networks or VPN can access it.
+> For external access, use a **public IP/domain or tunnel**.
