@@ -7,9 +7,11 @@ function Login({ apiBaseUrl }) {
   const [loading, setLoading] = useState(false);
   const pollingRef = useRef(null);
 
+  // Poll backend login status
   const startPollingLoginStatus = () => {
     let attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 20; // poll ~20 seconds
+
     pollingRef.current = setInterval(async () => {
       attempts++;
       try {
@@ -17,7 +19,8 @@ function Login({ apiBaseUrl }) {
           credentials: 'include',
         });
 
-        if (res.headers.get('content-type')?.includes('application/json')) {
+        const contentType = res.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
           const data = await res.json();
           if (data.success) {
             clearInterval(pollingRef.current);
@@ -29,7 +32,7 @@ function Login({ apiBaseUrl }) {
             alert('Login timed out. Please try again.');
           }
         } else {
-          // received HTML (likely redirect) → stop polling
+          // Received HTML instead of JSON → probably a redirect
           clearInterval(pollingRef.current);
           setLoading(false);
           window.location.href = `${apiBaseUrl}/azure-login/`;
@@ -37,11 +40,13 @@ function Login({ apiBaseUrl }) {
       } catch (err) {
         clearInterval(pollingRef.current);
         setLoading(false);
+        console.error('Polling error:', err);
         alert('Error checking login status.');
       }
     }, 1000);
   };
 
+  // Handle initial SSO login
   const handleSSOLogin = async () => {
     setLoading(true);
     try {
@@ -49,18 +54,22 @@ function Login({ apiBaseUrl }) {
         credentials: 'include',
       });
 
-      if (response.headers.get('content-type')?.includes('application/json')) {
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
         const data = await response.json();
         if (data.login_url) {
+          // Redirect to Azure login page
           window.location.href = data.login_url;
         } else if (data.success) {
+          // Already logged in
           setLoading(false);
           navigate('/dashboard');
         } else {
+          // Start polling if login not immediate
           startPollingLoginStatus();
         }
       } else {
-        // Redirect directly
+        // Backend returned HTML → redirect
         window.location.href = `${apiBaseUrl}/azure-login/`;
       }
     } catch (error) {
@@ -70,6 +79,7 @@ function Login({ apiBaseUrl }) {
     }
   };
 
+  // Cleanup polling on unmount
   useEffect(() => {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);

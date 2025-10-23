@@ -7,7 +7,15 @@ from django.utils.timezone import now, timedelta
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from USER.models import UserActivity
-
+import urllib.parse
+import requests
+from django.conf import settings
+from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.contrib.auth import login, logout
+from django.utils.timezone import now
+from USER.models import User
+from DASHBOARD.models import UserActivity
 User = get_user_model()
 
 
@@ -15,22 +23,34 @@ def login_view(request):
     return JsonResponse({"message": "Render login page here (SSO button logic handled in frontend)"})
 
 
+
+
 def azure_login(request):
+    """
+    Return JSON with Azure login URL for frontend to redirect user.
+    """
+    next_url = request.GET.get('next', '/dashboard')
     params = {
         'client_id': settings.AZURE_CLIENT_ID,
         'response_type': 'code',
         'redirect_uri': settings.AZURE_REDIRECT_URI,
         'response_mode': 'query',
         'scope': settings.AZURE_SCOPES,
-        'state': 'some_random_state',
+        'state': urllib.parse.quote(next_url),  # Keep track of intended redirect
     }
     login_url = f"{settings.AZURE_AUTHORIZE_ENDPOINT}?{urllib.parse.urlencode(params)}"
     return JsonResponse({"login_url": login_url})
 
 
 def azure_callback(request):
+    """
+    Handle Azure callback, exchange code for token, login user, redirect to frontend.
+    """
     code = request.GET.get('code')
-    next_url = request.GET.get('next', '/dashboard')
+    next_url = urllib.parse.unquote(request.GET.get('state', '/dashboard'))
+
+    if not code:
+        return redirect(f"{settings.FRONTEND_URL}{next_url}")
 
     token_data = {
         'client_id': settings.AZURE_CLIENT_ID,
@@ -63,6 +83,7 @@ def azure_callback(request):
         )
         login(request, user)
 
+        # Record login activity
         UserActivity.objects.create(
             user=user,
             activity_type='login',
@@ -70,6 +91,7 @@ def azure_callback(request):
             session_status=True,
         )
 
+        # Always redirect to frontend dashboard
         safe_redirect = next_url if next_url.startswith('/') else '/dashboard'
         return redirect(f"{settings.FRONTEND_URL}{safe_redirect}")
 
@@ -78,6 +100,9 @@ def azure_callback(request):
 
 
 def azure_logout(request):
+    """
+    Log out user and redirect to Azure logout page with frontend redirect.
+    """
     user = request.user
 
     try:
@@ -108,7 +133,6 @@ def azure_logout(request):
         f"?post_logout_redirect_uri={settings.POST_LOGOUT_REDIRECT_URI}"
     )
     return JsonResponse({"logout_url": azure_logout_url})
-
 
 @login_required
 def active_users_dashboard(request):
