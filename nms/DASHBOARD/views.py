@@ -38,42 +38,43 @@ from pysnmp.hlapi import (
 
 from django.contrib import messages
 from ipaddress import ip_address
-
+import re
 
 
 def generate_ip_list(ip_input):
-    """Parses input of multiple IPs or IP ranges and returns a list of IPs."""
+    """Parse input of IPs, ranges, or hostnames and return a list of targets."""
     ip_list = []
-    
-    # Split by comma to handle multiple IPs
-    parts = ip_input.split(',')
-    
+    if not ip_input:
+        return ip_list
+
+    parts = re.split(r"[,\s]+", ip_input.strip())
+
     for part in parts:
-        part = part.strip()
-        
-        # Check if it's a range (denoted by '-')
-        if '-' in part:
+        if not part:
+            continue
+        candidate = part.strip()
+
+        if "-" in candidate:
+            start_str, end_str = candidate.split("-", 1)
             try:
-                start_ip, end_ip = part.split('-')
-                start_ip = ip_address(start_ip.strip())
-                end_ip = ip_address(end_ip.strip())
+                start_ip = ip_address(start_str.strip())
+                end_ip = ip_address(end_str.strip())
 
                 if start_ip > end_ip:
                     raise ValueError(f"Invalid range: {start_ip} - {end_ip}")
 
-                # Generate and add the range of IPs
                 ip_list.extend([str(ip_address(ip)) for ip in range(int(start_ip), int(end_ip) + 1)])
-
-            except ValueError as e:
-                print(f"Error: {e}")
-        
-        else:
-            # Single IP case
-            try:
-                ip = ip_address(part)
-                ip_list.append(str(ip))
+                continue
             except ValueError:
-                print(f"Invalid IP address: {part}")
+                # Fall back to treating the entry as hostname (e.g., FQDN with hyphen)
+                pass
+
+        try:
+            ip = ip_address(candidate)
+            ip_list.append(str(ip))
+        except ValueError:
+            # Not an IP; try to resolve later during validation
+            ip_list.append(candidate)
 
     return ip_list
 

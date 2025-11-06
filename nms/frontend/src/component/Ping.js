@@ -29,6 +29,7 @@ function Ping({ apiBaseUrl }) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailStatus, setEmailStatus] = useState(null);
 
 
   useEffect(() => {
@@ -68,7 +69,12 @@ function Ping({ apiBaseUrl }) {
       });
 
       const data = await response.json();
-      if (data.success || response.ok) {
+      if (data.success && data.logout_url) {
+        window.location.href = data.logout_url;
+        return;
+      }
+
+      if (response.ok) {
         navigate('/');
       } else {
         console.error('Logout failed:', data.message || 'Unknown error');
@@ -172,7 +178,10 @@ function Ping({ apiBaseUrl }) {
       .map((e) => e.trim())
       .filter(Boolean);
 
-    if (!emailArray.length) return;
+    if (!emailArray.length) {
+      setEmailStatus({ type: 'error', message: 'Please enter at least one email recipient.' });
+      return;
+    }
 
     let bodyText = 'Results:\n\n';
     results.forEach(({ operation, result }) => {
@@ -180,19 +189,21 @@ function Ping({ apiBaseUrl }) {
     });
 
     try {
+      setEmailStatus({ type: 'info', message: 'Sending email…' });
       const res = await fetch(`${apiBaseUrl}/send-email/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email_list: emailArray, email_body: bodyText }),
       });
       const json = await res.json();
       if (json.success) {
-        console.log('Email sent successfully');
+        setEmailStatus({ type: 'success', message: 'Email sent successfully.' });
       } else {
-        console.error('Email sending failed:', json.message);
+        setEmailStatus({ type: 'error', message: json.message || 'Email sending failed.' });
       }
     } catch (error) {
-      console.error('Email sending failed:', error);
+      setEmailStatus({ type: 'error', message: 'Email sending failed. Please check the configuration.' });
     }
   };
 
@@ -216,6 +227,7 @@ function Ping({ apiBaseUrl }) {
     setResults([]);
     setEmailList('');
     sessionStorage.removeItem('ip_address');
+    setEmailStatus(null);
   };
 
   const renderSNMPFields = () => {
@@ -382,6 +394,9 @@ function Ping({ apiBaseUrl }) {
                 <button onClick={handleSendEmail}>Send Email</button>
                 <button onClick={downloadCSV}>Download CSV</button>
               </div>
+              {emailStatus && (
+                <p className={`email-status email-status-${emailStatus.type}`}>{emailStatus.message}</p>
+              )}
 
               <table className="result-table">
                 <thead>

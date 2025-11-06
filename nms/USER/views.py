@@ -6,9 +6,11 @@ from django.http import JsonResponse
 from django.utils.timezone import now, timedelta
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
+import logging
 from USER.models import UserActivity
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 def login_view(request):
@@ -61,12 +63,24 @@ def azure_callback(request):
         user, created = User.objects.get_or_create(
             email=email, defaults={'username': email, 'first_name': name}
         )
+
+        # Close any lingering active sessions before creating a new login record
+        open_sessions = UserActivity.objects.filter(
+            user=user,
+            activity_type='login',
+            session_status=True
+        )
+        now_ts = now()
+        for session in open_sessions:
+            session.duration = (now_ts - session.timestamp).total_seconds()
+            session.session_status = False
+            session.save(update_fields=['duration', 'session_status'])
+
         login(request, user)
 
         UserActivity.objects.create(
             user=user,
             activity_type='login',
-            timestamp=now(),
             session_status=True,
         )
 
@@ -77,7 +91,11 @@ def azure_callback(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+@login_required
 def azure_logout(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=405)
+
     user = request.user
 
     try:
@@ -95,27 +113,36 @@ def azure_logout(request):
         UserActivity.objects.create(
             user=user,
             activity_type='logout',
-            timestamp=now(),
-            duration=0
+            duration=0,
+            session_status=False,
         )
     except UserActivity.DoesNotExist:
-        pass
+        logger.warning("Logout requested but no matching login activity for user %s", user)
 
     logout(request)
 
     azure_logout_url = (
         f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/oauth2/v2.0/logout"
-        f"?post_logout_redirect_uri={settings.POST_LOGOUT_REDIRECT_URI}"
+        f"?client_id={urllib.parse.quote(settings.AZURE_CLIENT_ID)}"
+        f"&post_logout_redirect_uri={urllib.parse.quote(settings.POST_LOGOUT_REDIRECT_URI, safe='')}"
     )
-    return JsonResponse({"logout_url": azure_logout_url})
+    return JsonResponse({
+        "success": True,
+        "logout_url": azure_logout_url,
+        "redirect_url": settings.FRONTEND_URL,
+    })
 
 
 @login_required
 def active_users_dashboard(request):
     recent_threshold = now() - timedelta(minutes=15)
-    recent_activities = UserActivity.objects.filter(timestamp__gte=recent_threshold)
+    active_sessions = UserActivity.objects.filter(
+        timestamp__gte=recent_threshold,
+        activity_type='login',
+        session_status=True,
+    )
     active_users = User.objects.filter(
-        id__in=recent_activities.values_list('user_id', flat=True)
+        id__in=active_sessions.values_list('user_id', flat=True)
     ).distinct()
 
     user_activities = UserActivity.objects.select_related('user').order_by('-timestamp')[:100]
@@ -132,8 +159,8 @@ def active_users_dashboard(request):
                 "email": activity.user.email,
                 "activity_type": activity.activity_type,
                 "timestamp": activity.timestamp.isoformat(),
-                "duration": activity.duration,
-                "session_status": activity.session_status
+                "duration": activity.formatted_duration,
+                "session_status": "Active" if activity.session_status else "Closed"
             } for activity in user_activities
         ]
     })
