@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './component/Login';
 import Ping from './component/Ping'; // Dashboard component
-import UserActivity from './component/UserActivity'
+import UserActivity from './component/UserActivity';
+import OAuthCallback from './component/OAuthCallback';
 
 function App() {
   const API_BASE_URL =
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<Login apiBaseUrl={API_BASE_URL} />} />
         <Route path="/dashboard" element={<Ping apiBaseUrl={API_BASE_URL} />} />
         <Route path="/user-activity" element={<UserActivity apiBaseUrl={API_BASE_URL} />} />
+        <Route path="/oauth2/callback" element={<OAuthCallback apiBaseUrl={API_BASE_URL} />} />
       </Routes>
     </Router>
   );

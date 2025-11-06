@@ -1,7 +1,7 @@
 # =============================
-# Stage 1: Build React app
+# Stage 1: Base install
 # =============================
-FROM node:20 AS build
+FROM node:20 AS base
 WORKDIR /app
 
 # Copy dependencies and install
@@ -11,15 +11,26 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Copy environment file for production
-ARG ENV_FILE=.env.prod.fe
-COPY ${ENV_FILE} .env
+# =============================
+# Stage 2: Dev runtime
+# =============================
+FROM base AS dev
+ARG ENV_FILE=.env.dev.fe
+RUN cp "${ENV_FILE}" .env
+ENV CI=false
+EXPOSE 3000
+CMD ["npm", "start"]
 
-# Build React app
+# =============================
+# Stage 3: Build React app
+# =============================
+FROM base AS build
+ARG ENV_FILE=.env.prod.fe
+RUN cp "${ENV_FILE}" .env
 RUN npm run build
 
 # =============================
-# Stage 2: Serve with Nginx + SSL
+# Stage 4: Serve with Nginx + SSL
 # =============================
 FROM nginx:stable-alpine AS prod
 
