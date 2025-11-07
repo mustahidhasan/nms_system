@@ -120,6 +120,7 @@ function Ping({ apiBaseUrl }) {
   const isSelectAllChecked = allOps
     .filter((op) => op !== 'snmp_walk')
     .every((op) => operations[op]);
+  const showSnmpFields = operations.snmp_walk || operations.simple_snmp_walk;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -132,13 +133,23 @@ function Ping({ apiBaseUrl }) {
         });
         formData.append('snmp_version', snmpVersion);
 
-        if (operations.snmp_walk) {
-        formData.append('community_strings', document.querySelector('input[name="community_string"]')?.value || 'public');
+        if (operations.snmp_walk || operations.simple_snmp_walk) {
+        const communityInput = document.querySelector('input[name="community_string"]')?.value || 'public';
+        const communityValues = communityInput
+            .split(',')
+            .map((value) => value.trim())
+            .filter(Boolean);
+        if (communityValues.length) {
+            communityValues.forEach((value) => formData.append('community_strings', value));
+        } else {
+            formData.append('community_strings', 'public');
+        }
+
         formData.append('timeout', document.querySelector('input[name="timeout"]')?.value || '1000');
 
         if (snmpVersion === '3') {
             formData.append('username', document.querySelector('input[name="v3_username"]')?.value || '');
-            formData.append('authentication_type', document.querySelector('input[name="auth_protocol"]')?.value || '');
+                formData.append('authentication_type', document.querySelector('input[name="auth_protocol"]')?.value || '');
             formData.append('password', document.querySelector('input[name="auth_password"]')?.value || '');
             formData.append('encryption_type', document.querySelector('input[name="priv_protocol"]')?.value || '');
             formData.append('encryption_key', document.querySelector('input[name="priv_password"]')?.value || '');
@@ -231,7 +242,7 @@ function Ping({ apiBaseUrl }) {
   };
 
   const renderSNMPFields = () => {
-    if (!operations['snmp_walk']) return null;
+    if (!showSnmpFields) return null;
 
     return (
       <div id="snmp_fields" className="snmp-fields">

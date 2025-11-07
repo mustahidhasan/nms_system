@@ -347,49 +347,99 @@ async def advanced_snmp_walk(ip_addresses, snmp_version, community_strings, user
     # Add results to the table
     for ip_address, result_message in results:
         table.add_row([f"SNMP Walk Result for {ip_address}", result_message])
-def _run_simple_snmp_walk(ip_address_value, community_strings, hardcoded_oid, snmp_version, snmp_port):
+def _resolve_auth_protocol(protocol_name):
+    protocol = (protocol_name or '').upper()
+    if protocol == 'MD5':
+        return usmHMACMD5AuthProtocol
+    if protocol == 'SHA':
+        return usmHMACSHAAuthProtocol
+    if protocol in ('NONE', 'NOAUTH'):
+        return usmNoAuthProtocol
+    return usmHMACSHAAuthProtocol
+
+
+def _resolve_priv_protocol(protocol_name):
+    protocol = (protocol_name or '').upper()
+    if protocol == 'DES':
+        return usmDESPrivProtocol
+    if protocol in ('NONE', 'NOPRIV'):
+        return usmNoPrivProtocol
+    return usmAesCfb128Protocol
+
+
+def _run_simple_snmp_walk(
+    ip_address_value,
+    snmp_version,
+    snmp_port,
+    hardcoded_oid,
+    timeout_seconds,
+    retries,
+    community_strings=None,
+    username=None,
+    auth_password=None,
+    priv_password=None,
+    auth_protocol_name='SHA',
+    priv_protocol_name='AES',
+):
     snmp_result = []
     try:
-        if snmp_version == 'v2c':
-            for community_string in community_strings:
+        if snmp_version in ('1', '2c'):
+            communities = community_strings or ['public']
+            model = 0 if snmp_version == '1' else 1
+            for community_string in communities:
                 for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
                     SnmpEngine(),
-                    CommunityData(community_string, mpModel=1),
+                    CommunityData(community_string, mpModel=model),
                     UdpTransportTarget(
                         (ip_address_value, int(snmp_port)),
-                        timeout=SIMPLE_SNMP_TIMEOUT,
-                        retries=SIMPLE_SNMP_RETRIES,
+                        timeout=timeout_seconds,
+                        retries=retries,
                     ),
                     ContextData(),
                     ObjectType(ObjectIdentity(hardcoded_oid).loadMibs('SNMPv2-MIB')),
                     lexicographicMode=False,
                 ):
                     if errorIndication:
-                        logger.error(f'SNMPv2c Walk Error for {ip_address_value} with community "{community_string}": {str(errorIndication)}')
+                        logger.error(
+                            f'SNMPv{snmp_version} Walk Error for {ip_address_value} with community "{community_string}": {str(errorIndication)}'
+                        )
                         return ip_address_value, f'Error: {str(errorIndication)}'
-                    elif errorStatus:
-                        logger.error(f'SNMPv2c Error at {errorIndex} for {ip_address_value} with community "{community_string}": {errorStatus.prettyPrint()}')
+                    if errorStatus:
+                        logger.error(
+                            f'SNMPv{snmp_version} Error at {errorIndex} for {ip_address_value} with community "{community_string}": {errorStatus.prettyPrint()}'
+                        )
                         return ip_address_value, f'Error: {errorStatus.prettyPrint()}'
-                    else:
-                        for varBind in varBinds:
-                            snmp_result.append(f'{varBind[0].prettyPrint()} = {varBind[1]}')
-        else:
-            v3_user = 'myUser'
-            v3_auth_password = 'myAuthPass'
-            v3_priv_password = 'myPrivPass'
+                    for varBind in varBinds:
+                        snmp_result.append(f'{varBind[0].prettyPrint()} = {varBind[1]}')
+        elif snmp_version == '3':
+            missing_fields = []
+            if not username:
+                missing_fields.append('username')
+            if not auth_password:
+                missing_fields.append('authentication password')
+            if not priv_password:
+                missing_fields.append('privacy password')
+            if missing_fields:
+                message = f"Missing SNMPv3 parameters: {', '.join(missing_fields)}"
+                logger.error(message)
+                return ip_address_value, f'Error: {message}'
+
+            auth_protocol = _resolve_auth_protocol(auth_protocol_name)
+            priv_protocol = _resolve_priv_protocol(priv_protocol_name)
+
             for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
                 SnmpEngine(),
                 UsmUserData(
-                    v3_user,
-                    authKey=v3_auth_password,
-                    privKey=v3_priv_password,
-                    authProtocol=usmHMACSHAAuthProtocol,
-                    privProtocol=usmAesCfb128Protocol,
+                    username,
+                    authKey=auth_password,
+                    privKey=priv_password,
+                    authProtocol=auth_protocol,
+                    privProtocol=priv_protocol,
                 ),
                 UdpTransportTarget(
                     (ip_address_value, int(snmp_port)),
-                    timeout=SIMPLE_SNMP_TIMEOUT,
-                    retries=SIMPLE_SNMP_RETRIES,
+                    timeout=timeout_seconds,
+                    retries=retries,
                 ),
                 ContextData(),
                 ObjectType(ObjectIdentity(hardcoded_oid).loadMibs('SNMPv2-MIB')),
@@ -398,12 +448,15 @@ def _run_simple_snmp_walk(ip_address_value, community_strings, hardcoded_oid, sn
                 if errorIndication:
                     logger.error(f'SNMPv3 Walk Error for {ip_address_value}: {str(errorIndication)}')
                     return ip_address_value, f'Error: {str(errorIndication)}'
-                elif errorStatus:
-                    logger.error(f'SNMPv3 Error at {errorIndex} for {ip_address_value}: {errorStatus.prettyPrint()}')
+                if errorStatus:
+                    logger.error(
+                        f'SNMPv3 Error at {errorIndex} for {ip_address_value}: {errorStatus.prettyPrint()}'
+                    )
                     return ip_address_value, f'Error: {errorStatus.prettyPrint()}'
-                else:
-                    for varBind in varBinds:
-                        snmp_result.append(f'{varBind[0].prettyPrint()} = {varBind[1]}')
+                for varBind in varBinds:
+                    snmp_result.append(f'{varBind[0].prettyPrint()} = {varBind[1]}')
+        else:
+            return ip_address_value, f'Error: Unsupported SNMP version {snmp_version}'
 
         if snmp_result:
             return ip_address_value, '\n'.join(snmp_result)
@@ -415,28 +468,50 @@ def _run_simple_snmp_walk(ip_address_value, community_strings, hardcoded_oid, sn
 
 
 # Separate function for Simple SNMP Walk
-async def simple_snmp_walk(ip_addresses, snmp_port, table):
-    community_strings = ['public', 'private']
+async def simple_snmp_walk(
+    ip_addresses,
+    snmp_port,
+    table,
+    snmp_version,
+    community_strings,
+    timeout_seconds,
+    retries,
+    auth_protocol_name,
+    priv_protocol_name,
+    username,
+    auth_password,
+    priv_password,
+):
     hardcoded_oid = '1.3.6.1.2.1.1'
 
-    async def collect_results(snmp_version, label):
-        tasks = [
-            asyncio.to_thread(
-                _run_simple_snmp_walk,
-                ip,
-                community_strings,
-                hardcoded_oid,
-                snmp_version,
-                snmp_port,
-            )
-            for ip in ip_addresses
-        ]
-        results = await asyncio.gather(*tasks)
-        for ip_address_value, snmp_result in results:
-            table.add_row([f'{label} for {ip_address_value}', snmp_result])
+    tasks = [
+        asyncio.to_thread(
+            _run_simple_snmp_walk,
+            ip,
+            snmp_version,
+            snmp_port,
+            hardcoded_oid,
+            timeout_seconds,
+            retries,
+            community_strings,
+            username,
+            auth_password,
+            priv_password,
+            auth_protocol_name,
+            priv_protocol_name,
+        )
+        for ip in ip_addresses
+    ]
+    results = await asyncio.gather(*tasks)
 
-    await collect_results('v2c', 'Simple SNMP Walk Result')
-    await collect_results('v3', 'Simple SNMPv3 Walk Result')
+    version_label = snmp_version.lower()
+    if snmp_version == '3':
+        operation_label = 'Simple SNMPv3 Walk Result'
+    else:
+        operation_label = f'Simple SNMP Walk Result (v{version_label})'
+
+    for ip_address_value, snmp_result in results:
+        table.add_row([f'{operation_label} for {ip_address_value}', snmp_result])
 
 # New function to perform MTR
 async def run_mtr_for_ip(ip, table):
@@ -476,6 +551,36 @@ def ping_operation(request):
     snmp_walk = request.POST.get("snmp_walk")
     is_simple_snmp_walk = request.POST.get("simple_snmp_walk")
     mtr = request.POST.get("mtr")
+
+    community_strings = request.POST.getlist("community_strings")
+    if not community_strings:
+        single_community = request.POST.get("community_strings")
+        if single_community:
+            community_strings = [single_community]
+    community_strings = [value.strip() for value in community_strings if value and value.strip()]
+    if not community_strings:
+        community_strings = ["public", "private"]
+
+    snmp_version_input = request.POST.get("snmp_version", "2c").strip()
+    snmp_version_normalized = snmp_version_input.lower()
+    if snmp_version_normalized.startswith("v"):
+        snmp_version_normalized = snmp_version_normalized[1:]
+    if snmp_version_normalized not in ("1", "2c", "3"):
+        snmp_version_normalized = "2c"
+
+    timeout_ms_value = request.POST.get("timeout")
+    simple_timeout_seconds = SIMPLE_SNMP_TIMEOUT
+    if timeout_ms_value:
+        try:
+            simple_timeout_seconds = max(0.1, float(timeout_ms_value) / 1000.0)
+        except ValueError:
+            logger.warning(f"Invalid timeout value for Simple SNMP Walk: {timeout_ms_value}")
+
+    simple_auth_protocol = request.POST.get("authentication_type", "SHA")
+    simple_priv_protocol = request.POST.get("encryption_type", "AES")
+    simple_username = request.POST.get("username")
+    simple_auth_password = request.POST.get("password")
+    simple_priv_password = request.POST.get("encryption_key")
 
     ip_addresses = validate_ip_addresses(get_ip_address_all, request)
     print("line 435", ip_addresses)
@@ -523,13 +628,13 @@ def ping_operation(request):
                 try:
                     await advanced_snmp_walk(
                         ip_addresses,
-                        snmp_version=request.POST.get("snmp_version"),
-                        community_strings=request.POST.getlist("community_strings", ["public", "private"]),
-                        username=request.POST.get("username"),
-                        password=request.POST.get("password"),
-                        authentication_type=request.POST.get("authentication_type", "SHA"),
-                        encryption_type=request.POST.get("encryption_type", "AES"),
-                        encryption_key=request.POST.get("encryption_key"),
+                        snmp_version=snmp_version_normalized,
+                        community_strings=community_strings,
+                        username=simple_username,
+                        password=simple_auth_password,
+                        authentication_type=simple_auth_protocol,
+                        encryption_type=simple_priv_protocol,
+                        encryption_key=simple_priv_password,
                         oid=request.POST.get("oid"),
                         snmp_port=161,
                         table=table
@@ -539,7 +644,20 @@ def ping_operation(request):
 
             if is_simple_snmp_walk:
                 try:
-                    await simple_snmp_walk(ip_addresses, '161', table)
+                    await simple_snmp_walk(
+                        ip_addresses,
+                        '161',
+                        table,
+                        snmp_version_normalized,
+                        community_strings,
+                        simple_timeout_seconds,
+                        SIMPLE_SNMP_RETRIES,
+                        simple_auth_protocol,
+                        simple_priv_protocol,
+                        simple_username,
+                        simple_auth_password,
+                        simple_priv_password,
+                    )
                 except Exception as e:
                     results.append({"operation": "Simple SNMP Walk", "result": f"Error: {str(e)}"})
 
