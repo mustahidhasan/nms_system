@@ -18,3 +18,12 @@ POST_LOGOUT_REDIRECT_URI=${HOST_URL}/
 CORS_ALLOWED_ORIGINS=${HOST_URL}
 CSRF_TRUSTED_ORIGINS=${HOST_URL}
 CORS_ALLOW_CREDENTIALS=True
+
+# Email (production - update with real SMTP credentials)
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=girish.lc.photos2@gmail.com
+EMAIL_HOST_PASSWORD=jhazpenfiuhduvvx
+DEFAULT_FROM_EMAIL=girish.lc.photos2@gmail.com

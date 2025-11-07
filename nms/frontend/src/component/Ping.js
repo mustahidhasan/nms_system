@@ -29,6 +29,7 @@ function Ping({ apiBaseUrl }) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailStatus, setEmailStatus] = useState(null);
 
 
   useEffect(() => {
@@ -68,7 +69,12 @@ function Ping({ apiBaseUrl }) {
       });
 
       const data = await response.json();
-      if (data.success || response.ok) {
+      if (data.success && data.logout_url) {
+        window.location.href = data.logout_url;
+        return;
+      }
+
+      if (response.ok) {
         navigate('/');
       } else {
         console.error('Logout failed:', data.message || 'Unknown error');
@@ -114,6 +120,7 @@ function Ping({ apiBaseUrl }) {
   const isSelectAllChecked = allOps
     .filter((op) => op !== 'snmp_walk')
     .every((op) => operations[op]);
+  const showSnmpFields = operations.snmp_walk || operations.simple_snmp_walk;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,13 +133,23 @@ function Ping({ apiBaseUrl }) {
         });
         formData.append('snmp_version', snmpVersion);
 
-        if (operations.snmp_walk) {
-        formData.append('community_strings', document.querySelector('input[name="community_string"]')?.value || 'public');
+        if (operations.snmp_walk || operations.simple_snmp_walk) {
+        const communityInput = document.querySelector('input[name="community_string"]')?.value || 'public';
+        const communityValues = communityInput
+            .split(',')
+            .map((value) => value.trim())
+            .filter(Boolean);
+        if (communityValues.length) {
+            communityValues.forEach((value) => formData.append('community_strings', value));
+        } else {
+            formData.append('community_strings', 'public');
+        }
+
         formData.append('timeout', document.querySelector('input[name="timeout"]')?.value || '1000');
 
         if (snmpVersion === '3') {
             formData.append('username', document.querySelector('input[name="v3_username"]')?.value || '');
-            formData.append('authentication_type', document.querySelector('input[name="auth_protocol"]')?.value || '');
+                formData.append('authentication_type', document.querySelector('input[name="auth_protocol"]')?.value || '');
             formData.append('password', document.querySelector('input[name="auth_password"]')?.value || '');
             formData.append('encryption_type', document.querySelector('input[name="priv_protocol"]')?.value || '');
             formData.append('encryption_key', document.querySelector('input[name="priv_password"]')?.value || '');
@@ -172,7 +189,10 @@ function Ping({ apiBaseUrl }) {
       .map((e) => e.trim())
       .filter(Boolean);
 
-    if (!emailArray.length) return;
+    if (!emailArray.length) {
+      setEmailStatus({ type: 'error', message: 'Please enter at least one email recipient.' });
+      return;
+    }
 
     let bodyText = 'Results:\n\n';
     results.forEach(({ operation, result }) => {
@@ -180,19 +200,21 @@ function Ping({ apiBaseUrl }) {
     });
 
     try {
+      setEmailStatus({ type: 'info', message: 'Sending email…' });
       const res = await fetch(`${apiBaseUrl}/send-email/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email_list: emailArray, email_body: bodyText }),
       });
       const json = await res.json();
       if (json.success) {
-        console.log('Email sent successfully');
+        setEmailStatus({ type: 'success', message: 'Email sent successfully.' });
       } else {
-        console.error('Email sending failed:', json.message);
+        setEmailStatus({ type: 'error', message: json.message || 'Email sending failed.' });
       }
     } catch (error) {
-      console.error('Email sending failed:', error);
+      setEmailStatus({ type: 'error', message: 'Email sending failed. Please check the configuration.' });
     }
   };
 
@@ -216,10 +238,11 @@ function Ping({ apiBaseUrl }) {
     setResults([]);
     setEmailList('');
     sessionStorage.removeItem('ip_address');
+    setEmailStatus(null);
   };
 
   const renderSNMPFields = () => {
-    if (!operations['snmp_walk']) return null;
+    if (!showSnmpFields) return null;
 
     return (
       <div id="snmp_fields" className="snmp-fields">
@@ -382,6 +405,9 @@ function Ping({ apiBaseUrl }) {
                 <button onClick={handleSendEmail}>Send Email</button>
                 <button onClick={downloadCSV}>Download CSV</button>
               </div>
+              {emailStatus && (
+                <p className={`email-status email-status-${emailStatus.type}`}>{emailStatus.message}</p>
+              )}
 
               <table className="result-table">
                 <thead>
