@@ -40,6 +40,12 @@ from django.contrib import messages
 from ipaddress import ip_address
 import re
 
+HOSTNAME_PATTERN = re.compile(
+    r"^(?!-)(?:[A-Za-z0-9-]{1,63}(?<!-)\.)*(?:[A-Za-z0-9-]{1,63})(?<!-)\.?$"
+)
+SIMPLE_SNMP_TIMEOUT = 1  # seconds
+SIMPLE_SNMP_RETRIES = 0
+
 
 def generate_ip_list(ip_input):
     """Parse input of IPs, ranges, or hostnames and return a list of targets."""
@@ -80,22 +86,43 @@ def generate_ip_list(ip_input):
 
 # Separate function for validating IP addresses
 def validate_ip_addresses(get_ip_address_all, request):
-    ip_addresses = []
+    validated_targets = []
+
     for item in get_ip_address_all:
+        candidate = item.strip()
+        if not candidate:
+            continue
+
+        # Accept literal IPv4/IPv6 values
         try:
-            # Validate if it's an IPv4 address
-            socket.inet_aton(item)
-            ip_addresses.append(item)
-        except socket.error:
-            try:
-                # Attempt to resolve hostname to IP
-                resolved_ip = socket.gethostbyname(item)
-                ip_addresses.append(resolved_ip)
-            except socket.gaierror:
-                logger.error(f"Failed to resolve hostname: {item}")
-                messages.warning(request, f"Could not resolve: {item}")
-                continue  # Skip invalid hostname, but don't fail all
-    return list(set(ip_addresses))  # Deduplicate
+            validated_targets.append(str(ip_address(candidate)))
+            continue
+        except ValueError:
+            pass
+
+        # Try to resolve hostnames to IPv4
+        try:
+            resolved_ip = socket.gethostbyname(candidate)
+            validated_targets.append(resolved_ip)
+            continue
+        except socket.gaierror:
+            if HOSTNAME_PATTERN.fullmatch(candidate):
+                logger.warning(f"Hostname {candidate} could not be resolved; using as-is.")
+                messages.warning(request, f"Hostname '{candidate}' could not be resolved. Using hostname directly.")
+                validated_targets.append(candidate)
+            else:
+                logger.error(f"Failed to resolve invalid host entry: {candidate}")
+                messages.warning(request, f"Skipping invalid entry: {candidate}")
+
+    # Deduplicate while keeping the original order to match user expectations
+    seen = set()
+    ordered_targets = []
+    for target in validated_targets:
+        if target not in seen:
+            seen.add(target)
+            ordered_targets.append(target)
+
+    return ordered_targets
 
 # Separate function for Enable Ping operation
 async def enable_ping_operation(ip_addresses, os_name, table):
@@ -320,78 +347,96 @@ async def advanced_snmp_walk(ip_addresses, snmp_version, community_strings, user
     # Add results to the table
     for ip_address, result_message in results:
         table.add_row([f"SNMP Walk Result for {ip_address}", result_message])
-# Separate function for Simple SNMP Walk
-async def simple_snmp_walk(ip_addresses, snmp_port, table):
-    async def snmp_walk(ip_address, community_strings, hardcoded_oid, snmp_version):
-        snmp_result = []
-        try:
-            if snmp_version == 'v2c':
-                for community_string in community_strings:
-                    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
-                        SnmpEngine(),
-                        CommunityData(community_string, mpModel=1),
-                        UdpTransportTarget((ip_address, int(snmp_port))),
-                        ContextData(),
-                        ObjectType(ObjectIdentity(hardcoded_oid).loadMibs('SNMPv2-MIB')),
-                        lexicographicMode=False,
-                    ):
-                        if errorIndication:
-                            logger.error(f'SNMPv2c Walk Error for {ip_address} with community "{community_string}": {str(errorIndication)}')
-                            return f'Error: {str(errorIndication)}'
-                        elif errorStatus:
-                            logger.error(f'SNMPv2c Error at {errorIndex} for {ip_address} with community "{community_string}": {errorStatus.prettyPrint()}')
-                            return f'Error: {errorStatus.prettyPrint()}'
-                        else:
-                            for varBind in varBinds:
-                                snmp_result.append(f'{varBind[0].prettyPrint()} = {varBind[1]}')
-            else:
-                v3_user = 'myUser'
-                v3_auth_password = 'myAuthPass'
-                v3_priv_password = 'myPrivPass'
+def _run_simple_snmp_walk(ip_address_value, community_strings, hardcoded_oid, snmp_version, snmp_port):
+    snmp_result = []
+    try:
+        if snmp_version == 'v2c':
+            for community_string in community_strings:
                 for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
                     SnmpEngine(),
-                    UsmUserData(v3_user, authKey=v3_auth_password, privKey=v3_priv_password,
-                    authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
-                    UdpTransportTarget((ip_address, int(snmp_port))),
+                    CommunityData(community_string, mpModel=1),
+                    UdpTransportTarget(
+                        (ip_address_value, int(snmp_port)),
+                        timeout=SIMPLE_SNMP_TIMEOUT,
+                        retries=SIMPLE_SNMP_RETRIES,
+                    ),
                     ContextData(),
                     ObjectType(ObjectIdentity(hardcoded_oid).loadMibs('SNMPv2-MIB')),
                     lexicographicMode=False,
                 ):
                     if errorIndication:
-                        logger.error(f'SNMPv3 Walk Error for {ip_address}: {str(errorIndication)}')
-                        return f'Error: {str(errorIndication)}'
+                        logger.error(f'SNMPv2c Walk Error for {ip_address_value} with community "{community_string}": {str(errorIndication)}')
+                        return ip_address_value, f'Error: {str(errorIndication)}'
                     elif errorStatus:
-                        logger.error(f'SNMPv3 Error at {errorIndex} for {ip_address}: {errorStatus.prettyPrint()}')
-                        return f'Error: {errorStatus.prettyPrint()}'
+                        logger.error(f'SNMPv2c Error at {errorIndex} for {ip_address_value} with community "{community_string}": {errorStatus.prettyPrint()}')
+                        return ip_address_value, f'Error: {errorStatus.prettyPrint()}'
                     else:
                         for varBind in varBinds:
                             snmp_result.append(f'{varBind[0].prettyPrint()} = {varBind[1]}')
-            return snmp_result
-        except Exception as e:
-            logger.error(f'An error occurred during SNMP walk for {ip_address}: {str(e)}')
-            return f'Error: {str(e)}'
+        else:
+            v3_user = 'myUser'
+            v3_auth_password = 'myAuthPass'
+            v3_priv_password = 'myPrivPass'
+            for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+                SnmpEngine(),
+                UsmUserData(
+                    v3_user,
+                    authKey=v3_auth_password,
+                    privKey=v3_priv_password,
+                    authProtocol=usmHMACSHAAuthProtocol,
+                    privProtocol=usmAesCfb128Protocol,
+                ),
+                UdpTransportTarget(
+                    (ip_address_value, int(snmp_port)),
+                    timeout=SIMPLE_SNMP_TIMEOUT,
+                    retries=SIMPLE_SNMP_RETRIES,
+                ),
+                ContextData(),
+                ObjectType(ObjectIdentity(hardcoded_oid).loadMibs('SNMPv2-MIB')),
+                lexicographicMode=False,
+            ):
+                if errorIndication:
+                    logger.error(f'SNMPv3 Walk Error for {ip_address_value}: {str(errorIndication)}')
+                    return ip_address_value, f'Error: {str(errorIndication)}'
+                elif errorStatus:
+                    logger.error(f'SNMPv3 Error at {errorIndex} for {ip_address_value}: {errorStatus.prettyPrint()}')
+                    return ip_address_value, f'Error: {errorStatus.prettyPrint()}'
+                else:
+                    for varBind in varBinds:
+                        snmp_result.append(f'{varBind[0].prettyPrint()} = {varBind[1]}')
 
+        if snmp_result:
+            return ip_address_value, '\n'.join(snmp_result)
+        return ip_address_value, 'No SNMP data returned.'
+
+    except Exception as e:
+        logger.error(f'An error occurred during SNMP walk for {ip_address_value}: {str(e)}')
+        return ip_address_value, f'Error: {str(e)}'
+
+
+# Separate function for Simple SNMP Walk
+async def simple_snmp_walk(ip_addresses, snmp_port, table):
     community_strings = ['public', 'private']
     hardcoded_oid = '1.3.6.1.2.1.1'
 
-    tasks = [snmp_walk(ip, community_strings, hardcoded_oid, 'v2c') for ip in ip_addresses]
-    results = await asyncio.gather(*tasks)
+    async def collect_results(snmp_version, label):
+        tasks = [
+            asyncio.to_thread(
+                _run_simple_snmp_walk,
+                ip,
+                community_strings,
+                hardcoded_oid,
+                snmp_version,
+                snmp_port,
+            )
+            for ip in ip_addresses
+        ]
+        results = await asyncio.gather(*tasks)
+        for ip_address_value, snmp_result in results:
+            table.add_row([f'{label} for {ip_address_value}', snmp_result])
 
-    for ip_address, snmp_result in zip(ip_addresses, results):
-        if isinstance(snmp_result, list) and snmp_result:
-            table.add_row([f'Simple SNMP Walk Result for {ip_address}', '\n'.join(snmp_result)])
-        else:
-            table.add_row([f'Simple SNMP Walk Result for {ip_address}', snmp_result])
-
-    # Process SNMPv3 if needed
-    tasks_v3 = [snmp_walk(ip, community_strings, hardcoded_oid, 'v3') for ip in ip_addresses]
-    results_v3 = await asyncio.gather(*tasks_v3)
-
-    for ip_address, snmp_result_v3 in zip(ip_addresses, results_v3):
-        if isinstance(snmp_result_v3, list) and snmp_result_v3:
-            table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', '\n'.join(snmp_result_v3)])
-        else:
-            table.add_row([f'Simple SNMPv3 Walk Result for {ip_address}', snmp_result_v3])
+    await collect_results('v2c', 'Simple SNMP Walk Result')
+    await collect_results('v3', 'Simple SNMPv3 Walk Result')
 
 # New function to perform MTR
 async def run_mtr_for_ip(ip, table):
