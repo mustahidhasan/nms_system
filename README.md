@@ -124,3 +124,19 @@ docker-compose -f docker-compose.prod.yml logs -f --tail=100
 
 > Azure must be able to reach the IP — if using a **private IP**, only internal networks or VPN can access it.
 > For external access, use a **public IP/domain or tunnel**.
+
+---
+
+## 7 Service Communications Module
+
+The refreshed stack ships a purpose-built incident communications workflow:
+
+* **Authentication** – `/api/auth/login/` issues JWT tokens; `/api/auth/refresh/` refreshes them. All other `/api/*` routes expect a `Bearer` token.
+* **Teams & Roles** – `communications.Team` + `TeamMembership` allow User/Team Admin/System Admin roles. System Admins are Django staff/superusers.
+* **Distribution Lists** – Global lists (no team) and team-scoped lists (w/ membership checks). Each list stores recipient entries with optional descriptions.
+* **Incidents** – Create incidents per team, associate a primary distribution list, and view the full message timeline.
+* **Messaging & Attachments** – `/api/messages/` accepts multipart form data, stores attachments, and mails recipients via SMTP.
+* **Templates & Closing** – `/api/templates/` exposes the 3 default templates (Major, Incident, Service Announcement). `POST /api/incidents/{id}/close/` captures the final email and marks the incident closed.
+* **React Dashboard** – The new dashboard (CRA) uses the JWT APIs for login, incident creation, distribution list management, message timeline, and closure actions.
+
+> Tip: create Django users/teams via the admin, assign memberships, then log in through the SPA to manage communications.

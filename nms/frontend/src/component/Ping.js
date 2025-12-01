@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import '../assets/Ping.css';
 import UserActivity from './UserActivity';
 
-function Ping({ apiBaseUrl }) {
+function Ping({ apiBaseUrl, setAuth }) {
   const navigate = useNavigate();
   const allOps = [
     'enable_ping',
@@ -75,6 +75,10 @@ function Ping({ apiBaseUrl }) {
       }
 
       if (response.ok) {
+        localStorage.removeItem('nmsAuth');
+        if (typeof setAuth === 'function') {
+          setAuth(null);
+        }
         navigate('/');
       } else {
         console.error('Logout failed:', data.message || 'Unknown error');
@@ -82,6 +86,37 @@ function Ping({ apiBaseUrl }) {
     } catch (error) {
       console.error('Logout error:', error);
     }finally{
+      setLoading(false);
+    }
+  };
+
+  const handleServiceCommunications = async () => {
+    try {
+      setLoading(true);
+      const csrfToken = getCookie('csrftoken');
+      const response = await fetch(`${apiBaseUrl}/api/auth/session-login/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || 'Unable to open Service Communications.');
+      }
+      localStorage.setItem('nmsAuth', JSON.stringify(data));
+      if (typeof setAuth === 'function') {
+        setAuth(data);
+      }
+      setShowSettingsDropdown(false);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Service Communications error:', error);
+      alert(error.message || 'Failed to load Service Communications.');
+    } finally {
       setLoading(false);
     }
   };
@@ -305,10 +340,15 @@ function Ping({ apiBaseUrl }) {
             <span className="settings-icon" onClick={() => setShowSettingsDropdown((prev) => !prev)}>⚙️</span>
             {showSettingsDropdown && (
               <div className="settings-dropdown">
-                <div onClick={() => {
-                  navigate('/user-activity');
-                  setShowSettingsDropdown(false);
-                }}>👤 User</div>
+                <div
+                  onClick={() => {
+                    navigate('/user-activity');
+                    setShowSettingsDropdown(false);
+                  }}
+                >
+                  👤 User
+                </div>
+                <div onClick={handleServiceCommunications}>🛰️ Service Communications</div>
               </div>
             )}
           </div>

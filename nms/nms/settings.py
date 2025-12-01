@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from datetime import timedelta
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,8 +20,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "USER",
     "DASHBOARD",
+    "communications",
 ]
 
 # Middleware
@@ -93,11 +97,11 @@ HOST_URL = config("HOST_URL", default="http://localhost")
 FRONTEND_URL = f"{HOST_URL}"
 
 # Azure AD OAuth2
-AZURE_TENANT_ID = config("AZURE_TENANT_ID")
-AZURE_CLIENT_ID = config("AZURE_CLIENT_ID")
-AZURE_CLIENT_SECRET = config("AZURE_CLIENT_SECRET")
-AZURE_REDIRECT_URI = config("AZURE_REDIRECT_URI")
-POST_LOGOUT_REDIRECT_URI = config("POST_LOGOUT_REDIRECT_URI")
+AZURE_TENANT_ID = config("AZURE_TENANT_ID", default="")
+AZURE_CLIENT_ID = config("AZURE_CLIENT_ID", default="")
+AZURE_CLIENT_SECRET = config("AZURE_CLIENT_SECRET", default="")
+AZURE_REDIRECT_URI = config("AZURE_REDIRECT_URI", default=f"{HOST_URL}/oauth2/callback/")
+POST_LOGOUT_REDIRECT_URI = config("POST_LOGOUT_REDIRECT_URI", default=HOST_URL)
 
 AZURE_AUTHORITY = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
 AZURE_AUTHORIZE_ENDPOINT = f"{AZURE_AUTHORITY}/oauth2/v2.0/authorize"
@@ -117,3 +121,28 @@ EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER or "no-reply@example.com")
+
+# Media files for attachments
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 25,
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+}
