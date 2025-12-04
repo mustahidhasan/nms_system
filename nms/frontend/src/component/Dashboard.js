@@ -15,6 +15,13 @@ const SUB_NAV_SECTIONS = [
 ];
 
 const PANEL_KEYS = ['teams', 'incident', 'active', 'messaging', 'lists', 'storedLists'];
+const COLLAPSE_STORAGE_KEY = 'nmsCollapsedPanels';
+
+const buildDefaultCollapsedState = () =>
+  PANEL_KEYS.reduce((acc, key) => {
+    acc[key] = false;
+    return acc;
+  }, {});
 
 const toArray = (payload) => {
   if (Array.isArray(payload)) {
@@ -119,12 +126,27 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [activeSubNav, setActiveSubNav] = useState('overview');
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [collapsedPanels, setCollapsedPanels] = useState(() =>
-    PANEL_KEYS.reduce((acc, key) => {
-      acc[key] = false;
-      return acc;
-    }, {})
-  );
+  const [collapsedPanels, setCollapsedPanels] = useState(() => {
+    const defaults = buildDefaultCollapsedState();
+    if (typeof window === 'undefined') {
+      return defaults;
+    }
+    try {
+      const raw = window.localStorage.getItem(COLLAPSE_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            ...defaults,
+            ...parsed,
+          };
+        }
+      }
+    } catch (err) {
+      // ignore storage issues and fall back to defaults
+    }
+    return defaults;
+  });
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
   const distributionListFormRef = useRef(null);
@@ -138,20 +160,14 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const previousIncidentRef = useRef(null);
 
   const profileDisplayName = useMemo(() => {
-    const first = auth?.user?.first_name;
-    const last = auth?.user?.last_name;
-    const fullName = [first, last].filter(Boolean).join(' ').trim();
-    return fullName || auth?.user?.email || 'Service Comms User';
-  }, [auth]);
-
-  const profileCompactName = useMemo(() => {
-    const first = auth?.user?.first_name;
-    const last = auth?.user?.last_name;
-    if (first) {
-      return `${first}${last ? ` ${last.slice(0, 1)}.` : ''}`;
-    }
+    const first = (auth?.user?.first_name || '').trim();
+    if (first) return first;
     const email = auth?.user?.email || '';
-    return email.split('@')[0] || 'Operator';
+    if (email) {
+      const [localPart] = email.split('@');
+      if (localPart) return localPart;
+    }
+    return 'Service Comms User';
   }, [auth]);
 
   const userInitials = useMemo(() => {
@@ -220,6 +236,15 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     [sectionRefs]
   );
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(collapsedPanels));
+    } catch (err) {
+      // ignore storage persistence errors
+    }
+  }, [collapsedPanels]);
+
   const togglePanel = useCallback((panelId) => {
     setCollapsedPanels((prev) => ({
       ...prev,
@@ -228,6 +253,13 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   }, []);
 
   const isPanelCollapsed = useCallback((panelId) => !!collapsedPanels[panelId], [collapsedPanels]);
+
+  const handlePanelHeaderKeyDown = (event, panelId) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      togglePanel(panelId);
+    }
+  };
 
   const handleScrollTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -361,7 +393,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const handleLogout = () => {
     setShowSettingsDropdown(false);
     persistAuth(null);
-    navigate('/dashboard');
+    navigate('/');
   };
 
   useEffect(() => {
@@ -801,35 +833,40 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
             <p>Structured incident and announcement workflows</p>
           </div>
         </div>
-        <div className="header-actions sc-header-actions" ref={settingsMenuRef}>
-          <div className="sc-logo-pair">
-            <img src="logo_left.png" alt="Partner Brand" className="sc-logo badge" />
-            <img src="logo_right.png" alt="Operations Partner" className="sc-logo badge" />
+        <div className="header-actions sc-header-actions">
+          <img
+            src="logo_right.png"
+            alt="Operations Partner"
+            className="sc-logo sc-logo-compact"
+          />
+          <div className="sc-settings-trigger" ref={settingsMenuRef}>
+            <button
+              type="button"
+              className={`icon-button ${showSettingsDropdown ? 'active' : ''}`}
+              aria-haspopup="menu"
+              aria-controls="sc-settings-menu"
+              aria-expanded={showSettingsDropdown}
+              onClick={() => setShowSettingsDropdown((prev) => !prev)}
+            >
+              ⚙️
+            </button>
+            {showSettingsDropdown && (
+              <div className="sc-settings-dropdown" id="sc-settings-menu" role="menu">
+                <div className="sc-profile-card" title={profileDisplayName}>
+                  <div className="sc-avatar">{userInitials}</div>
+                  <div className="sc-profile-details">
+                    <span>{profileDisplayName}</span>
+                  </div>
+                </div>
+                <button type="button" onClick={handleNavigateHome}>
+                  🏠 Home
+                </button>
+                <button type="button" onClick={handleLogout}>
+                  ↩ Logout
+                </button>
+              </div>
+            )}
           </div>
-          <div className="sc-profile-card" title={profileDisplayName}>
-            <div className="sc-avatar">{userInitials}</div>
-            <div className="sc-profile-details">
-              <span>{profileCompactName}</span>
-              <small>{auth?.user?.email}</small>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="icon-button"
-            onClick={() => setShowSettingsDropdown((prev) => !prev)}
-          >
-            ⚙️
-          </button>
-          {showSettingsDropdown && (
-            <div className="sc-settings-dropdown">
-              <button type="button" onClick={handleNavigateHome}>
-                🏠 Home
-              </button>
-              <button type="button" onClick={handleLogout}>
-                ↩ Logout
-              </button>
-            </div>
-          )}
         </div>
       </header>
 
@@ -877,19 +914,24 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
 
       <section className="grid">
         <div className="panel" data-section="teams" ref={teamsPanelRef}>
-          <div className="panel-header">
+          <div
+            className={`panel-header ${isPanelCollapsed('teams') ? 'collapsed' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isPanelCollapsed('teams')}
+            aria-controls="panel-teams"
+            onClick={() => togglePanel('teams')}
+            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'teams')}
+          >
             <h2>Teams</h2>
-            <button
-              type="button"
-              className={`panel-toggle ${isPanelCollapsed('teams') ? 'collapsed' : ''}`}
-              aria-label="Toggle Teams & Templates"
-              aria-expanded={!isPanelCollapsed('teams')}
-              onClick={() => togglePanel('teams')}
-            >
+            <span className="panel-toggle-indicator" aria-hidden="true">
               ▾
-            </button>
+            </span>
           </div>
-          <div className={`panel-body ${isPanelCollapsed('teams') ? 'collapsed' : ''}`}>
+          <div
+            id="panel-teams"
+            className={`panel-body ${isPanelCollapsed('teams') ? 'collapsed' : ''}`}
+          >
             <label className="form-field">
               <span>Select Team</span>
               <select
@@ -924,19 +966,24 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         </div>
 
         <div className="panel" data-section="incident" ref={incidentPanelRef}>
-          <div className="panel-header">
+          <div
+            className={`panel-header ${isPanelCollapsed('incident') ? 'collapsed' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isPanelCollapsed('incident')}
+            aria-controls="panel-incident"
+            onClick={() => togglePanel('incident')}
+            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'incident')}
+          >
             <h2>New Incident</h2>
-            <button
-              type="button"
-              className={`panel-toggle ${isPanelCollapsed('incident') ? 'collapsed' : ''}`}
-              aria-label="Toggle New Incident"
-              aria-expanded={!isPanelCollapsed('incident')}
-              onClick={() => togglePanel('incident')}
-            >
+            <span className="panel-toggle-indicator" aria-hidden="true">
               ▾
-            </button>
+            </span>
           </div>
-          <div className={`panel-body ${isPanelCollapsed('incident') ? 'collapsed' : ''}`}>
+          <div
+            id="panel-incident"
+            className={`panel-body ${isPanelCollapsed('incident') ? 'collapsed' : ''}`}
+          >
             <form onSubmit={handleIncidentSubmit} className="form-grid">
               <label className="form-field">
                 <span>INC Number</span>
@@ -1074,19 +1121,24 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
 
       <section className="grid">
         <div className="panel tall" data-section="active" ref={activeIncidentsRef}>
-          <div className="panel-header">
+          <div
+            className={`panel-header ${isPanelCollapsed('active') ? 'collapsed' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isPanelCollapsed('active')}
+            aria-controls="panel-active"
+            onClick={() => togglePanel('active')}
+            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'active')}
+          >
             <h2>Active Incidents</h2>
-            <button
-              type="button"
-              className={`panel-toggle ${isPanelCollapsed('active') ? 'collapsed' : ''}`}
-              aria-label="Toggle Active Incidents"
-              aria-expanded={!isPanelCollapsed('active')}
-              onClick={() => togglePanel('active')}
-            >
+            <span className="panel-toggle-indicator" aria-hidden="true">
               ▾
-            </button>
+            </span>
           </div>
-          <div className={`panel-body ${isPanelCollapsed('active') ? 'collapsed' : ''}`}>
+          <div
+            id="panel-active"
+            className={`panel-body ${isPanelCollapsed('active') ? 'collapsed' : ''}`}
+          >
             <ul className="incident-list">
               {filteredIncidents.map((incident) => (
                 <li
@@ -1110,19 +1162,24 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         </div>
 
         <div className="panel tall" data-section="messaging" ref={messagePanelRef}>
-          <div className="panel-header">
+          <div
+            className={`panel-header ${isPanelCollapsed('messaging') ? 'collapsed' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isPanelCollapsed('messaging')}
+            aria-controls="panel-messaging"
+            onClick={() => togglePanel('messaging')}
+            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'messaging')}
+          >
             <h2>Message Timeline</h2>
-            <button
-              type="button"
-              className={`panel-toggle ${isPanelCollapsed('messaging') ? 'collapsed' : ''}`}
-              aria-label="Toggle Message Timeline"
-              aria-expanded={!isPanelCollapsed('messaging')}
-              onClick={() => togglePanel('messaging')}
-            >
+            <span className="panel-toggle-indicator" aria-hidden="true">
               ▾
-            </button>
+            </span>
           </div>
-          <div className={`panel-body ${isPanelCollapsed('messaging') ? 'collapsed' : ''}`}>
+          <div
+            id="panel-messaging"
+            className={`panel-body ${isPanelCollapsed('messaging') ? 'collapsed' : ''}`}
+          >
             {selectedIncidentDetails ? (
               <>
                 <div className="incident-details-card">
@@ -1357,19 +1414,24 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
 
       <section className="grid">
         <div className="panel" data-section="lists" ref={distributionListsPanelRef}>
-          <div className="panel-header">
+          <div
+            className={`panel-header ${isPanelCollapsed('lists') ? 'collapsed' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isPanelCollapsed('lists')}
+            aria-controls="panel-lists"
+            onClick={() => togglePanel('lists')}
+            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'lists')}
+          >
             <h2>Distribution Lists</h2>
-            <button
-              type="button"
-              className={`panel-toggle ${isPanelCollapsed('lists') ? 'collapsed' : ''}`}
-              aria-label="Toggle Distribution Lists"
-              aria-expanded={!isPanelCollapsed('lists')}
-              onClick={() => togglePanel('lists')}
-            >
+            <span className="panel-toggle-indicator" aria-hidden="true">
               ▾
-            </button>
+            </span>
           </div>
-          <div className={`panel-body ${isPanelCollapsed('lists') ? 'collapsed' : ''}`}>
+          <div
+            id="panel-lists"
+            className={`panel-body ${isPanelCollapsed('lists') ? 'collapsed' : ''}`}
+          >
             <form
               onSubmit={handleDistributionListSubmit}
               className="form-grid"
@@ -1428,19 +1490,24 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         </div>
 
         <div className="panel">
-          <div className="panel-header">
+          <div
+            className={`panel-header ${isPanelCollapsed('storedLists') ? 'collapsed' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isPanelCollapsed('storedLists')}
+            aria-controls="panel-storedLists"
+            onClick={() => togglePanel('storedLists')}
+            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'storedLists')}
+          >
             <h2>Stored Lists</h2>
-            <button
-              type="button"
-              className={`panel-toggle ${isPanelCollapsed('storedLists') ? 'collapsed' : ''}`}
-              aria-label="Toggle Stored Lists"
-              aria-expanded={!isPanelCollapsed('storedLists')}
-              onClick={() => togglePanel('storedLists')}
-            >
+            <span className="panel-toggle-indicator" aria-hidden="true">
               ▾
-            </button>
+            </span>
           </div>
-          <div className={`panel-body ${isPanelCollapsed('storedLists') ? 'collapsed' : ''}`}>
+          <div
+            id="panel-storedLists"
+            className={`panel-body ${isPanelCollapsed('storedLists') ? 'collapsed' : ''}`}
+          >
             <ul className="list-view">
               {distributionLists.map((list) => (
                 <li key={list.id}>

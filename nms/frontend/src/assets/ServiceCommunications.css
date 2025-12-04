@@ -57,20 +57,23 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
-.sc-logo-pair {
+.sc-settings-trigger {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
 }
 
-.sc-logo.badge {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+.sc-logo-compact {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   padding: 4px;
+  background: #ffffff;
+  border: 1px solid var(--sc-border);
+  box-shadow: 0 8px 20px rgba(20, 64, 29, 0.12);
 }
 
 .sc-profile-card {
@@ -111,7 +114,7 @@
 .sc-subnav {
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 4;
   background: var(--sc-surface);
   padding: 0.4rem 2rem;
   display: flex;
@@ -138,22 +141,27 @@
 }
 
 .icon-button {
-  background: var(--sc-green);
-  color: white;
-  border: none;
+  background: none !important;
+  color: var(--sc-text);
+  border: 1px solid var(--sc-border);
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: 12px;
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(27, 107, 58, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(20, 64, 29, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 
-.icon-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 25px rgba(27, 107, 58, 0.35);
+.icon-button:hover,
+.icon-button:focus-visible,
+.icon-button.active {
+  background: none;
+  color: var(--sc-green);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(20, 64, 29, 0.18);
+  outline: none;
 }
 
 .sc-settings-dropdown {
@@ -163,30 +171,32 @@
   background: var(--sc-surface);
   border: 1px solid var(--sc-border);
   border-radius: 14px;
-  min-width: 180px;
+  min-width: 220px;
   box-shadow: 0 15px 30px rgba(33, 65, 33, 0.15);
   display: flex;
   flex-direction: column;
-  z-index: 2;
+  z-index: 10;
   overflow: hidden;
+  padding: 0.25rem 0;
 }
 
-.sc-settings-dropdown button {
-  background: transparent;
-  color: var(--sc-text);
-  border: none;
-  text-align: left;
-  padding: 0.85rem 1rem;
+.sc-settings-dropdown .sc-profile-card {
+  width: 100%;
   border-bottom: 1px solid #eaf4ea;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 0.75rem 1rem;
 }
 
-.sc-settings-dropdown button:last-child {
-  border-bottom: none;
+.sc-settings-dropdown .sc-profile-details span {
+  color: var(--sc-text);
 }
 
-.sc-settings-dropdown button:hover {
-  background: var(--sc-soft);
+.sc-settings-dropdown .sc-profile-details small {
+  color: var(--sc-green-muted);
 }
+
 
 .service-communications .alert {
   margin: 1.5rem 2rem;
@@ -314,22 +324,35 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 12px;
+  padding: 0.35rem 0.5rem;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.panel-toggle {
-  border: none;
+.panel-header:hover {
+  background: rgba(27, 107, 58, 0.05);
+}
+
+.panel-header:focus-visible {
+  outline: 2px solid var(--sc-green);
+  outline-offset: 2px;
+}
+
+.panel-toggle-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   background: var(--sc-soft);
   color: var(--sc-green);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
   transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.panel-toggle.collapsed {
+.panel-header.collapsed .panel-toggle-indicator {
   transform: rotate(-90deg);
 }
 
@@ -472,6 +495,37 @@
 .service-communications button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.service-communications .icon-button {
+  background: none !important;
+  border: 1px solid var(--sc-border);
+  box-shadow: 0 4px 12px rgba(20, 64, 29, 0.12);
+  padding: 0;
+  width: 44px;
+  height: 44px;
+}
+
+.sc-settings-dropdown button {
+  background: none !important;
+  color: var(--sc-text) !important;
+  border: none !important;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #eaf4ea;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  box-shadow: none !important;
+}
+
+.sc-settings-dropdown button:last-child {
+  border-bottom: none;
+}
+
+.sc-settings-dropdown button:hover {
+  color: var(--sc-green);
 }
 
 .incident-list {
