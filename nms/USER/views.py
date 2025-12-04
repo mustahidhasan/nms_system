@@ -7,7 +7,7 @@ from django.utils.timezone import now, timedelta
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 import logging
-from USER.models import UserActivity
+from USER.models import UserActivity, UserProfile, UserRole, get_user_role
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -63,6 +63,10 @@ def azure_callback(request):
         user, created = User.objects.get_or_create(
             email=email, defaults={'username': email, 'first_name': name}
         )
+
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        if created:
+            profile.set_role(UserRole.USER, manual=False)
 
         # Close any lingering active sessions before creating a new login record
         open_sessions = UserActivity.objects.filter(
@@ -150,7 +154,12 @@ def active_users_dashboard(request):
     return JsonResponse({
         "active_user_count": active_users.count(),
         "active_users": [
-            {"id": user.id, "email": user.email, "name": user.first_name}
+            {
+                "id": user.id,
+                "email": user.email,
+                "name": user.first_name,
+                "role": get_user_role(user),
+            }
             for user in active_users
         ],
         "user_activities": [

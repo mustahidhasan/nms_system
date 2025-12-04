@@ -26,6 +26,8 @@ from .serializers import (
     LoginSerializer,
 )
 from .constants import ANNOUNCEMENT_TEMPLATES
+from USER.models import UserRole, get_user_role, user_is_global_team_admin, user_is_system_admin
+
 from .permissions import user_can_manage_team, user_in_team
 from .services import deliver_incident_message
 
@@ -46,6 +48,7 @@ class SessionLoginView(APIView):
         refresh = RefreshToken.for_user(request.user)
         teams = Team.objects.filter(memberships__user=request.user).distinct()
         team_data = TeamSerializer(teams, many=True, context={"request": request}).data
+        role = get_user_role(request.user)
         data = {
             "access": str(refresh.access_token),
             "refresh": str(refresh),
@@ -55,6 +58,8 @@ class SessionLoginView(APIView):
                 "email": request.user.email,
                 "first_name": request.user.first_name,
                 "last_name": request.user.last_name,
+                "role": role,
+                "role_label": UserRole(role).label if role in UserRole.values else role,
             },
             "teams": team_data,
         }
@@ -68,13 +73,13 @@ class TeamViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = Team.objects.all().prefetch_related("memberships")
-        if user.is_staff or user.is_superuser:
+        if user_is_global_team_admin(user):
             return qs
         return qs.filter(memberships__user=user).distinct()
 
     def perform_create(self, serializer):
         user = self.request.user
-        if not (user.is_staff or user.is_superuser):
+        if not user_is_system_admin(user):
             raise PermissionDenied("Only system administrators can create teams.")
         team = serializer.save(created_by=user)
         TeamMembership.objects.get_or_create(
@@ -83,13 +88,13 @@ class TeamViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         user = self.request.user
-        if not (user.is_staff or user.is_superuser):
+        if not user_is_system_admin(user):
             raise PermissionDenied("Only system administrators can update teams.")
         serializer.save()
 
     def perform_destroy(self, instance):
         user = self.request.user
-        if not (user.is_staff or user.is_superuser):
+        if not user_is_system_admin(user):
             raise PermissionDenied("Only system administrators can delete teams.")
         instance.delete()
 
@@ -102,7 +107,7 @@ class DistributionListViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = DistributionList.objects.prefetch_related("entries")
         team_id = self.request.query_params.get("team")
-        if user.is_staff or user.is_superuser:
+        if user_is_global_team_admin(user):
             if team_id:
                 if team_id == "global":
                     return qs.filter(team__isnull=True)
@@ -119,7 +124,7 @@ class DistributionListViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         team = serializer.validated_data.get("team")
         user = self.request.user
-        if team is None and not (user.is_staff or user.is_superuser):
+        if team is None and not user_is_system_admin(user):
             raise PermissionDenied("Only system administrators can create global lists.")
         if team and not user_can_manage_team(user, team):
             raise PermissionDenied("Only team admins can create a team list.")
@@ -129,7 +134,7 @@ class DistributionListViewSet(viewsets.ModelViewSet):
         distribution_list = serializer.instance
         user = self.request.user
         team = distribution_list.team
-        if team is None and not (user.is_staff or user.is_superuser):
+        if team is None and not user_is_system_admin(user):
             raise PermissionDenied("Only system administrators can modify global lists.")
         if team and not user_can_manage_team(user, team):
             raise PermissionDenied("Only team admins can modify this list.")
@@ -138,7 +143,7 @@ class DistributionListViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         user = self.request.user
         team = instance.team
-        if team is None and not (user.is_staff or user.is_superuser):
+        if team is None and not user_is_system_admin(user):
             raise PermissionDenied("Only system administrators can delete global lists.")
         if team and not user_can_manage_team(user, team):
             raise PermissionDenied("Only team admins can delete this list.")
@@ -163,7 +168,7 @@ class IncidentViewSet(viewsets.ModelViewSet):
             except ValueError:
                 pass
         user = self.request.user
-        if user.is_staff or user.is_superuser:
+        if user_is_global_team_admin(user):
             return qs
         return qs.filter(team__memberships__user=user).distinct()
 
@@ -234,7 +239,7 @@ class IncidentMessageViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, vie
         if incident_id:
             queryset = queryset.filter(incident_id=incident_id)
         user = self.request.user
-        if user.is_staff or user.is_superuser:
+        if user_is_global_team_admin(user):
             return queryset
         return queryset.filter(incident__team__memberships__user=user).distinct()
 
@@ -261,7 +266,7 @@ class DashboardSummaryView(APIView):
     def get(self, request):
         user = request.user
         incidents = Incident.objects.all()
-        if not (user.is_staff or user.is_superuser):
+        if not user_is_global_team_admin(user):
             incidents = incidents.filter(team__memberships__user=user)
 
         open_incidents = incidents.filter(status__in=[Incident.Status.OPEN, Incident.Status.MONITORING])

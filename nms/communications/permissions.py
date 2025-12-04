@@ -1,14 +1,13 @@
 from rest_framework import permissions
+
+from USER.models import user_is_global_team_admin, user_is_system_admin
+
 from .models import TeamMembership, Team
 
 
 class IsSystemAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and (request.user.is_staff or request.user.is_superuser)
-        )
+        return bool(request.user and request.user.is_authenticated and user_is_system_admin(request.user))
 
 
 def get_membership(user, team: Team):
@@ -23,7 +22,7 @@ def get_membership(user, team: Team):
 def user_can_manage_team(user, team: Team):
     if not user or not user.is_authenticated:
         return False
-    if user.is_staff or user.is_superuser:
+    if user_is_global_team_admin(user):
         return True
     membership = get_membership(user, team)
     return bool(membership and membership.role == TeamMembership.Role.TEAM_ADMIN)
@@ -32,6 +31,6 @@ def user_can_manage_team(user, team: Team):
 def user_in_team(user, team: Team):
     if not user or not user.is_authenticated:
         return False
-    if user.is_staff or user.is_superuser:
+    if user_is_global_team_admin(user):
         return True
     return TeamMembership.objects.filter(team=team, user=user).exists()

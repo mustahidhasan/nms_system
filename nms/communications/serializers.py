@@ -1,4 +1,6 @@
 from django.contrib.auth import get_user_model
+
+from USER.models import UserRole, get_user_role, user_is_global_team_admin
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
@@ -46,7 +48,7 @@ class TeamSerializer(serializers.ModelSerializer):
         user = getattr(request, "user", None)
         if not user or not user.is_authenticated:
             return None
-        if user.is_staff or user.is_superuser:
+        if user_is_global_team_admin(user):
             return TeamMembership.Role.TEAM_ADMIN
         membership = obj.memberships.filter(user=user).first()
         return membership.role if membership else None
@@ -321,12 +323,15 @@ class LoginSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         user = self.user
+        role = get_user_role(user)
         data["user"] = {
             "id": user.id,
             "username": user.username,
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
+            "role": role,
+            "role_label": UserRole(role).label if role in UserRole.values else role,
         }
         request = self.context.get("request")
         teams = Team.objects.filter(memberships__user=user).distinct()
