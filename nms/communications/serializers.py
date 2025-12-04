@@ -199,7 +199,39 @@ class IncidentSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {
             "primary_distribution_list": {"allow_null": True, "required": False},
+            "inc_number": {"allow_blank": False, "required": True},
+            "problem_description": {"allow_blank": False, "required": True},
+            "workaround": {"allow_blank": False, "required": True},
+            "next_communication_time": {"allow_null": False, "required": True},
         }
+
+    def validate_distribution_lists(self, value):
+        if not value:
+            raise serializers.ValidationError("Select at least one distribution list.")
+        return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if self.instance is None:
+            errors = {}
+            if not attrs.get("inc_number"):
+                errors["inc_number"] = "INC number is required."
+            if not attrs.get("title"):
+                errors["title"] = "Subject is required."
+            if not attrs.get("incident_type"):
+                errors["incident_type"] = "Type is required."
+            if not attrs.get("problem_description"):
+                errors["problem_description"] = "Problem description is required."
+            if not attrs.get("workaround"):
+                errors["workaround"] = "Workaround is required."
+            affected = attrs.get("affected_regions") or []
+            if not affected:
+                errors["affected_regions"] = "Select at least one affected region."
+            if attrs.get("next_communication_time") is None:
+                errors["next_communication_time"] = "Next communication time is required."
+            if errors:
+                raise serializers.ValidationError(errors)
+        return attrs
 
 
 class IncidentMessageSerializer(serializers.ModelSerializer):
