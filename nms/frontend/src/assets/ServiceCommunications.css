@@ -1,0 +1,144 @@
+.service-communications {
+  background: #f8f9fa;
+  color: #1c401d;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.service-communications .app-header {
+  background: #ffffff;
+  color: #1c401d;
+  border-bottom: 1px solid #d1e7dd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sc-header {
+  padding: 1rem 2rem;
+}
+
+.sc-branding {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sc-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: #e9f5eb;
+  padding: 6px;
+  object-fit: contain;
+  border: 1px solid #d1e7dd;
+}
+
+.sc-header h1 {
+  margin: 0;
+  color: #1c401d;
+}
+
+.sc-header p {
+  margin: 0;
+  color: #3a5d2b;
+}
+
+.sc-header-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.service-communications .summary-grid {
+  padding-top: 1rem;
+}
+
+.service-communications .summary-card,
+.service-communications .panel {
+  background: #ffffff;
+  border: 1px solid #d1e7dd;
+  box-shadow: none;
+}
+
+.service-communications .summary-value {
+  color: #2f9e44;
+}
+
+.service-communications .panel h2,
+.service-communications .summary-card h3 {
+  color: #1c401d;
+}
+
+.service-communications input,
+.service-communications textarea,
+.service-communications select {
+  border: 1px solid #d1e7dd;
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.service-communications button {
+  background: #2f9e44;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.service-communications button.secondary {
+  background: #ffffff;
+  color: #2f9e44;
+  border: 1px solid #2f9e44;
+}
+
+.service-communications button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.icon-button {
+  background: #2f9e44;
+  color: white;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sc-settings-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #d1e7dd;
+  border-radius: 10px;
+  min-width: 180px;
+  box-shadow: 0 10px 25px rgba(33, 65, 33, 0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+.sc-settings-dropdown button {
+  background: transparent;
+  color: #1c401d;
+  border: none;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eaf4ea;
+  border-radius: 0;
+}
+
+.sc-settings-dropdown button:last-child {
+  border-bottom: none;
+}
+
+.sc-settings-dropdown button:hover {
+  background: #eaf4ea;
+}

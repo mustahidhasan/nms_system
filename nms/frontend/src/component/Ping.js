@@ -112,7 +112,7 @@ function Ping({ apiBaseUrl, setAuth }) {
         setAuth(data);
       }
       setShowSettingsDropdown(false);
-      navigate('/dashboard');
+      navigate('/service-communications');
     } catch (error) {
       console.error('Service Communications error:', error);
       alert(error.message || 'Failed to load Service Communications.');

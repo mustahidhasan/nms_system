@@ -26,7 +26,7 @@ function Login({ legacyBaseUrl }) {
         if (data.success) {
           clearInterval(pollingRef.current);
           setLoading(false);
-          navigate('/diagnostics');
+          navigate('/dashboard');
         } else if (attempts >= maxAttempts) {
           clearInterval(pollingRef.current);
           setLoading(false);
@@ -50,7 +50,7 @@ function Login({ legacyBaseUrl }) {
         window.location.href = data.login_url;
       } else if (data.success) {
         setLoading(false);
-        navigate('/diagnostics');
+        navigate('/dashboard');
       } else {
         startPollingLoginStatus();
       }

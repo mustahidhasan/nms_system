@@ -55,25 +55,23 @@ function App() {
             />
           }
         />
+        <Route path="/dashboard" element={<Ping apiBaseUrl={baseUrl} setAuth={setAuth} />} />
         <Route
-          path="/dashboard"
+          path="/service-communications"
           element={
             auth ? (
               <Dashboard apiBaseUrl={apiBaseUrl} auth={auth} setAuth={setAuth} />
             ) : (
-              <Navigate to="/diagnostics" replace />
+              <Navigate to="/dashboard" replace />
             )
           }
         />
-        <Route
-          path="/diagnostics"
-          element={<Ping apiBaseUrl={baseUrl} setAuth={setAuth} />}
-        />
+        <Route path="/diagnostics" element={<Navigate to="/dashboard" replace />} />
         <Route path="/user-activity" element={<UserActivity apiBaseUrl={baseUrl} />} />
         <Route path="/oauth2/callback" element={<OAuthCallback apiBaseUrl={baseUrl} />} />
         <Route
           path="*"
-          element={<Navigate to={auth ? '/dashboard' : '/diagnostics'} replace />}
+          element={<Navigate to={auth ? '/service-communications' : '/dashboard'} replace />}
         />
       </Routes>
     </Router>

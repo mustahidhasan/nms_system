@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
+import '../assets/ServiceCommunications.css';
 
 const defaultIncidentForm = {
   title: '',
@@ -50,61 +51,138 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [summary, setSummary] = useState({ open_incident_count: 0, recent_messages: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const refreshPromiseRef = useRef(null);
+  const settingsMenuRef = useRef(null);
 
-  const headers = useMemo(() => {
-    if (!token) return {};
-    return {
-      Authorization: `Bearer ${token}`,
-    };
-  }, [token]);
-
-  const apiRequest = async (path, options = {}) => {
-    const opts = { ...options };
-    opts.headers = {
-      ...(!opts.body || !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
-      ...opts.headers,
-      ...headers,
-    };
-    if (opts.body && !(opts.body instanceof FormData)) {
-      opts.body = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);
-    }
-    const response = await fetch(`${apiBaseUrl}${path}`, {
-      credentials: 'include',
-      ...opts,
-    });
-    if (!response.ok) {
-      let detail = 'Request failed';
-      try {
-        const data = await response.json();
-        detail = data.detail || JSON.stringify(data);
-      } catch (e) {
-        // ignore json errors
+  const persistAuth = useCallback(
+    (nextAuth) => {
+      if (nextAuth) {
+        localStorage.setItem('nmsAuth', JSON.stringify(nextAuth));
+      } else {
+        localStorage.removeItem('nmsAuth');
       }
-      throw new Error(detail);
-    }
-    if (response.status === 204) {
-      return null;
-    }
-    return response.json();
-  };
+      setAuth(nextAuth);
+    },
+    [setAuth]
+  );
 
-  const persistAuth = (nextAuth) => {
-    if (nextAuth) {
-      localStorage.setItem('nmsAuth', JSON.stringify(nextAuth));
-    } else {
-      localStorage.removeItem('nmsAuth');
+  const fetchWithToken = useCallback(
+    (path, options = {}, forcedToken) => {
+      const opts = { ...options };
+      const headers = { ...(opts.headers || {}) };
+      const requestToken = forcedToken || token;
+      const shouldSerializeBody = opts.body && !(opts.body instanceof FormData);
+      if (!opts.body || shouldSerializeBody) {
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+      }
+      if (requestToken) {
+        headers.Authorization = `Bearer ${requestToken}`;
+      }
+      opts.headers = headers;
+      if (shouldSerializeBody && typeof opts.body !== 'string') {
+        opts.body = JSON.stringify(opts.body);
+      }
+      return fetch(`${apiBaseUrl}${path}`, {
+        credentials: 'include',
+        ...opts,
+      });
+    },
+    [apiBaseUrl, token]
+  );
+
+  const refreshAccessToken = useCallback(async () => {
+    if (!auth?.refresh) {
+      throw new Error('Session expired. Please sign in again.');
     }
-    setAuth(nextAuth);
+    if (!refreshPromiseRef.current) {
+      refreshPromiseRef.current = (async () => {
+        const response = await fetch(`${apiBaseUrl}/auth/refresh/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ refresh: auth.refresh }),
+        });
+        let data = null;
+        try {
+          data = await response.json();
+        } catch (err) {
+          // ignore parsing issue, handled below
+        }
+        if (!response.ok || !data?.access) {
+          persistAuth(null);
+          navigate('/dashboard');
+          throw new Error(data?.detail || 'Session expired. Please sign in again.');
+        }
+        const nextAuth = {
+          ...(auth || {}),
+          access: data.access,
+          refresh: data.refresh || auth.refresh,
+        };
+        persistAuth(nextAuth);
+        return nextAuth.access;
+      })().finally(() => {
+        refreshPromiseRef.current = null;
+      });
+    }
+    return refreshPromiseRef.current;
+  }, [apiBaseUrl, auth, navigate, persistAuth]);
+
+  const apiRequest = useCallback(
+    async (path, options = {}, allowRefresh = true) => {
+      const execute = async (overrideToken) => {
+        const response = await fetchWithToken(path, options, overrideToken);
+        if (response.status === 204) {
+          return null;
+        }
+        let data = null;
+        try {
+          data = await response.json();
+        } catch (err) {
+          // ignore json parse issues for empty bodies
+        }
+        if (!response.ok) {
+          const detail =
+            data?.detail || data?.message || (typeof data === 'string' ? data : 'Request failed');
+          const error = new Error(detail);
+          error.status = response.status;
+          error.responseData = data;
+          throw error;
+        }
+        return data;
+      };
+
+      try {
+        return await execute();
+      } catch (err) {
+        if (err.status === 401) {
+          if (allowRefresh && auth?.refresh) {
+            const newAccess = await refreshAccessToken();
+            return execute(newAccess);
+          }
+          persistAuth(null);
+          navigate('/dashboard');
+        }
+        throw err;
+      }
+    },
+    [auth?.refresh, fetchWithToken, navigate, persistAuth, refreshAccessToken]
+  );
+
+  const handleNavigateHome = () => {
+    setShowSettingsDropdown(false);
+    navigate('/dashboard');
   };
 
   const handleLogout = () => {
+    setShowSettingsDropdown(false);
     persistAuth(null);
-    navigate('/');
+    navigate('/dashboard');
   };
 
   useEffect(() => {
     if (!token) {
-      navigate('/');
+      navigate('/dashboard');
       return;
     }
     const bootstrap = async () => {
@@ -152,6 +230,16 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIncident]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
+        setShowSettingsDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const loadSummary = async () => {
     const data = await apiRequest('/dashboard/summary/');
@@ -332,23 +420,37 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   );
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div>
-          <h1>Service Communications</h1>
-          <p>Structured incident and announcement workflows</p>
+    <div className="app-shell service-communications">
+      <header className="app-header sc-header">
+        <div className="sc-branding">
+          <img src="logo_left.png" alt="Network Operations" className="sc-logo" />
+          <div>
+            <h1>Service Communications</h1>
+            <p>Structured incident and announcement workflows</p>
+          </div>
         </div>
-        <div className="header-actions">
-          <button className="secondary" onClick={() => navigate('/diagnostics')}>
-            Diagnostics
-          </button>
+        <div className="header-actions sc-header-actions" ref={settingsMenuRef}>
           <div className="user-meta">
             <span>{auth?.user?.first_name || auth?.user?.email}</span>
             <small>{auth?.user?.email}</small>
           </div>
-          <button className="secondary" onClick={handleLogout}>
-            Logout
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => setShowSettingsDropdown((prev) => !prev)}
+          >
+            ⚙️
           </button>
+          {showSettingsDropdown && (
+            <div className="sc-settings-dropdown">
+              <button type="button" onClick={handleNavigateHome}>
+                🏠 Home
+              </button>
+              <button type="button" onClick={handleLogout}>
+                ↩ Logout
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
