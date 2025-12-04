@@ -64,6 +64,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  z-index: 40;
 }
 
 .sc-logo-compact {
@@ -114,7 +115,7 @@
 .sc-subnav {
   position: sticky;
   top: 0;
-  z-index: 4;
+  z-index: 20;
   background: var(--sc-surface);
   padding: 0.4rem 2rem;
   display: flex;
@@ -141,26 +142,30 @@
 }
 
 .icon-button {
-  background: none !important;
+  background: transparent !important;
   color: var(--sc-text);
-  border: 1px solid var(--sc-border);
+  border: none !important;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: 50%;
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(20, 64, 29, 0.12);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, background 0.2s ease;
+  box-shadow: none !important;
+  transition: color 0.2s ease, transform 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .icon-button:hover,
 .icon-button:focus-visible,
 .icon-button.active {
-  background: none;
+  background: transparent !important;
   color: var(--sc-green);
   transform: translateY(-1px);
-  box-shadow: 0 10px 26px rgba(20, 64, 29, 0.18);
+  box-shadow: none !important;
   outline: none;
 }
 
@@ -175,7 +180,7 @@
   box-shadow: 0 15px 30px rgba(33, 65, 33, 0.15);
   display: flex;
   flex-direction: column;
-  z-index: 10;
+  z-index: 200;
   overflow: hidden;
   padding: 0.25rem 0;
 }
@@ -314,6 +319,32 @@
   overflow: hidden;
 }
 
+.tab-content {
+  margin: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tab-panel {
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: 22px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 20px 45px rgba(20, 64, 29, 0.07);
+}
+
+.tab-panel h2 {
+  margin-top: 0;
+  color: var(--sc-green);
+}
+
+.tab-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .service-communications .panel-header h2 {
   margin: 0;
   color: var(--sc-green);
@@ -340,19 +371,29 @@
   outline-offset: 2px;
 }
 
-.panel-toggle-indicator {
+.panel-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--sc-soft);
+  border: 1px solid var(--sc-border);
+  background: none;
   color: var(--sc-green);
-  transition: transform 0.2s ease, background 0.2s ease;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, border 0.2s ease;
 }
 
-.panel-header.collapsed .panel-toggle-indicator {
+.panel-toggle:hover,
+.panel-toggle:focus-visible {
+  background: rgba(27, 107, 58, 0.08);
+  border-color: var(--sc-green);
+  outline: none;
+}
+
+.panel-toggle.collapsed {
   transform: rotate(-90deg);
 }
 
@@ -468,6 +509,17 @@
   gap: 0.35rem;
 }
 
+.service-communications .icon-button {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 50% !important;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--sc-text);
+}
+
 .service-communications button:not(.subnav-item):not(.panel-toggle):not(.text-link) {
   background: var(--sc-green);
   color: white;
@@ -496,26 +548,19 @@
   cursor: not-allowed;
 }
 
-.service-communications .icon-button {
-  background: none !important;
-  border: 1px solid var(--sc-border);
-  box-shadow: 0 4px 12px rgba(20, 64, 29, 0.12);
-  padding: 0;
-  width: 44px;
-  height: 44px;
-}
-
 .sc-settings-dropdown button {
-  background: none !important;
+  background: transparent !important;
   color: var(--sc-text) !important;
   border: none !important;
   text-align: left;
-  padding: 0.65rem 1rem;
+  padding: 0.65rem 1.2rem;
   border-bottom: 1px solid #eaf4ea;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
+  width: 100%;
+  border-radius: 0;
   box-shadow: none !important;
 }
 
@@ -525,6 +570,7 @@
 
 .sc-settings-dropdown button:hover {
   color: var(--sc-green);
+  background: transparent;
 }
 
 .incident-list {

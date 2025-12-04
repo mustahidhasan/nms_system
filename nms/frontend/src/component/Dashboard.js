@@ -10,18 +10,19 @@ const SUB_NAV_SECTIONS = [
   { id: 'teams', label: 'Teams & Templates' },
   { id: 'incident', label: 'Create Incident' },
   { id: 'active', label: 'Active Incidents' },
-  { id: 'messaging', label: 'Messaging' },
   { id: 'lists', label: 'Distribution Lists' },
 ];
 
-const PANEL_KEYS = ['teams', 'incident', 'active', 'messaging', 'lists', 'storedLists'];
-const COLLAPSE_STORAGE_KEY = 'nmsCollapsedPanels';
-
-const buildDefaultCollapsedState = () =>
-  PANEL_KEYS.reduce((acc, key) => {
-    acc[key] = false;
-    return acc;
-  }, {});
+const readCookie = (name) => {
+  if (!document?.cookie) return null;
+  return document.cookie
+    .split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(`${name}=`))
+    ?.split('=')
+    ?.slice(1)
+    ?.join('=') || null;
+};
 
 const toArray = (payload) => {
   if (Array.isArray(payload)) {
@@ -125,47 +126,30 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [error, setError] = useState('');
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [activeSubNav, setActiveSubNav] = useState('overview');
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [collapsedPanels, setCollapsedPanels] = useState(() => {
-    const defaults = buildDefaultCollapsedState();
-    if (typeof window === 'undefined') {
-      return defaults;
-    }
-    try {
-      const raw = window.localStorage.getItem(COLLAPSE_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') {
-          return {
-            ...defaults,
-            ...parsed,
-          };
-        }
-      }
-    } catch (err) {
-      // ignore storage issues and fall back to defaults
-    }
-    return defaults;
-  });
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
-  const distributionListFormRef = useRef(null);
-  const overviewSectionRef = useRef(null);
-  const teamsPanelRef = useRef(null);
-  const incidentPanelRef = useRef(null);
-  const activeIncidentsRef = useRef(null);
-  const messagePanelRef = useRef(null);
-  const distributionListsPanelRef = useRef(null);
 
   const previousIncidentRef = useRef(null);
+
+  const legacyBaseUrl = useMemo(() => {
+    if (!apiBaseUrl) return '';
+    try {
+      const parsed = new URL(apiBaseUrl);
+      return `${parsed.protocol}//${parsed.host}`;
+    } catch (err) {
+      return apiBaseUrl.replace(/\/api\/?$/, '') || apiBaseUrl;
+    }
+  }, [apiBaseUrl]);
 
   const profileDisplayName = useMemo(() => {
     const first = (auth?.user?.first_name || '').trim();
     if (first) return first;
-    const email = auth?.user?.email || '';
-    if (email) {
-      const [localPart] = email.split('@');
-      if (localPart) return localPart;
+    const fallback = (auth?.user?.name || '').trim();
+    if (fallback) {
+      const [firstWord] = fallback.split(/\s+/);
+      if (firstWord) {
+        return firstWord;
+      }
     }
     return 'Service Comms User';
   }, [auth]);
@@ -179,90 +163,8 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     return email.slice(0, 2).toUpperCase() || 'SC';
   }, [auth]);
 
-  const sectionRefs = useMemo(
-    () => ({
-      overview: overviewSectionRef,
-      teams: teamsPanelRef,
-      incident: incidentPanelRef,
-      active: activeIncidentsRef,
-      messaging: messagePanelRef,
-      lists: distributionListsPanelRef,
-    }),
-    [
-      overviewSectionRef,
-      teamsPanelRef,
-      incidentPanelRef,
-      activeIncidentsRef,
-      messagePanelRef,
-      distributionListsPanelRef,
-    ]
-  );
-
-  useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      window.requestAnimationFrame(() => {
-        const ranked = SUB_NAV_SECTIONS.map(({ id }) => {
-          const ref = sectionRefs[id];
-          if (!ref?.current) {
-            return null;
-          }
-          const rect = ref.current.getBoundingClientRect();
-          const distance = Math.abs(rect.top - 150);
-          return { id, distance };
-        }).filter(Boolean);
-        if (ranked.length) {
-          ranked.sort((a, b) => a.distance - b.distance);
-          const nextSection = ranked[0].id;
-          setActiveSubNav((prev) => (prev === nextSection ? prev : nextSection));
-        }
-        setShowScrollTop(window.scrollY > 400);
-        ticking = false;
-      });
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [sectionRefs]);
-
-  const handleSectionNav = useCallback(
-    (sectionId) => {
-      setActiveSubNav(sectionId);
-      const target = sectionRefs[sectionId]?.current;
-      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    },
-    [sectionRefs]
-  );
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(collapsedPanels));
-    } catch (err) {
-      // ignore storage persistence errors
-    }
-  }, [collapsedPanels]);
-
-  const togglePanel = useCallback((panelId) => {
-    setCollapsedPanels((prev) => ({
-      ...prev,
-      [panelId]: !prev[panelId],
-    }));
-  }, []);
-
-  const isPanelCollapsed = useCallback((panelId) => !!collapsedPanels[panelId], [collapsedPanels]);
-
-  const handlePanelHeaderKeyDown = (event, panelId) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      togglePanel(panelId);
-    }
-  };
-
-  const handleScrollTop = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleSectionNav = useCallback((sectionId) => {
+    setActiveSubNav(sectionId);
   }, []);
 
   const persistAuth = useCallback(
@@ -385,16 +287,44 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     [auth?.refresh, fetchWithToken, navigate, persistAuth, refreshAccessToken]
   );
 
-  const handleNavigateHome = () => {
+  const handleNavigateHome = useCallback(() => {
     setShowSettingsDropdown(false);
     navigate('/dashboard');
-  };
+    if (typeof window !== 'undefined') {
+      window.location.assign('/dashboard');
+    }
+  }, [navigate]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(async () => {
     setShowSettingsDropdown(false);
     persistAuth(null);
-    navigate('/');
-  };
+    try {
+      const headers = {};
+      const csrfToken = readCookie('csrftoken');
+      if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+      }
+      const response = await fetch(`${legacyBaseUrl}/logout/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+      });
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (err) {
+        // ignore parse issues
+      }
+      if (data?.success && data?.logout_url) {
+        window.location.href = data.logout_url;
+        return;
+      }
+    } catch (err) {
+      console.error('Logout failed', err);
+    } finally {
+      navigate('/');
+    }
+  }, [legacyBaseUrl, navigate, persistAuth]);
 
   useEffect(() => {
     if (!token) {
@@ -811,16 +741,549 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   };
 
   const scrollToDistributionListForm = () => {
-    handleSectionNav('lists');
-    distributionListFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActiveSubNav('lists');
   };
 
   const scrollToIncidentForm = () => {
-    handleSectionNav('incident');
+    setActiveSubNav('incident');
   };
 
   const scrollToActiveIncidents = () => {
-    handleSectionNav('active');
+    setActiveSubNav('active');
+  };
+
+  const renderTabContent = () => {
+    switch (activeSubNav) {
+      case 'overview':
+        return (
+          <section className="sc-overview" data-tab="overview">
+            <div className="summary-grid sc-overview-grid">
+              <div className="summary-card">
+                <h3>Open Incidents</h3>
+                <p className="summary-value">{summary.open_incident_count}</p>
+              </div>
+              <div className="summary-card recent">
+                <h3>Recent Messages</h3>
+                <ul>
+                  {summary.recent_messages.map((item) => (
+                    <li key={item.id}>
+                      <strong>{item.incident_reference}</strong> — {item.subject}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="summary-actions">
+              <button type="button" className="sc-action primary" onClick={scrollToIncidentForm}>
+                Create New Incident
+              </button>
+              <button type="button" className="sc-action" onClick={scrollToActiveIncidents}>
+                View All Active Incidents
+              </button>
+            </div>
+          </section>
+        );
+      case 'teams':
+        return (
+          <section className="tab-panel">
+            <h2>Teams & Templates</h2>
+            <label className="form-field">
+              <span>Select Team</span>
+              <select
+                value={selectedTeam || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedTeam(value ? Number(value) : null);
+                }}
+              >
+                <option value="" disabled>
+                  Select a team
+                </option>
+                {Array.isArray(teams) &&
+                  teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <div className="template-hints">
+              <h4>Templates</h4>
+              <ul>
+                {templateOptions.map((template) => (
+                  <li key={template.id}>
+                    <strong>{template.label}</strong>: {template.subject}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        );
+      case 'incident':
+        return (
+          <section className="tab-panel">
+            <h2>Create Incident</h2>
+            <form onSubmit={handleIncidentSubmit} className="form-grid">
+              <label className="form-field">
+                <span>INC Number</span>
+                <input
+                  type="text"
+                  placeholder="INC123456"
+                  value={incidentForm.incNumber}
+                  onChange={(e) => setIncidentForm({ ...incidentForm, incNumber: e.target.value })}
+                  required
+                />
+              </label>
+              <label className="form-field">
+                <span>Subject</span>
+                <input
+                  type="text"
+                  placeholder="Subject line for stakeholders"
+                  value={incidentForm.subject}
+                  onChange={(e) => setIncidentForm({ ...incidentForm, subject: e.target.value })}
+                  required
+                />
+              </label>
+              <label className="form-field">
+                <span>Incident Type</span>
+                <select
+                  value={incidentForm.incidentType}
+                  onChange={(e) => setIncidentForm({ ...incidentForm, incidentType: e.target.value })}
+                  required
+                >
+                  <option value="major">Major</option>
+                  <option value="critical">Critical</option>
+                  <option value="informational">Informational</option>
+                </select>
+              </label>
+              <label className="form-field">
+                <span>Problem Description</span>
+                <textarea
+                  placeholder="Symptoms, scope, timeline"
+                  value={incidentForm.problemDescription}
+                  onChange={(e) =>
+                    setIncidentForm({ ...incidentForm, problemDescription: e.target.value })
+                  }
+                  required
+                />
+              </label>
+              <label className="form-field">
+                <span>Workaround / Mitigations</span>
+                <textarea
+                  placeholder="Include known mitigations"
+                  value={incidentForm.workaround}
+                  onChange={(e) => setIncidentForm({ ...incidentForm, workaround: e.target.value })}
+                  required
+                />
+              </label>
+              <label className="form-field">
+                <span>Impact Statement</span>
+                <textarea
+                  placeholder="Customers, services, regions"
+                  value={incidentForm.impact}
+                  onChange={(e) => setIncidentForm({ ...incidentForm, impact: e.target.value })}
+                />
+              </label>
+              <div className="checkbox-grid">
+                <label>Affected Regions</label>
+                <div className="regions">
+                  {REGION_OPTIONS.map((region) => (
+                    <label key={region}>
+                      <input
+                        type="checkbox"
+                        checked={incidentForm.affectedRegions.includes(region)}
+                        onChange={() => toggleRegion(region)}
+                      />
+                      {region}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <label className="form-field">
+                <span>Next Communication Time (UTC/local)</span>
+                <input
+                  type="datetime-local"
+                  value={incidentForm.nextCommunicationTime}
+                  onChange={(e) =>
+                    setIncidentForm({ ...incidentForm, nextCommunicationTime: e.target.value })
+                  }
+                  required
+                />
+              </label>
+              <label className="form-field">
+                <span>Templates</span>
+                <select
+                  value={incidentForm.templateType}
+                  onChange={(e) =>
+                    setIncidentForm({ ...incidentForm, templateType: e.target.value })
+                  }
+                >
+                  {templateOptions.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-field">
+                <span>Distribution Lists</span>
+                <select
+                  multiple
+                  value={incidentForm.distributionLists.map(String)}
+                  onChange={handleIncidentDistributionChange}
+                  required
+                >
+                  {availableLists.map((list) => (
+                    <option key={list.id} value={list.id}>
+                      {list.name}
+                    </option>
+                  ))}
+                </select>
+                {availableLists.length === 0 && (
+                  <small className="form-hint">
+                    No distribution lists yet.{' '}
+                    <button type="button" onClick={scrollToDistributionListForm} className="text-link">
+                      Create one in the Distribution Lists tab
+                    </button>
+                  </small>
+                )}
+              </label>
+              <button type="submit" disabled={loading}>
+                Save Incident
+              </button>
+            </form>
+          </section>
+        );
+      case 'active':
+        return (
+          <div className="tab-stack">
+            <section className="tab-panel">
+              <h2>Active Incidents</h2>
+              <ul className="incident-list">
+                {filteredIncidents.map((incident) => (
+                  <li
+                    key={incident.id}
+                    className={incident.id === selectedIncident ? 'active' : ''}
+                    onClick={() => setSelectedIncident(incident.id)}
+                  >
+                    <div>
+                      <strong>{incident.reference_id || incident.inc_number || incident.id}</strong> — {incident.title}
+                      <span className={`status-pill ${incident.status}`}>{incident.status}</span>
+                    </div>
+                    <small>
+                      {incident.inc_number ? `${incident.inc_number} • ` : ''}
+                      {incident.incident_type?.toUpperCase()}
+                    </small>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="tab-panel">
+              <h2>Message Timeline</h2>
+              {selectedIncidentDetails ? (
+                <>
+                  <div className="incident-details-card">
+                    <p>
+                      <strong>INC:</strong> {selectedIncidentDetails.inc_number || '—'}
+                    </p>
+                    <p>
+                      <strong>Type:</strong> {selectedIncidentDetails.incident_type}
+                    </p>
+                    <p>
+                      <strong>Problem:</strong> {selectedIncidentDetails.problem_description || '—'}
+                    </p>
+                    <p>
+                      <strong>Workaround:</strong> {selectedIncidentDetails.workaround || '—'}
+                    </p>
+                    <p>
+                      <strong>Affected Regions:</strong> {Array.isArray(selectedIncidentDetails.affected_regions) &&
+                      selectedIncidentDetails.affected_regions.length
+                        ? selectedIncidentDetails.affected_regions.join(', ')
+                        : '—'}
+                    </p>
+                    <p>
+                      <strong>Next Communication:</strong> {formatDateTime(selectedIncidentDetails.next_communication_time)}
+                    </p>
+                  </div>
+                  <form onSubmit={handleMessageSubmit} className="form-grid">
+                    <label className="form-field">
+                      <span>Subject</span>
+                      <input
+                        type="text"
+                        placeholder="Subject"
+                        value={messageForm.subject}
+                        onChange={(e) => setMessageForm({ ...messageForm, subject: e.target.value })}
+                        required
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Message Body</span>
+                      <textarea
+                        placeholder="Message body"
+                        value={messageForm.body}
+                        onChange={(e) => setMessageForm({ ...messageForm, body: e.target.value })}
+                        required
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Template</span>
+                      <select
+                        value={messageForm.templateType}
+                        onChange={(e) =>
+                          setMessageForm({ ...messageForm, templateType: e.target.value })
+                        }
+                      >
+                        {templateOptions.map((template) => (
+                          <option key={template.id} value={template.id}>
+                            {template.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="form-field">
+                      <span>Distribution Lists</span>
+                      <select
+                        multiple
+                        value={messageForm.distributionLists.map(String)}
+                        onChange={handleMessageDistributionChange}
+                      >
+                        {availableLists.map((list) => (
+                          <option key={list.id} value={list.id}>
+                            {list.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="form-field">
+                      <span>Point of Contact</span>
+                      <input
+                        type="text"
+                        placeholder="Point of contact"
+                        value={messageForm.pointOfContact}
+                        onChange={(e) =>
+                          setMessageForm({ ...messageForm, pointOfContact: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Override Problem Description</span>
+                      <textarea
+                        placeholder="Optional override"
+                        value={messageForm.problemDescription}
+                        onChange={(e) =>
+                          setMessageForm({ ...messageForm, problemDescription: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Override Workaround</span>
+                      <textarea
+                        placeholder="Optional override"
+                        value={messageForm.workaround}
+                        onChange={(e) =>
+                          setMessageForm({ ...messageForm, workaround: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Override Next Communication</span>
+                      <input
+                        type="datetime-local"
+                        value={messageForm.nextCommunicationTime}
+                        onChange={(e) =>
+                          setMessageForm({ ...messageForm, nextCommunicationTime: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Extra Recipients</span>
+                      <input
+                        type="email"
+                        multiple
+                        placeholder="Comma separated emails"
+                        value={messageForm.extraRecipients}
+                        onChange={(e) =>
+                          setMessageForm({ ...messageForm, extraRecipients: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Attachments</span>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={(e) => setMessageFiles(Array.from(e.target.files))}
+                      />
+                    </label>
+                    <button type="submit" disabled={loading}>
+                      Send Message
+                    </button>
+                  </form>
+                  <hr />
+                  <form onSubmit={handleCloseIncident} className="form-grid">
+                    <h3>Close Incident</h3>
+                    <label className="form-field">
+                      <span>Final Subject</span>
+                      <input
+                        type="text"
+                        placeholder="Final subject"
+                        value={closeForm.subject}
+                        onChange={(e) => setCloseForm({ ...closeForm, subject: e.target.value })}
+                        required
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Final Message Body</span>
+                      <textarea
+                        placeholder="Final message body"
+                        value={closeForm.body}
+                        onChange={(e) => setCloseForm({ ...closeForm, body: e.target.value })}
+                        required
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Distribution List</span>
+                      <select
+                        value={closeForm.distribution_list}
+                        onChange={(e) =>
+                          setCloseForm({ ...closeForm, distribution_list: e.target.value })
+                        }
+                      >
+                        <option value="">Use incident default list</option>
+                        {availableLists.map((list) => (
+                          <option key={list.id} value={list.id}>
+                            {list.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button type="submit" disabled={loading}>
+                      Close Incident & Notify
+                    </button>
+                  </form>
+                  <ul className="timeline">
+                    {messages.map((message) => (
+                      <li key={message.id}>
+                        <div className="timeline-header">
+                          <strong>{message.subject}</strong>
+                          <span>{new Date(message.created_at).toLocaleString()}</span>
+                        </div>
+                        <p>{message.body}</p>
+                        <div className="timeline-meta">
+                          <small>POC: {message.point_of_contact || '—'}</small>
+                          <small>Next Communication: {formatDateTime(message.next_communication_time)}</small>
+                        </div>
+                        <p>
+                          <strong>Problem:</strong> {message.problem_description || '—'}
+                        </p>
+                        {message.workaround && (
+                          <p>
+                            <strong>Workaround:</strong> {message.workaround}
+                          </p>
+                        )}
+                        <small>
+                          Distribution:{' '}
+                          {(() => {
+                            const listNames = [
+                              ...(message.distribution_lists || []),
+                            ].map((id) => distributionLookup.get(id)?.name || `List ${id}`);
+                            if (!listNames.length && message.distribution_list) {
+                              listNames.push(
+                                distributionLookup.get(message.distribution_list)?.name ||
+                                  `List ${message.distribution_list}`
+                              );
+                            }
+                            return listNames.length ? listNames.join(', ') : '—';
+                          })()}
+                        </small>
+                        <br />
+                        <small>Delivery: {message.delivery_status}</small>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="empty-state">
+                  Select an incident from the list above to compose updates and view the timeline.
+                </p>
+              )}
+            </section>
+          </div>
+        );
+      case 'lists':
+        return (
+          <div className="tab-stack">
+            <section className="tab-panel">
+              <h2>Create Distribution List</h2>
+              <form onSubmit={handleDistributionListSubmit} className="form-grid">
+                <label className="form-field">
+                  <span>List Name</span>
+                  <input
+                    type="text"
+                    placeholder="List name"
+                    value={listForm.name}
+                    onChange={(e) => setListForm({ ...listForm, name: e.target.value })}
+                    required
+                  />
+                </label>
+                <label className="form-field">
+                  <span>Description</span>
+                  <textarea
+                    placeholder="List description"
+                    value={listForm.description}
+                    onChange={(e) => setListForm({ ...listForm, description: e.target.value })}
+                  />
+                </label>
+                <label className="form-field">
+                  <span>Email Addresses</span>
+                  <textarea
+                    placeholder="one@example.com | optional description"
+                    value={listForm.emails}
+                    onChange={(e) => setListForm({ ...listForm, emails: e.target.value })}
+                  />
+                </label>
+                <div className="radio-group">
+                  <label>
+                    <input
+                      type="radio"
+                      value="team"
+                      checked={listForm.scope === 'team'}
+                      onChange={(e) => setListForm({ ...listForm, scope: e.target.value })}
+                    />
+                    Team list
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      value="global"
+                      checked={listForm.scope === 'global'}
+                      onChange={(e) => setListForm({ ...listForm, scope: e.target.value })}
+                    />
+                    Global list
+                  </label>
+                </div>
+                <button type="submit" disabled={loading}>
+                  Save Distribution List
+                </button>
+              </form>
+            </section>
+            <section className="tab-panel">
+              <h2>Stored Lists</h2>
+              <ul className="list-view">
+                {distributionLists.map((list) => (
+                  <li key={list.id}>
+                    <strong>{list.name}</strong> ({list.scope})
+                    <p>{list.description}</p>
+                    <small>{Array.isArray(list.entries) ? list.entries.length : 0} recipients</small>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -885,647 +1348,8 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
 
       {error && <div className="alert">{error}</div>}
 
-      <section className="sc-overview" ref={overviewSectionRef} data-section="overview">
-        <div className="summary-grid sc-overview-grid">
-          <div className="summary-card">
-            <h3>Open Incidents</h3>
-            <p className="summary-value">{summary.open_incident_count}</p>
-          </div>
-          <div className="summary-card recent">
-            <h3>Recent Messages</h3>
-            <ul>
-              {summary.recent_messages.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.incident_reference}</strong> — {item.subject}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        <div className="summary-actions">
-          <button type="button" className="sc-action primary" onClick={scrollToIncidentForm}>
-            Create New Incident
-          </button>
-          <button type="button" className="sc-action" onClick={scrollToActiveIncidents}>
-            View All Active Incidents
-          </button>
-        </div>
-      </section>
+      <div className="tab-content">{renderTabContent()}</div>
 
-      <section className="grid">
-        <div className="panel" data-section="teams" ref={teamsPanelRef}>
-          <div
-            className={`panel-header ${isPanelCollapsed('teams') ? 'collapsed' : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-expanded={!isPanelCollapsed('teams')}
-            aria-controls="panel-teams"
-            onClick={() => togglePanel('teams')}
-            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'teams')}
-          >
-            <h2>Teams</h2>
-            <span className="panel-toggle-indicator" aria-hidden="true">
-              ▾
-            </span>
-          </div>
-          <div
-            id="panel-teams"
-            className={`panel-body ${isPanelCollapsed('teams') ? 'collapsed' : ''}`}
-          >
-            <label className="form-field">
-              <span>Select Team</span>
-              <select
-                value={selectedTeam || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSelectedTeam(value ? Number(value) : null);
-                }}
-              >
-                <option value="" disabled>
-                  Select a team
-                </option>
-                {Array.isArray(teams) &&
-                  teams.map((team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <div className="template-hints">
-              <h4>Templates</h4>
-              <ul>
-                {templateOptions.map((template) => (
-                  <li key={template.id}>
-                    <strong>{template.label}</strong>: {template.subject}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div className="panel" data-section="incident" ref={incidentPanelRef}>
-          <div
-            className={`panel-header ${isPanelCollapsed('incident') ? 'collapsed' : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-expanded={!isPanelCollapsed('incident')}
-            aria-controls="panel-incident"
-            onClick={() => togglePanel('incident')}
-            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'incident')}
-          >
-            <h2>New Incident</h2>
-            <span className="panel-toggle-indicator" aria-hidden="true">
-              ▾
-            </span>
-          </div>
-          <div
-            id="panel-incident"
-            className={`panel-body ${isPanelCollapsed('incident') ? 'collapsed' : ''}`}
-          >
-            <form onSubmit={handleIncidentSubmit} className="form-grid">
-              <label className="form-field">
-                <span>INC Number</span>
-                <input
-                  placeholder="INC123456"
-                  value={incidentForm.incNumber}
-                  onChange={(e) => setIncidentForm({ ...incidentForm, incNumber: e.target.value })}
-                  required
-                />
-              </label>
-              <label className="form-field">
-                <span>Subject</span>
-                <input
-                  placeholder="Subject line for stakeholders"
-                  value={incidentForm.subject}
-                  onChange={(e) => setIncidentForm({ ...incidentForm, subject: e.target.value })}
-                  required
-                />
-              </label>
-              <label className="form-field">
-                <span>Incident Type</span>
-                <select
-                  value={incidentForm.incidentType}
-                  onChange={(e) => setIncidentForm({ ...incidentForm, incidentType: e.target.value })}
-                  required
-                >
-                  <option value="major">Major</option>
-                  <option value="critical">Critical</option>
-                  <option value="informational">Informational</option>
-                </select>
-              </label>
-              <label className="form-field">
-                <span>Problem Description</span>
-                <textarea
-                  placeholder="Symptoms, scope, timeline"
-                  value={incidentForm.problemDescription}
-                  onChange={(e) =>
-                    setIncidentForm({ ...incidentForm, problemDescription: e.target.value })
-                  }
-                  required
-                />
-              </label>
-              <label className="form-field">
-                <span>Workaround / Mitigations</span>
-                <textarea
-                  placeholder="Include known mitigations"
-                  value={incidentForm.workaround}
-                  onChange={(e) => setIncidentForm({ ...incidentForm, workaround: e.target.value })}
-                  required
-                />
-              </label>
-              <label className="form-field">
-                <span>Impact Statement</span>
-                <textarea
-                  placeholder="Customers, services, regions"
-                  value={incidentForm.impact}
-                  onChange={(e) => setIncidentForm({ ...incidentForm, impact: e.target.value })}
-                />
-              </label>
-            <div className="checkbox-grid">
-              <label>Affected Regions</label>
-              <div className="regions">
-                {REGION_OPTIONS.map((region) => (
-                  <label key={region}>
-                    <input
-                      type="checkbox"
-                      checked={incidentForm.affectedRegions.includes(region)}
-                      onChange={() => toggleRegion(region)}
-                    />
-                    {region}
-                  </label>
-                ))}
-              </div>
-            </div>
-              <label className="form-field">
-                <span>Next Communication Time (UTC/local)</span>
-                <input
-                  type="datetime-local"
-                  value={incidentForm.nextCommunicationTime}
-                  onChange={(e) =>
-                    setIncidentForm({ ...incidentForm, nextCommunicationTime: e.target.value })
-                  }
-                  required
-                />
-              </label>
-              <label className="form-field">
-                <span>Templates</span>
-                <select
-                  value={incidentForm.templateType}
-                  onChange={(e) =>
-                    setIncidentForm({ ...incidentForm, templateType: e.target.value })
-                  }
-                >
-                  {templateOptions.map((template) => (
-                    <option key={template.id} value={template.id}>
-                      {template.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="form-field">
-                <span>Distribution Lists</span>
-                <select
-                  multiple
-                  value={incidentForm.distributionLists.map(String)}
-                  onChange={handleIncidentDistributionChange}
-                  required
-                >
-                  {availableLists.map((list) => (
-                    <option key={list.id} value={list.id}>
-                      {list.name}
-                    </option>
-                  ))}
-                </select>
-                {availableLists.length === 0 && (
-                  <small className="form-hint">
-                    No distribution lists yet.{' '}
-                    <button
-                      type="button"
-                      onClick={scrollToDistributionListForm}
-                      className="text-link"
-                    >
-                      Create one below
-                    </button>
-                  </small>
-                )}
-              </label>
-              <button type="submit" disabled={loading}>
-                Save Incident
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid">
-        <div className="panel tall" data-section="active" ref={activeIncidentsRef}>
-          <div
-            className={`panel-header ${isPanelCollapsed('active') ? 'collapsed' : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-expanded={!isPanelCollapsed('active')}
-            aria-controls="panel-active"
-            onClick={() => togglePanel('active')}
-            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'active')}
-          >
-            <h2>Active Incidents</h2>
-            <span className="panel-toggle-indicator" aria-hidden="true">
-              ▾
-            </span>
-          </div>
-          <div
-            id="panel-active"
-            className={`panel-body ${isPanelCollapsed('active') ? 'collapsed' : ''}`}
-          >
-            <ul className="incident-list">
-              {filteredIncidents.map((incident) => (
-                <li
-                  key={incident.id}
-                  className={incident.id === selectedIncident ? 'active' : ''}
-                  onClick={() => setSelectedIncident(incident.id)}
-                >
-                  <div>
-                    <strong>{incident.reference_id || incident.inc_number || incident.id}</strong> —{' '}
-                    {incident.title}
-                    <span className={`status-pill ${incident.status}`}>{incident.status}</span>
-                  </div>
-                  <small>
-                    {incident.inc_number ? `${incident.inc_number} • ` : ''}
-                    {incident.incident_type?.toUpperCase()}
-                  </small>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        <div className="panel tall" data-section="messaging" ref={messagePanelRef}>
-          <div
-            className={`panel-header ${isPanelCollapsed('messaging') ? 'collapsed' : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-expanded={!isPanelCollapsed('messaging')}
-            aria-controls="panel-messaging"
-            onClick={() => togglePanel('messaging')}
-            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'messaging')}
-          >
-            <h2>Message Timeline</h2>
-            <span className="panel-toggle-indicator" aria-hidden="true">
-              ▾
-            </span>
-          </div>
-          <div
-            id="panel-messaging"
-            className={`panel-body ${isPanelCollapsed('messaging') ? 'collapsed' : ''}`}
-          >
-            {selectedIncidentDetails ? (
-              <>
-                <div className="incident-details-card">
-                  <p>
-                    <strong>INC:</strong> {selectedIncidentDetails.inc_number || '—'}
-                  </p>
-                  <p>
-                    <strong>Type:</strong> {selectedIncidentDetails.incident_type}
-                  </p>
-                  <p>
-                    <strong>Problem:</strong> {selectedIncidentDetails.problem_description || '—'}
-                  </p>
-                  <p>
-                    <strong>Workaround:</strong> {selectedIncidentDetails.workaround || '—'}
-                  </p>
-                  <p>
-                    <strong>Affected Regions:</strong>{' '}
-                    {Array.isArray(selectedIncidentDetails.affected_regions) &&
-                    selectedIncidentDetails.affected_regions.length
-                      ? selectedIncidentDetails.affected_regions.join(', ')
-                      : '—'}
-                  </p>
-                  <p>
-                    <strong>Next Communication:</strong>{' '}
-                    {formatDateTime(selectedIncidentDetails.next_communication_time)}
-                  </p>
-                </div>
-
-                <form onSubmit={handleMessageSubmit} className="form-grid">
-                  <label className="form-field">
-                    <span>Subject</span>
-                    <input
-                      placeholder="Subject"
-                      value={messageForm.subject}
-                      onChange={(e) => setMessageForm({ ...messageForm, subject: e.target.value })}
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Message Body</span>
-                    <textarea
-                      placeholder="Message body"
-                      value={messageForm.body}
-                      onChange={(e) => setMessageForm({ ...messageForm, body: e.target.value })}
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Template</span>
-                    <select
-                      value={messageForm.templateType}
-                      onChange={(e) =>
-                        setMessageForm({ ...messageForm, templateType: e.target.value })
-                      }
-                    >
-                      {templateOptions.map((template) => (
-                        <option key={template.id} value={template.id}>
-                          {template.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="form-field">
-                    <span>Distribution Lists</span>
-                    <select
-                      multiple
-                      value={messageForm.distributionLists.map(String)}
-                      onChange={handleMessageDistributionChange}
-                    >
-                      {availableLists.map((list) => (
-                        <option key={list.id} value={list.id}>
-                          {list.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="form-field">
-                    <span>Point of Contact</span>
-                    <input
-                      placeholder="Point of contact"
-                      value={messageForm.pointOfContact}
-                      onChange={(e) =>
-                        setMessageForm({ ...messageForm, pointOfContact: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Override Problem Description</span>
-                    <textarea
-                      placeholder="Optional override"
-                      value={messageForm.problemDescription}
-                      onChange={(e) =>
-                        setMessageForm({ ...messageForm, problemDescription: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Override Workaround</span>
-                    <textarea
-                      placeholder="Optional override"
-                      value={messageForm.workaround}
-                      onChange={(e) =>
-                        setMessageForm({ ...messageForm, workaround: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Override Next Communication</span>
-                    <input
-                      type="datetime-local"
-                      value={messageForm.nextCommunicationTime}
-                      onChange={(e) =>
-                        setMessageForm({ ...messageForm, nextCommunicationTime: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Extra Recipients</span>
-                    <input
-                      placeholder="Comma separated emails"
-                      value={messageForm.extraRecipients}
-                      onChange={(e) =>
-                        setMessageForm({ ...messageForm, extraRecipients: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Attachments</span>
-                    <input
-                      type="file"
-                      multiple
-                      onChange={(e) => setMessageFiles(Array.from(e.target.files))}
-                    />
-                  </label>
-                  <button type="submit" disabled={loading}>
-                    Send Message
-                  </button>
-                </form>
-
-                <hr />
-
-                <form onSubmit={handleCloseIncident} className="form-grid">
-                  <h3>Close Incident</h3>
-                  <label className="form-field">
-                    <span>Final Subject</span>
-                    <input
-                      placeholder="Final subject"
-                      value={closeForm.subject}
-                      onChange={(e) => setCloseForm({ ...closeForm, subject: e.target.value })}
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Final Message Body</span>
-                    <textarea
-                      placeholder="Final message body"
-                      value={closeForm.body}
-                      onChange={(e) => setCloseForm({ ...closeForm, body: e.target.value })}
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Distribution List</span>
-                    <select
-                      value={closeForm.distribution_list}
-                      onChange={(e) =>
-                        setCloseForm({ ...closeForm, distribution_list: e.target.value })
-                      }
-                    >
-                      <option value="">Use incident default list</option>
-                      {availableLists.map((list) => (
-                        <option key={list.id} value={list.id}>
-                          {list.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button type="submit" disabled={loading}>
-                    Close Incident & Notify
-                  </button>
-                </form>
-
-                <ul className="timeline">
-                  {messages.map((message) => (
-                    <li key={message.id}>
-                      <div className="timeline-header">
-                        <strong>{message.subject}</strong>
-                        <span>{new Date(message.created_at).toLocaleString()}</span>
-                      </div>
-                      <p>{message.body}</p>
-                      <div className="timeline-meta">
-                        <small>POC: {message.point_of_contact || '—'}</small>
-                        <small>
-                          Next Communication: {formatDateTime(message.next_communication_time)}
-                        </small>
-                      </div>
-                      <p>
-                        <strong>Problem:</strong> {message.problem_description || '—'}
-                      </p>
-                      {message.workaround && (
-                        <p>
-                          <strong>Workaround:</strong> {message.workaround}
-                        </p>
-                      )}
-                      <small>
-                        Distribution:{' '}
-                        {(() => {
-                          const listNames = [
-                            ...(message.distribution_lists || []),
-                          ].map((id) => distributionLookup.get(id)?.name || `List ${id}`);
-                          if (!listNames.length && message.distribution_list) {
-                            listNames.push(
-                              distributionLookup.get(message.distribution_list)?.name ||
-                                `List ${message.distribution_list}`
-                            );
-                          }
-                          return listNames.length ? listNames.join(', ') : '—';
-                        })()}
-                      </small>
-                      <br />
-                      <small>Delivery: {message.delivery_status}</small>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <p className="empty-state">Select an incident to view the timeline.</p>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid">
-        <div className="panel" data-section="lists" ref={distributionListsPanelRef}>
-          <div
-            className={`panel-header ${isPanelCollapsed('lists') ? 'collapsed' : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-expanded={!isPanelCollapsed('lists')}
-            aria-controls="panel-lists"
-            onClick={() => togglePanel('lists')}
-            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'lists')}
-          >
-            <h2>Distribution Lists</h2>
-            <span className="panel-toggle-indicator" aria-hidden="true">
-              ▾
-            </span>
-          </div>
-          <div
-            id="panel-lists"
-            className={`panel-body ${isPanelCollapsed('lists') ? 'collapsed' : ''}`}
-          >
-            <form
-              onSubmit={handleDistributionListSubmit}
-              className="form-grid"
-              ref={distributionListFormRef}
-            >
-              <label className="form-field">
-                <span>List Name</span>
-                <input
-                  placeholder="List name"
-                  value={listForm.name}
-                  onChange={(e) => setListForm({ ...listForm, name: e.target.value })}
-                  required
-                />
-              </label>
-              <label className="form-field">
-                <span>Description</span>
-                <textarea
-                  placeholder="List description"
-                  value={listForm.description}
-                  onChange={(e) => setListForm({ ...listForm, description: e.target.value })}
-                />
-              </label>
-              <label className="form-field">
-                <span>Email Addresses</span>
-                <textarea
-                  placeholder="one@example.com | optional description"
-                  value={listForm.emails}
-                  onChange={(e) => setListForm({ ...listForm, emails: e.target.value })}
-                />
-              </label>
-              <div className="radio-group">
-                <label>
-                  <input
-                    type="radio"
-                    value="team"
-                    checked={listForm.scope === 'team'}
-                    onChange={(e) => setListForm({ ...listForm, scope: e.target.value })}
-                  />
-                  Team list
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    value="global"
-                    checked={listForm.scope === 'global'}
-                    onChange={(e) => setListForm({ ...listForm, scope: e.target.value })}
-                  />
-                  Global list
-                </label>
-              </div>
-              <button type="submit" disabled={loading}>
-                Save Distribution List
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <div className="panel">
-          <div
-            className={`panel-header ${isPanelCollapsed('storedLists') ? 'collapsed' : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-expanded={!isPanelCollapsed('storedLists')}
-            aria-controls="panel-storedLists"
-            onClick={() => togglePanel('storedLists')}
-            onKeyDown={(event) => handlePanelHeaderKeyDown(event, 'storedLists')}
-          >
-            <h2>Stored Lists</h2>
-            <span className="panel-toggle-indicator" aria-hidden="true">
-              ▾
-            </span>
-          </div>
-          <div
-            id="panel-storedLists"
-            className={`panel-body ${isPanelCollapsed('storedLists') ? 'collapsed' : ''}`}
-          >
-            <ul className="list-view">
-              {distributionLists.map((list) => (
-                <li key={list.id}>
-                  <strong>{list.name}</strong> ({list.scope})
-                  <p>{list.description}</p>
-                  <small>{Array.isArray(list.entries) ? list.entries.length : 0} recipients</small>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {showScrollTop && (
-        <button type="button" className="scroll-top-btn" onClick={handleScrollTop} aria-label="Scroll to top">
-          ↑
-        </button>
-      )}
       {loading && <div className="backdrop">Working...</div>}
     </div>
   );
