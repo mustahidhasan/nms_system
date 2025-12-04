@@ -5,6 +5,7 @@ import Dashboard from './component/Dashboard';
 import Ping from './component/Ping';
 import UserActivity from './component/UserActivity';
 import OAuthCallback from './component/OAuthCallback';
+import AdminRedirect from './component/AdminRedirect';
 import './App.css';
 
 const resolveApiBase = () => {
@@ -66,6 +67,7 @@ function App() {
             )
           }
         />
+        <Route path="/admin/*" element={<AdminRedirect adminBaseUrl={baseUrl} />} />
         <Route path="/diagnostics" element={<Navigate to="/dashboard" replace />} />
         <Route path="/user-activity" element={<UserActivity apiBaseUrl={baseUrl} />} />
         <Route path="/oauth2/callback" element={<OAuthCallback apiBaseUrl={baseUrl} />} />
