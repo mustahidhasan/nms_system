@@ -121,7 +121,10 @@ class IncidentSerializer(serializers.ModelSerializer):
     )
     created_by_name = serializers.CharField(source="created_by.get_full_name", read_only=True)
     created_by_email = serializers.CharField(source="created_by.email", read_only=True)
-    is_closed = serializers.BooleanField(source="is_closed", read_only=True)
+    is_closed = serializers.BooleanField(read_only=True)
+    distribution_lists = serializers.PrimaryKeyRelatedField(
+        queryset=DistributionList.objects.all(), many=True, required=False
+    )
     messages_count = serializers.SerializerMethodField()
 
     def get_messages_count(self, obj):
@@ -136,6 +139,15 @@ class IncidentSerializer(serializers.ModelSerializer):
             validated_data["created_by"] = request.user
         return super().create(validated_data)
 
+    def validate_affected_regions(self, value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        if isinstance(value, list):
+            return value
+        return []
+
     class Meta:
         model = Incident
         fields = [
@@ -143,14 +155,21 @@ class IncidentSerializer(serializers.ModelSerializer):
             "reference_id",
             "team",
             "team_name",
+            "inc_number",
+            "incident_type",
             "title",
             "summary",
+            "problem_description",
+            "workaround",
+            "affected_regions",
+            "next_communication_time",
             "impact",
             "severity",
             "status",
             "template_type",
             "primary_distribution_list",
             "primary_distribution_list_name",
+            "distribution_lists",
             "created_by",
             "created_by_name",
             "created_by_email",
@@ -185,6 +204,9 @@ class IncidentMessageSerializer(serializers.ModelSerializer):
     incident_reference = serializers.CharField(source="incident.reference_id", read_only=True)
     attachments = MessageAttachmentSerializer(many=True, read_only=True)
     author_name = serializers.CharField(source="author.get_full_name", read_only=True)
+    distribution_lists = serializers.PrimaryKeyRelatedField(
+        queryset=DistributionList.objects.all(), many=True, required=False
+    )
 
     class Meta:
         model = IncidentMessage
@@ -195,11 +217,16 @@ class IncidentMessageSerializer(serializers.ModelSerializer):
             "author",
             "author_name",
             "distribution_list",
+            "distribution_lists",
             "subject",
             "body",
             "template_type",
             "extra_recipients",
             "sent_to",
+            "point_of_contact",
+            "problem_description",
+            "workaround",
+            "next_communication_time",
             "delivery_status",
             "created_at",
             "attachments",
@@ -218,7 +245,24 @@ class IncidentMessageSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get("request")
         files = request.FILES.getlist("attachments") if request else []
+        distribution_lists = validated_data.pop("distribution_lists", [])
         validated_data["author"] = request.user if request else None
+        incident = validated_data["incident"]
+        user = request.user if request else None
+        validated_data["point_of_contact"] = (
+            validated_data.get("point_of_contact")
+            or (user.get_full_name() if user and user.get_full_name() else None)
+            or (user.email if user else "")
+        )
+        validated_data["problem_description"] = (
+            validated_data.get("problem_description")
+            or incident.problem_description
+            or incident.summary
+        )
+        validated_data["workaround"] = validated_data.get("workaround") or incident.workaround
+        validated_data["next_communication_time"] = (
+            validated_data.get("next_communication_time") or incident.next_communication_time
+        )
         message = IncidentMessage.objects.create(**validated_data)
         for file in files:
             MessageAttachment.objects.create(
@@ -226,6 +270,12 @@ class IncidentMessageSerializer(serializers.ModelSerializer):
                 file=file,
                 original_name=getattr(file, "name", ""),
             )
+        if distribution_lists:
+            message.distribution_lists.set(distribution_lists)
+        elif incident.distribution_lists.exists():
+            message.distribution_lists.set(incident.distribution_lists.all())
+        elif message.distribution_list:
+            message.distribution_lists.add(message.distribution_list)
         return message
 
     def validate_extra_recipients(self, value):
@@ -240,12 +290,19 @@ class IncidentCloseSerializer(serializers.Serializer):
     distribution_list = serializers.PrimaryKeyRelatedField(
         queryset=DistributionList.objects.all(), allow_null=True, required=False
     )
+    distribution_lists = serializers.PrimaryKeyRelatedField(
+        queryset=DistributionList.objects.all(), many=True, required=False
+    )
     template_type = serializers.ChoiceField(
         choices=Incident.TemplateType.choices, default=Incident.TemplateType.INCIDENT
     )
     extra_recipients = serializers.ListField(
         child=serializers.EmailField(), required=False, allow_empty=True
     )
+    point_of_contact = serializers.CharField(required=False, allow_blank=True)
+    problem_description = serializers.CharField(required=False, allow_blank=True)
+    workaround = serializers.CharField(required=False, allow_blank=True)
+    next_communication_time = serializers.DateTimeField(required=False, allow_null=True)
 
     def validate_extra_recipients(self, value):
         if isinstance(value, str):

@@ -3,22 +3,63 @@ import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import '../assets/ServiceCommunications.css';
 
-const defaultIncidentForm = {
-  title: '',
-  summary: '',
-  impact: '',
-  severity: 'P3',
-  template_type: 'incident',
-  primary_distribution_list: '',
+const REGION_OPTIONS = ['Global', 'India', 'Africa', 'Russia'];
+
+const formatDateTime = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
 };
 
-const defaultMessageForm = {
+const toLocalInputValue = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  const local = new Date(date.getTime() - tzOffset);
+  return local.toISOString().slice(0, 16);
+};
+
+const normalizeDateForApi = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+};
+
+const getDefaultPointOfContact = (auth) => {
+  if (!auth?.user) return '';
+  const { first_name: firstName, last_name: lastName, email } = auth.user;
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+  return fullName || email || '';
+};
+
+const buildDefaultIncidentForm = () => ({
+  incNumber: '',
+  subject: '',
+  incidentType: 'major',
+  templateType: 'incident',
+  problemDescription: '',
+  workaround: '',
+  affectedRegions: [],
+  nextCommunicationTime: '',
+  distributionLists: [],
+  impact: '',
+  severity: 'P3',
+});
+
+const buildDefaultMessageForm = (auth) => ({
   subject: '',
   body: '',
-  template_type: 'incident',
-  distribution_list: '',
+  templateType: 'incident',
+  distributionLists: [],
   extraRecipients: '',
-};
+  pointOfContact: getDefaultPointOfContact(auth),
+  problemDescription: '',
+  workaround: '',
+  nextCommunicationTime: '',
+});
 
 const defaultListForm = {
   name: '',
@@ -43,8 +84,8 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [messages, setMessages] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [distributionLists, setDistributionLists] = useState([]);
-  const [incidentForm, setIncidentForm] = useState(defaultIncidentForm);
-  const [messageForm, setMessageForm] = useState(defaultMessageForm);
+  const [incidentForm, setIncidentForm] = useState(buildDefaultIncidentForm);
+  const [messageForm, setMessageForm] = useState(() => buildDefaultMessageForm(auth));
   const [messageFiles, setMessageFiles] = useState([]);
   const [listForm, setListForm] = useState(defaultListForm);
   const [closeForm, setCloseForm] = useState(defaultCloseForm);
@@ -54,6 +95,8 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
+
+  const previousIncidentRef = useRef(null);
 
   const persistAuth = useCallback(
     (nextAuth) => {
@@ -278,6 +321,12 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     setDistributionLists([...normalizedTeamLists, ...normalizedGlobalLists]);
   };
 
+  const distributionLookup = useMemo(() => {
+    const map = new Map();
+    (distributionLists || []).forEach((list) => map.set(list.id, list));
+    return map;
+  }, [distributionLists]);
+
   const filteredIncidents = useMemo(() => {
     const list = Array.isArray(incidents) ? incidents : [];
     if (!selectedTeam) return list;
@@ -292,6 +341,56 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
 
   const templateOptions = useMemo(() => templates || [], [templates]);
 
+  useEffect(() => {
+    setMessageForm((prev) => ({
+      ...prev,
+      pointOfContact: prev.pointOfContact || getDefaultPointOfContact(auth),
+    }));
+  }, [auth]);
+
+  useEffect(() => {
+    if (!selectedIncident) {
+      previousIncidentRef.current = null;
+      setMessageForm(buildDefaultMessageForm(auth));
+      return;
+    }
+    const details = incidents.find((incident) => incident.id === selectedIncident);
+    if (!details || previousIncidentRef.current === details.id) {
+      return;
+    }
+    previousIncidentRef.current = details.id;
+    setMessageForm((prev) => ({
+      ...prev,
+      pointOfContact: prev.pointOfContact || getDefaultPointOfContact(auth),
+      problemDescription: details.problem_description || '',
+      workaround: details.workaround || '',
+      nextCommunicationTime: toLocalInputValue(details.next_communication_time),
+      distributionLists: Array.isArray(details.distribution_lists)
+        ? details.distribution_lists
+        : [],
+    }));
+  }, [selectedIncident, incidents, auth]);
+
+  const handleIncidentDistributionChange = (event) => {
+    const values = Array.from(event.target.selectedOptions).map((option) => Number(option.value));
+    setIncidentForm({ ...incidentForm, distributionLists: values });
+  };
+
+  const handleMessageDistributionChange = (event) => {
+    const values = Array.from(event.target.selectedOptions).map((option) => Number(option.value));
+    setMessageForm({ ...messageForm, distributionLists: values });
+  };
+
+  const toggleRegion = (region) => {
+    setIncidentForm((prev) => {
+      const exists = prev.affectedRegions.includes(region);
+      const affectedRegions = exists
+        ? prev.affectedRegions.filter((item) => item !== region)
+        : [...prev.affectedRegions, region];
+      return { ...prev, affectedRegions };
+    });
+  };
+
   const handleIncidentSubmit = async (event) => {
     event.preventDefault();
     if (!selectedTeam) return;
@@ -301,12 +400,21 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       await apiRequest('/incidents/', {
         method: 'POST',
         body: {
-          ...incidentForm,
           team: selectedTeam,
-          primary_distribution_list: incidentForm.primary_distribution_list || null,
+          inc_number: incidentForm.incNumber,
+          title: incidentForm.subject,
+          summary: incidentForm.problemDescription,
+          impact: incidentForm.impact,
+          severity: incidentForm.severity,
+          template_type: incidentForm.templateType,
+          problem_description: incidentForm.problemDescription,
+          workaround: incidentForm.workaround,
+          affected_regions: incidentForm.affectedRegions,
+          next_communication_time: normalizeDateForApi(incidentForm.nextCommunicationTime),
+          distribution_lists: incidentForm.distributionLists,
         },
       });
-      setIncidentForm(defaultIncidentForm);
+      setIncidentForm(buildDefaultIncidentForm());
       await loadIncidents();
       await loadSummary();
     } catch (err) {
@@ -326,10 +434,15 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       payload.append('incident', selectedIncident);
       payload.append('subject', messageForm.subject);
       payload.append('body', messageForm.body);
-      payload.append('template_type', messageForm.template_type);
-      if (messageForm.distribution_list) {
-        payload.append('distribution_list', messageForm.distribution_list);
+      payload.append('template_type', messageForm.templateType);
+      payload.append('point_of_contact', messageForm.pointOfContact);
+      payload.append('problem_description', messageForm.problemDescription);
+      payload.append('workaround', messageForm.workaround);
+      const nextComms = normalizeDateForApi(messageForm.nextCommunicationTime);
+      if (nextComms) {
+        payload.append('next_communication_time', nextComms);
       }
+      messageForm.distributionLists.forEach((listId) => payload.append('distribution_lists', listId));
       if (messageForm.extraRecipients) {
         payload.append('extra_recipients', messageForm.extraRecipients);
       }
@@ -341,7 +454,13 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         headers: {},
       });
 
-      setMessageForm(defaultMessageForm);
+      setMessageForm(() => ({
+        ...buildDefaultMessageForm(auth),
+        problemDescription: selectedIncidentDetails?.problem_description || '',
+        workaround: selectedIncidentDetails?.workaround || '',
+        nextCommunicationTime: toLocalInputValue(selectedIncidentDetails?.next_communication_time),
+        distributionLists: selectedIncidentDetails?.distribution_lists || [],
+      }));
       setMessageFiles([]);
       await loadMessages(selectedIncident);
     } catch (err) {
@@ -480,7 +599,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
           </div>
           <select
             value={selectedTeam || ''}
-            onChange={(e) => setSelectedTeam(Number(e.target.value))}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedTeam(value ? Number(value) : null);
+            }}
           >
             <option value="" disabled>
               Select a team
@@ -510,52 +632,97 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
           </div>
           <form onSubmit={handleIncidentSubmit} className="form-grid">
             <input
-              placeholder="Title"
-              value={incidentForm.title}
-              onChange={(e) => setIncidentForm({ ...incidentForm, title: e.target.value })}
+              placeholder="INC Number"
+              value={incidentForm.incNumber}
+              onChange={(e) => setIncidentForm({ ...incidentForm, incNumber: e.target.value })}
+              required
+            />
+            <input
+              placeholder="Subject Line"
+              value={incidentForm.subject}
+              onChange={(e) => setIncidentForm({ ...incidentForm, subject: e.target.value })}
+              required
+            />
+            <select
+              value={incidentForm.incidentType}
+              onChange={(e) => setIncidentForm({ ...incidentForm, incidentType: e.target.value })}
+            >
+              <option value="major">Major</option>
+              <option value="critical">Critical</option>
+              <option value="informational">Informational</option>
+            </select>
+            <textarea
+              placeholder="Problem Description"
+              value={incidentForm.problemDescription}
+              onChange={(e) =>
+                setIncidentForm({ ...incidentForm, problemDescription: e.target.value })
+              }
               required
             />
             <textarea
-              placeholder="Summary"
-              value={incidentForm.summary}
-              onChange={(e) => setIncidentForm({ ...incidentForm, summary: e.target.value })}
-              required
+              placeholder="Workaround (optional)"
+              value={incidentForm.workaround}
+              onChange={(e) => setIncidentForm({ ...incidentForm, workaround: e.target.value })}
             />
             <textarea
               placeholder="Impact statement"
               value={incidentForm.impact}
               onChange={(e) => setIncidentForm({ ...incidentForm, impact: e.target.value })}
             />
-            <input
-              placeholder="Severity (e.g., P1, P2)"
-              value={incidentForm.severity}
-              onChange={(e) => setIncidentForm({ ...incidentForm, severity: e.target.value })}
-            />
-            <select
-              value={incidentForm.template_type}
-              onChange={(e) => setIncidentForm({ ...incidentForm, template_type: e.target.value })}
-            >
-              {templateOptions.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={incidentForm.primary_distribution_list}
-              onChange={(e) =>
-                setIncidentForm({ ...incidentForm, primary_distribution_list: e.target.value })
-              }
-            >
-              <option value="">Primary distribution list</option>
-              {availableLists.map((list) => (
-                <option key={list.id} value={list.id}>
-                  {list.name}
-                </option>
-              ))}
-            </select>
+            <div className="checkbox-grid">
+              <label>Affected Regions</label>
+              <div className="regions">
+                {REGION_OPTIONS.map((region) => (
+                  <label key={region}>
+                    <input
+                      type="checkbox"
+                      checked={incidentForm.affectedRegions.includes(region)}
+                      onChange={() => toggleRegion(region)}
+                    />
+                    {region}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <label>
+              Next Communication Time
+              <input
+                type="datetime-local"
+                value={incidentForm.nextCommunicationTime}
+                onChange={(e) =>
+                  setIncidentForm({ ...incidentForm, nextCommunicationTime: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Templates
+              <select
+                value={incidentForm.templateType}
+                onChange={(e) => setIncidentForm({ ...incidentForm, templateType: e.target.value })}
+              >
+                {templateOptions.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Distribution Lists
+              <select
+                multiple
+                value={incidentForm.distributionLists.map(String)}
+                onChange={handleIncidentDistributionChange}
+              >
+                {availableLists.map((list) => (
+                  <option key={list.id} value={list.id}>
+                    {list.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button type="submit" disabled={loading}>
-              Create Incident
+              Save Incident
             </button>
           </form>
         </div>
@@ -574,10 +741,14 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                 onClick={() => setSelectedIncident(incident.id)}
               >
                 <div>
-                  <strong>{incident.reference_id}</strong> — {incident.title}
+                  <strong>{incident.reference_id || incident.inc_number || incident.id}</strong> —{' '}
+                  {incident.title}
                   <span className={`status-pill ${incident.status}`}>{incident.status}</span>
                 </div>
-                <small>{incident.summary}</small>
+                <small>
+                  {incident.inc_number ? `${incident.inc_number} • ` : ''}
+                  {incident.incident_type?.toUpperCase()}
+                </small>
               </li>
             ))}
           </ul>
@@ -589,6 +760,32 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
           </div>
           {selectedIncidentDetails ? (
             <>
+              <div className="incident-details-card">
+                <p>
+                  <strong>INC:</strong> {selectedIncidentDetails.inc_number || '—'}
+                </p>
+                <p>
+                  <strong>Type:</strong> {selectedIncidentDetails.incident_type}
+                </p>
+                <p>
+                  <strong>Problem:</strong> {selectedIncidentDetails.problem_description || '—'}
+                </p>
+                <p>
+                  <strong>Workaround:</strong> {selectedIncidentDetails.workaround || '—'}
+                </p>
+                <p>
+                  <strong>Affected Regions:</strong>{' '}
+                  {Array.isArray(selectedIncidentDetails.affected_regions) &&
+                  selectedIncidentDetails.affected_regions.length
+                    ? selectedIncidentDetails.affected_regions.join(', ')
+                    : '—'}
+                </p>
+                <p>
+                  <strong>Next Communication:</strong>{' '}
+                  {formatDateTime(selectedIncidentDetails.next_communication_time)}
+                </p>
+              </div>
+
               <form onSubmit={handleMessageSubmit} className="form-grid">
                 <input
                   placeholder="Subject"
@@ -603,8 +800,8 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                   required
                 />
                 <select
-                  value={messageForm.template_type}
-                  onChange={(e) => setMessageForm({ ...messageForm, template_type: e.target.value })}
+                  value={messageForm.templateType}
+                  onChange={(e) => setMessageForm({ ...messageForm, templateType: e.target.value })}
                 >
                   {templateOptions.map((template) => (
                     <option key={template.id} value={template.id}>
@@ -612,19 +809,49 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                     </option>
                   ))}
                 </select>
-                <select
-                  value={messageForm.distribution_list}
+                <label>
+                  Distribution Lists
+                  <select
+                    multiple
+                    value={messageForm.distributionLists.map(String)}
+                    onChange={handleMessageDistributionChange}
+                  >
+                    {availableLists.map((list) => (
+                      <option key={list.id} value={list.id}>
+                        {list.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <input
+                  placeholder="Point of Contact"
+                  value={messageForm.pointOfContact}
                   onChange={(e) =>
-                    setMessageForm({ ...messageForm, distribution_list: e.target.value })
+                    setMessageForm({ ...messageForm, pointOfContact: e.target.value })
                   }
-                >
-                  <option value="">Distribution list</option>
-                  {availableLists.map((list) => (
-                    <option key={list.id} value={list.id}>
-                      {list.name}
-                    </option>
-                  ))}
-                </select>
+                />
+                <textarea
+                  placeholder="Override Problem Description (optional)"
+                  value={messageForm.problemDescription}
+                  onChange={(e) =>
+                    setMessageForm({ ...messageForm, problemDescription: e.target.value })
+                  }
+                />
+                <textarea
+                  placeholder="Override Workaround (optional)"
+                  value={messageForm.workaround}
+                  onChange={(e) => setMessageForm({ ...messageForm, workaround: e.target.value })}
+                />
+                <label>
+                  Override Next Communication Time
+                  <input
+                    type="datetime-local"
+                    value={messageForm.nextCommunicationTime}
+                    onChange={(e) =>
+                      setMessageForm({ ...messageForm, nextCommunicationTime: e.target.value })
+                    }
+                  />
+                </label>
                 <input
                   placeholder="Extra recipients (comma separated)"
                   value={messageForm.extraRecipients}
@@ -684,6 +911,36 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                       <span>{new Date(message.created_at).toLocaleString()}</span>
                     </div>
                     <p>{message.body}</p>
+                    <div className="timeline-meta">
+                      <small>POC: {message.point_of_contact || '—'}</small>
+                      <small>
+                        Next Communication: {formatDateTime(message.next_communication_time)}
+                      </small>
+                    </div>
+                    <p>
+                      <strong>Problem:</strong> {message.problem_description || '—'}
+                    </p>
+                    {message.workaround && (
+                      <p>
+                        <strong>Workaround:</strong> {message.workaround}
+                      </p>
+                    )}
+                    <small>
+                      Distribution:{' '}
+                      {(() => {
+                        const listNames = [
+                          ...(message.distribution_lists || []),
+                        ].map((id) => distributionLookup.get(id)?.name || `List ${id}`);
+                        if (!listNames.length && message.distribution_list) {
+                          listNames.push(
+                            distributionLookup.get(message.distribution_list)?.name ||
+                              `List ${message.distribution_list}`
+                          );
+                        }
+                        return listNames.length ? listNames.join(', ') : '—';
+                      })()}
+                    </small>
+                    <br />
                     <small>Delivery: {message.delivery_status}</small>
                   </li>
                 ))}
@@ -752,7 +1009,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
               <li key={list.id}>
                 <strong>{list.name}</strong> ({list.scope})
                 <p>{list.description}</p>
-                <small>{list.entries.length} recipients</small>
+                <small>{Array.isArray(list.entries) ? list.entries.length : 0} recipients</small>
               </li>
             ))}
           </ul>

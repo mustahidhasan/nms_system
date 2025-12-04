@@ -8,6 +8,18 @@ def _collect_recipients(message: IncidentMessage) -> List[str]:
     recipients = []
     if message.distribution_list:
         recipients.extend(list(message.distribution_list.entries.values_list("email", flat=True)))
+    if message.distribution_lists.exists():
+        for dl in message.distribution_lists.all():
+            recipients.extend(list(dl.entries.values_list("email", flat=True)))
+    if not recipients:
+        # fall back to incident defaults if nothing explicitly selected
+        default_lists = message.incident.distribution_lists.all()
+        for dl in default_lists:
+            recipients.extend(list(dl.entries.values_list("email", flat=True)))
+        if not recipients and message.incident.primary_distribution_list:
+            recipients.extend(
+                list(message.incident.primary_distribution_list.entries.values_list("email", flat=True))
+            )
     if message.extra_recipients:
         recipients.extend([value.strip() for value in message.extra_recipients if value.strip()])
     # Deduplicate while preserving order

@@ -194,16 +194,29 @@ class IncidentViewSet(viewsets.ModelViewSet):
         incident.closed_by = request.user
         incident.save(update_fields=["status", "closed_at", "closed_by"])
 
-        distribution_list = serializer.validated_data.get("distribution_list") or incident.primary_distribution_list
+        data = serializer.validated_data
+        distribution_list = data.get("distribution_list") or incident.primary_distribution_list
         message = IncidentMessage.objects.create(
             incident=incident,
             author=request.user,
             distribution_list=distribution_list,
-            subject=serializer.validated_data["final_subject"],
-            body=serializer.validated_data["final_body"],
-            template_type=serializer.validated_data.get("template_type", incident.template_type),
-            extra_recipients=serializer.validated_data.get("extra_recipients", []),
+            subject=data["final_subject"],
+            body=data["final_body"],
+            template_type=data.get("template_type", incident.template_type),
+            extra_recipients=data.get("extra_recipients", []),
+            point_of_contact=data.get("point_of_contact")
+            or request.user.get_full_name()
+            or request.user.email,
+            problem_description=data.get("problem_description") or incident.problem_description,
+            workaround=data.get("workaround") or incident.workaround,
+            next_communication_time=data.get("next_communication_time") or incident.next_communication_time,
         )
+        if data.get("distribution_lists"):
+            message.distribution_lists.set(data["distribution_lists"])
+        elif incident.distribution_lists.exists():
+            message.distribution_lists.set(incident.distribution_lists.all())
+        elif distribution_list:
+            message.distribution_lists.add(distribution_list)
         deliver_incident_message(message)
         return Response(self.get_serializer(incident).data)
 
@@ -216,7 +229,7 @@ class IncidentMessageViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, vie
     def get_queryset(self):
         queryset = IncidentMessage.objects.select_related(
             "incident", "author", "distribution_list"
-        ).prefetch_related("attachments")
+        ).prefetch_related("attachments", "distribution_lists")
         incident_id = self.request.query_params.get("incident")
         if incident_id:
             queryset = queryset.filter(incident_id=incident_id)

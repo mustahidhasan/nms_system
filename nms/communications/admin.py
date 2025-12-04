@@ -48,15 +48,27 @@ class IncidentMessageInline(admin.TabularInline):
 
 @admin.register(Incident)
 class IncidentAdmin(admin.ModelAdmin):
-    list_display = ("reference_id", "title", "team", "status", "severity", "created_at")
-    list_filter = ("team", "status", "severity", "template_type")
-    search_fields = ("reference_id", "title")
+    list_display = (
+        "reference_id",
+        "inc_number",
+        "title",
+        "incident_type",
+        "team",
+        "status",
+        "severity",
+        "next_communication_time",
+        "created_at",
+    )
+    list_filter = ("team", "status", "severity", "template_type", "incident_type")
+    search_fields = ("reference_id", "title", "inc_number")
+    filter_horizontal = ("distribution_lists",)
     inlines = [IncidentMessageInline]
 
 
 @admin.register(IncidentMessage)
 class IncidentMessageAdmin(admin.ModelAdmin):
-    list_display = ("incident", "subject", "template_type", "created_at")
-    list_filter = ("template_type",)
+    list_display = ("incident", "subject", "template_type", "point_of_contact", "created_at")
+    list_filter = ("template_type", "distribution_lists")
     search_fields = ("subject", "incident__reference_id")
     inlines = [MessageAttachmentInline]
+    filter_horizontal = ("distribution_lists",)

@@ -106,15 +106,28 @@ class Incident(models.Model):
         MONITORING = "monitoring", "Monitoring"
         CLOSED = "closed", "Closed"
 
+    class IncidentType(models.TextChoices):
+        MAJOR = "major", "Major"
+        CRITICAL = "critical", "Critical"
+        INFORMATIONAL = "informational", "Informational"
+
     class TemplateType(models.TextChoices):
         MAJOR = "major", "Major Incident"
         INCIDENT = "incident", "Incident"
         SERVICE = "service", "Service Announcement"
 
     reference_id = models.CharField(max_length=32, unique=True, editable=False, default="")
+    inc_number = models.CharField(max_length=64, blank=True)
+    incident_type = models.CharField(
+        max_length=32, choices=IncidentType.choices, default=IncidentType.MAJOR
+    )
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="incidents")
     title = models.CharField(max_length=200)
     summary = models.TextField()
+    problem_description = models.TextField(blank=True)
+    workaround = models.TextField(blank=True)
+    affected_regions = models.JSONField(default=list, blank=True)
+    next_communication_time = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
     severity = models.CharField(max_length=30, default="P3")
     template_type = models.CharField(
@@ -127,6 +140,11 @@ class Incident(models.Model):
         null=True,
         blank=True,
         related_name="primary_incidents",
+    )
+    distribution_lists = models.ManyToManyField(
+        DistributionList,
+        related_name="incidents",
+        blank=True,
     )
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name="incidents_created"
@@ -169,6 +187,15 @@ class IncidentMessage(models.Model):
         blank=True,
         related_name="incident_messages",
     )
+    distribution_lists = models.ManyToManyField(
+        DistributionList,
+        blank=True,
+        related_name="incident_messages_multi",
+    )
+    point_of_contact = models.CharField(max_length=200, blank=True)
+    problem_description = models.TextField(blank=True)
+    workaround = models.TextField(blank=True)
+    next_communication_time = models.DateTimeField(null=True, blank=True)
     subject = models.CharField(max_length=200)
     body = models.TextField()
     template_type = models.CharField(
