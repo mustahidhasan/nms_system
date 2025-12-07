@@ -37,27 +37,55 @@ const toArray = (payload) => {
   return [];
 };
 
+const IST_TIMEZONE = 'Asia/Kolkata';
+const IST_OFFSET_MINUTES = 5 * 60 + 30;
+const IST_OFFSET_MS = IST_OFFSET_MINUTES * 60 * 1000;
+
+const pad = (value) => String(value).padStart(2, '0');
+
 const formatDateTime = (value) => {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return new Intl.DateTimeFormat('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: IST_TIMEZONE,
+  }).format(date);
 };
 
 const toLocalInputValue = (value) => {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  const tzOffset = date.getTimezoneOffset() * 60000;
-  const local = new Date(date.getTime() - tzOffset);
-  return local.toISOString().slice(0, 16);
+  const istTimestamp = date.getTime() + IST_OFFSET_MS;
+  const istDate = new Date(istTimestamp);
+  const year = istDate.getUTCFullYear();
+  const month = pad(istDate.getUTCMonth() + 1);
+  const day = pad(istDate.getUTCDate());
+  const hour = pad(istDate.getUTCHours());
+  const minute = pad(istDate.getUTCMinutes());
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+};
+
+const parseIstDateTimeInput = (value) => {
+  if (!value || typeof value !== 'string') return null;
+  const [datePart, timePart] = value.split('T');
+  if (!datePart || !timePart) return null;
+  const [year, month, day] = datePart.split('-').map((part) => parseInt(part, 10));
+  const [hour, minute] = timePart.split(':').map((part) => parseInt(part, 10));
+  if ([year, month, day, hour, minute].some((part) => Number.isNaN(part))) {
+    return null;
+  }
+  return { year, month, day, hour, minute };
 };
 
 const normalizeDateForApi = (value) => {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toISOString();
+  const parts = parseIstDateTimeInput(value);
+  if (!parts) return null;
+  const utcTimestamp =
+    Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute) - IST_OFFSET_MS;
+  return new Date(utcTimestamp).toISOString();
 };
 
 const getDefaultPointOfContact = (auth) => {
@@ -1103,14 +1131,13 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                     </label>
                     <label className="form-field">
                       <span>Extra Recipients</span>
-                      <input
-                        type="email"
-                        multiple
-                        placeholder="Comma separated emails"
+                      <textarea
+                        placeholder="Comma or newline separated emails"
                         value={messageForm.extraRecipients}
                         onChange={(e) =>
                           setMessageForm({ ...messageForm, extraRecipients: e.target.value })
                         }
+                        rows={2}
                       />
                     </label>
                     <label className="form-field">
@@ -1172,7 +1199,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                       <li key={message.id}>
                         <div className="timeline-header">
                           <strong>{message.subject}</strong>
-                          <span>{new Date(message.created_at).toLocaleString()}</span>
+                          <span>{formatDateTime(message.created_at)}</span>
                         </div>
                         <p>{message.body}</p>
                         <div className="timeline-meta">

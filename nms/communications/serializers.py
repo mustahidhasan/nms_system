@@ -1,7 +1,10 @@
+import re
+
 from django.contrib.auth import get_user_model
 
 from USER.models import UserRole, get_user_role, user_is_global_team_admin
 from rest_framework import serializers
+from rest_framework.fields import empty
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
     Team,
@@ -15,6 +18,55 @@ from .models import (
 from .constants import ANNOUNCEMENT_TEMPLATES
 
 User = get_user_model()
+
+EMAIL_SPLIT_PATTERN = re.compile(r"[,\s;]+")
+
+
+def _flatten_email_values(value):
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [part.strip() for part in EMAIL_SPLIT_PATTERN.split(value) if part.strip()]
+    if isinstance(value, (list, tuple, set)):
+        flattened = []
+        for item in value:
+            flattened.extend(_flatten_email_values(item))
+        return flattened
+    return [str(value).strip()] if str(value).strip() else []
+
+
+def _dedupe_preserve_order(values):
+    seen = set()
+    ordered = []
+    for item in values:
+        key = item.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append(item)
+    return ordered
+
+
+class EmailListField(serializers.ListField):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("child", serializers.EmailField())
+        kwargs.setdefault("allow_empty", True)
+        kwargs.setdefault("required", False)
+        super().__init__(**kwargs)
+
+    def get_value(self, dictionary):
+        if hasattr(dictionary, "getlist"):
+            if self.field_name in dictionary:
+                return dictionary.getlist(self.field_name)
+            return empty
+        return super().get_value(dictionary)
+
+    def to_internal_value(self, data):
+        if data is empty:
+            data = []
+        normalized = _flatten_email_values(data)
+        validated = super().to_internal_value(normalized)
+        return _dedupe_preserve_order(validated)
 
 
 class TeamMembershipSerializer(serializers.ModelSerializer):
@@ -238,6 +290,7 @@ class IncidentMessageSerializer(serializers.ModelSerializer):
     incident_reference = serializers.CharField(source="incident.reference_id", read_only=True)
     attachments = MessageAttachmentSerializer(many=True, read_only=True)
     author_name = serializers.CharField(source="author.get_full_name", read_only=True)
+    extra_recipients = EmailListField()
     distribution_lists = serializers.PrimaryKeyRelatedField(
         queryset=DistributionList.objects.all(), many=True, required=False
     )
@@ -312,12 +365,6 @@ class IncidentMessageSerializer(serializers.ModelSerializer):
             message.distribution_lists.add(message.distribution_list)
         return message
 
-    def validate_extra_recipients(self, value):
-        if isinstance(value, str):
-            return [item.strip() for item in value.split(",") if item.strip()]
-        return value or []
-
-
 class IncidentCloseSerializer(serializers.Serializer):
     final_subject = serializers.CharField()
     final_body = serializers.CharField()
@@ -330,18 +377,11 @@ class IncidentCloseSerializer(serializers.Serializer):
     template_type = serializers.ChoiceField(
         choices=Incident.TemplateType.choices, default=Incident.TemplateType.INCIDENT
     )
-    extra_recipients = serializers.ListField(
-        child=serializers.EmailField(), required=False, allow_empty=True
-    )
+    extra_recipients = EmailListField()
     point_of_contact = serializers.CharField(required=False, allow_blank=True)
     problem_description = serializers.CharField(required=False, allow_blank=True)
     workaround = serializers.CharField(required=False, allow_blank=True)
     next_communication_time = serializers.DateTimeField(required=False, allow_null=True)
-
-    def validate_extra_recipients(self, value):
-        if isinstance(value, str):
-            return [item.strip() for item in value.split(",") if item.strip()]
-        return value or []
 
 
 class AnnouncementTemplateSerializer(serializers.Serializer):
