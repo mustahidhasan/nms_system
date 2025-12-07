@@ -319,6 +319,38 @@
   overflow: hidden;
 }
 
+.service-communications form.sc-form {
+  border: 1px solid var(--sc-border);
+  border-radius: 24px;
+  padding: 1.75rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.98) 0%, rgba(243, 249, 244, 0.9) 100%);
+  box-shadow: 0 25px 55px rgba(20, 64, 29, 0.1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.service-communications form.sc-form::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(27, 107, 58, 0.12), transparent 55%);
+  pointer-events: none;
+}
+
+.service-communications form.sc-form > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .service-communications form.sc-form {
+    padding: 1.25rem;
+  }
+}
+
 .tab-content {
   margin: 2rem;
   display: flex;
@@ -422,11 +454,25 @@
 .service-communications input,
 .service-communications textarea,
 .service-communications select {
-  border: 1px solid var(--sc-border);
-  border-radius: 12px;
-  padding: 0.8rem 1rem;
-  background: #fcfefc;
-  transition: border 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #d8eadc;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  color: var(--sc-text);
+  font-weight: 500;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px rgba(27, 107, 58, 0.08);
+  transition: border 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.service-communications input:hover,
+.service-communications textarea:hover,
+.service-communications select:hover {
+  border-color: var(--sc-green);
+}
+
+.service-communications input[type='checkbox'],
+.service-communications input[type='radio'] {
+  accent-color: var(--sc-green);
 }
 
 .service-communications input:focus,
@@ -435,41 +481,109 @@
   outline: none;
   border-color: var(--sc-green);
   box-shadow: 0 0 0 3px rgba(27, 107, 58, 0.1);
+  transform: translateY(-1px);
 }
 
 .service-communications textarea {
-  min-height: 110px;
+  min-height: 140px;
+  resize: vertical;
+}
+
+.service-communications select[multiple] {
+  min-height: 160px;
+  padding: 0.75rem;
+}
+
+.service-communications input[type='file'] {
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.service-communications input[type='file']::file-selector-button {
+  border: none;
+  border-radius: 999px;
+  background: var(--sc-green);
+  color: white;
+  padding: 0.4rem 0.9rem;
+  margin-right: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
 }
 
 .service-communications .form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.85rem 1.2rem;
-}
-
-.service-communications .form-grid > button,
-.service-communications .form-grid > hr,
-.service-communications .form-grid > h3 {
-  grid-column: 1 / -1;
-}
-
-.service-communications .form-grid textarea,
-.service-communications .form-grid .checkbox-grid,
-.service-communications .form-grid .radio-group,
-.service-communications .form-grid .regions,
-.service-communications .form-grid input[type='file'] {
-  grid-column: 1 / -1;
-}
-
-.form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  font-weight: 600;
-  color: var(--sc-green-muted);
+  gap: 1.25rem;
 }
 
-.form-field small {
+.service-communications .sc-form h3 {
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sc-green);
+}
+
+.service-communications .form-field,
+.service-communications .checkbox-grid,
+.service-communications .radio-group {
+  width: 100%;
+}
+
+.chip-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--sc-border);
+  background: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  color: var(--sc-text);
+  cursor: pointer;
+  transition: border 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chip-control input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--sc-green);
+}
+
+.chip-control span {
+  pointer-events: none;
+}
+
+.chip-control.active {
+  border-color: var(--sc-green);
+  background: rgba(27, 107, 58, 0.12);
+  color: var(--sc-green);
+  box-shadow: 0 6px 16px rgba(27, 107, 58, 0.15);
+}
+
+.service-communications .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-weight: 600;
+  color: var(--sc-green-muted);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 1rem 1.15rem 1.2rem;
+  border-radius: 20px;
+  border: 1px solid #e5f0e6;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 12px 24px rgba(31, 76, 43, 0.05);
+}
+
+.service-communications .form-field span {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #516d55;
+}
+
+.service-communications .form-field small {
   font-weight: 400;
   color: #4a684a;
 }
@@ -487,26 +601,24 @@
 .service-communications .checkbox-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border-radius: 22px;
+  border: 1px dashed #c9e5cf;
+  background: rgba(255, 255, 255, 0.7);
 }
 
-.service-communications .checkbox-grid label {
-  font-weight: 600;
-  color: var(--sc-green-muted);
+.service-communications .checkbox-grid > label {
+  font-weight: 700;
+  color: var(--sc-green);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .service-communications .checkbox-grid .regions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-}
-
-.service-communications .checkbox-grid .regions label {
-  font-weight: 400;
-  color: var(--sc-text);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+  gap: 0.75rem;
 }
 
 .service-communications .icon-button {
@@ -648,10 +760,16 @@
   color: #556e55;
 }
 
-.radio-group {
+.service-communications .radio-group {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
   color: var(--sc-text);
+  padding: 0.75rem;
+  border-radius: 999px;
+  border: 1px dashed #cfe3d2;
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .list-view {

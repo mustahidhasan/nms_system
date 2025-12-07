@@ -823,7 +823,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         return (
           <section className="tab-panel">
             <h2>Create Incident</h2>
-            <form onSubmit={handleIncidentSubmit} className="form-grid">
+            <form onSubmit={handleIncidentSubmit} className="form-grid sc-form">
               <label className="form-field">
                 <span>INC Number</span>
                 <input
@@ -887,16 +887,22 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
               <div className="checkbox-grid">
                 <label>Affected Regions</label>
                 <div className="regions">
-                  {REGION_OPTIONS.map((region) => (
-                    <label key={region}>
-                      <input
-                        type="checkbox"
-                        checked={incidentForm.affectedRegions.includes(region)}
-                        onChange={() => toggleRegion(region)}
-                      />
-                      {region}
-                    </label>
-                  ))}
+                  {REGION_OPTIONS.map((region) => {
+                    const isChecked = incidentForm.affectedRegions.includes(region);
+                    return (
+                      <label
+                        key={region}
+                        className={`chip-control${isChecked ? ' active' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleRegion(region)}
+                        />
+                        <span>{region}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
               <label className="form-field">
@@ -1005,7 +1011,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                       <strong>Next Communication:</strong> {formatDateTime(selectedIncidentDetails.next_communication_time)}
                     </p>
                   </div>
-                  <form onSubmit={handleMessageSubmit} className="form-grid">
+                  <form onSubmit={handleMessageSubmit} className="form-grid sc-form">
                     <label className="form-field">
                       <span>Subject</span>
                       <input
@@ -1120,7 +1126,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                     </button>
                   </form>
                   <hr />
-                  <form onSubmit={handleCloseIncident} className="form-grid">
+                  <form onSubmit={handleCloseIncident} className="form-grid sc-form">
                     <h3>Close Incident</h3>
                     <label className="form-field">
                       <span>Final Subject</span>
@@ -1215,7 +1221,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
           <div className="tab-stack">
             <section className="tab-panel">
               <h2>Create Distribution List</h2>
-              <form onSubmit={handleDistributionListSubmit} className="form-grid">
+              <form onSubmit={handleDistributionListSubmit} className="form-grid sc-form">
                 <label className="form-field">
                   <span>List Name</span>
                   <input
@@ -1243,23 +1249,23 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                   />
                 </label>
                 <div className="radio-group">
-                  <label>
+                  <label className={`chip-control${listForm.scope === 'team' ? ' active' : ''}`}>
                     <input
                       type="radio"
                       value="team"
                       checked={listForm.scope === 'team'}
                       onChange={(e) => setListForm({ ...listForm, scope: e.target.value })}
                     />
-                    Team list
+                    <span>Team list</span>
                   </label>
-                  <label>
+                  <label className={`chip-control${listForm.scope === 'global' ? ' active' : ''}`}>
                     <input
                       type="radio"
                       value="global"
                       checked={listForm.scope === 'global'}
                       onChange={(e) => setListForm({ ...listForm, scope: e.target.value })}
                     />
-                    Global list
+                    <span>Global list</span>
                   </label>
                 </div>
                 <button type="submit" disabled={loading}>
