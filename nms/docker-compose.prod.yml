@@ -40,7 +40,7 @@ services:
     volumes:
       # Only mount config and SSL, NOT the build folder
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./certs:/etc/ssl/private
+      - ./certs:/etc/ssl/private:ro
       - ./staticfiles:/app/staticfiles
     restart: always
 

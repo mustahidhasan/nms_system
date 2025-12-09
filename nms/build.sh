@@ -24,19 +24,28 @@ if [ "$ENV" = "prod" ]; then
   ENV_FILE_FE=".env.prod.fe"
   HOST_IP="18.212.236.236"
   COMPOSE_FILE="docker-compose.prod.yml"
+  CERT_TARGET_DIR="./certs"
+  CERT_TARGET_CRT="$CERT_TARGET_DIR/server.crt"
+  CERT_TARGET_KEY="$CERT_TARGET_DIR/server.key"
 
-  # Generate self-signed SSL certs if they don't exist
-  CERT_DIR="./certs"
-  mkdir -p $CERT_DIR
-  if [ ! -f "$CERT_DIR/selfsigned.crt" ] || [ ! -f "$CERT_DIR/selfsigned.key" ]; then
-    echo "Generating self-signed SSL certificate..."
-    sudo openssl req -x509 -nodes -days 365 \
+  mkdir -p "$CERT_TARGET_DIR"
+  if [ ! -f "$CERT_TARGET_CRT" ] || [ ! -f "$CERT_TARGET_KEY" ]; then
+    echo "Generating self-signed SSL certificates in $CERT_TARGET_DIR..."
+    openssl req -x509 -nodes -days 365 \
       -newkey rsa:2048 \
-      -keyout "$CERT_DIR/selfsigned.key" \
-      -out "$CERT_DIR/selfsigned.crt" \
+      -keyout "$CERT_TARGET_KEY" \
+      -out "$CERT_TARGET_CRT" \
       -subj "/CN=$HOST_IP"
   else
-    echo "SSL certificates already exist. Skipping generation."
+    echo "Reusing existing certificates in $CERT_TARGET_DIR"
+  fi
+
+  if [ -w /etc/ssl ]; then
+    echo "Copying certificates into /etc/ssl for host-level usage..."
+    sudo cp "$CERT_TARGET_CRT" /etc/ssl/server.crt
+    sudo cp "$CERT_TARGET_KEY" /etc/ssl/server.key
+  else
+    echo "Warning: unable to write to /etc/ssl; ensure nginx host has access to $CERT_TARGET_DIR"
   fi
 else
   echo "Building Development Environment..."
