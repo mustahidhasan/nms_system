@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../assets/Ping.css';
-import UserActivity from './UserActivity';
 
 function Ping({ apiBaseUrl, setAuth }) {
   const navigate = useNavigate();
@@ -27,7 +26,6 @@ function Ping({ apiBaseUrl, setAuth }) {
   const [snmpVersion, setSnmpVersion] = useState('2c');
   const [showAbout, setShowAbout] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
-  const [showUserActivity, setShowUserActivity] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState(null);
   const [lastRunAt, setLastRunAt] = useState(null);
@@ -475,9 +473,6 @@ function Ping({ apiBaseUrl, setAuth }) {
                 <button type="button" className="ghost-button" onClick={() => setShowAbout(true)}>
                   ℹ️ Quick tour
                 </button>
-                <button type="button" className="ghost-button" onClick={() => setShowUserActivity(true)}>
-                  🕒 Recent activity
-                </button>
               </div>
             </div>
             <div className="hero-stats">
@@ -585,25 +580,32 @@ function Ping({ apiBaseUrl, setAuth }) {
         {showAbout && (
           <div className="about-popup">
             <div className="popup-overlay" onClick={() => setShowAbout(false)}></div>
-            <div className="popup-content">
+            <div className="popup-content tour-panel">
               <button className="close-btn" onClick={() => setShowAbout(false)}>✖</button>
-              <iframe
-                src="/about.pdf"
-                title="About PDF"
-                width="100%"
-                height="500px"
-                frameBorder="0"
-              />
-            </div>
-          </div>
-        )}
-
-        {showUserActivity && (
-          <div className="user-activity-modal">
-            <div className="popup-overlay" onClick={() => setShowUserActivity(false)}></div>
-            <div className="popup-content">
-              <button className="close-btn" onClick={() => setShowUserActivity(false)}>✖</button>
-              <UserActivity />
+              <h3>About this workspace</h3>
+              <p>
+                Network Operations collects diagnostics (ping, traceroute, DNS, SNMP, MTR) and lets you
+                notify distribution lists instantly. Service Communications manages teams, incidents, and
+                distribution lists used for messaging stakeholders.
+              </p>
+              <div className="tour-columns">
+                <div>
+                  <h4>Network Operations</h4>
+                  <ol>
+                    <li>Select the checks you need from the sidebar.</li>
+                    <li>Enter IPs, ranges, or hostnames and click Run Diagnostics.</li>
+                    <li>Review results, export CSV, or email stakeholders.</li>
+                  </ol>
+                </div>
+                <div>
+                  <h4>Service Communications</h4>
+                  <ol>
+                    <li>Create or select a team to manage templates/lists.</li>
+                    <li>Open incidents, send timeline updates, or close with final messaging.</li>
+                    <li>Leverage distribution lists for consistent, audited communications.</li>
+                  </ol>
+                </div>
+              </div>
             </div>
           </div>
         )}
