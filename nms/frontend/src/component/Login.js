@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../assets/Login.css';
 
-function Login({ legacyBaseUrl }) {
+function Login({ apiBaseUrl, legacyBaseUrl }) {
   const navigate = useNavigate();
   const pollingRef = useRef(null);
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,7 @@ function Login({ legacyBaseUrl }) {
     pollingRef.current = setInterval(async () => {
       attempts += 1;
       try {
-        const res = await fetch(`${legacyBaseUrl}/azure-login/status/`, {
+        const res = await fetch(`${apiBaseUrl}/azure-login/status/`, {
           credentials: 'include',
         });
         const data = await res.json();
@@ -43,7 +43,9 @@ function Login({ legacyBaseUrl }) {
   const handleSSOLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${legacyBaseUrl}/azure-login/`);
+      const response = await fetch(`${apiBaseUrl}/azure-login/`, {
+        credentials: 'include',
+      });
       const data = await response.json();
 
       if (data.login_url) {
