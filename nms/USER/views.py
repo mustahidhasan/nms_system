@@ -12,6 +12,8 @@ from USER.models import UserActivity, UserProfile, UserRole, get_user_role
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
+RECENT_LOGIN_DUPLICATE_WINDOW = timedelta(seconds=5)
+SESSION_ACTIVITY_KEY = "active_login_activity_id"
 
 def login_view(request):
     return JsonResponse({"message": "Render login page here (SSO button logic handled in frontend)"})
@@ -68,25 +70,37 @@ def azure_callback(request):
         if created:
             profile.set_role(UserRole.USER, manual=False)
 
-        # Close any lingering active sessions before creating a new login record
+        now_ts = now()
+        duplicate_session = None
         open_sessions = UserActivity.objects.filter(
             user=user,
             activity_type='login',
-            session_status=True
-        )
-        now_ts = now()
+            session_status=True,
+        ).order_by('-timestamp')
         for session in open_sessions:
+            if (
+                duplicate_session is None
+                and (now_ts - session.timestamp) <= RECENT_LOGIN_DUPLICATE_WINDOW
+            ):
+                duplicate_session = session
+                continue
             session.duration = (now_ts - session.timestamp).total_seconds()
             session.session_status = False
             session.save(update_fields=['duration', 'session_status'])
 
         login(request, user)
 
-        UserActivity.objects.create(
+        if duplicate_session is not None:
+            request.session[SESSION_ACTIVITY_KEY] = duplicate_session.id
+            safe_redirect = next_url if next_url.startswith('/') else '/dashboard'
+            return redirect(f"{settings.FRONTEND_URL}{safe_redirect}")
+
+        new_activity = UserActivity.objects.create(
             user=user,
             activity_type='login',
             session_status=True,
         )
+        request.session[SESSION_ACTIVITY_KEY] = new_activity.id
 
         safe_redirect = next_url if next_url.startswith('/') else '/dashboard'
         return redirect(f"{settings.FRONTEND_URL}{safe_redirect}")
@@ -103,11 +117,20 @@ def azure_logout(request):
     user = request.user
 
     try:
-        last_login_activity = UserActivity.objects.filter(
-            user=user,
-            activity_type='login',
-            session_status=True
-        ).latest('timestamp')
+        activity_id = request.session.pop(SESSION_ACTIVITY_KEY, None)
+        if activity_id:
+            last_login_activity = UserActivity.objects.get(
+                id=activity_id,
+                user=user,
+                activity_type='login',
+                session_status=True,
+            )
+        else:
+            last_login_activity = UserActivity.objects.filter(
+                user=user,
+                activity_type='login',
+                session_status=True
+            ).latest('timestamp')
 
         duration_seconds = (now() - last_login_activity.timestamp).total_seconds()
         last_login_activity.session_status = False
