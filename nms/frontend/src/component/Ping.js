@@ -152,6 +152,49 @@ function Ping({ apiBaseUrl, setAuth }) {
     setOperations(newOps);
   };
 
+  const escapeHtml = (value) =>
+    String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  const buildEmailTableHtml = () => {
+    if (!results.length) {
+      return '<p>No network operations were executed.</p>';
+    }
+    const tableRows = results
+      .map(
+        ({ operation, result }) => `
+        <tr>
+          <td style="border:1px solid #d1d5db; padding:8px; font-weight:600;">${escapeHtml(operation)}</td>
+          <td style="border:1px solid #d1d5db; padding:8px;">
+            <pre style="margin:0; white-space:pre-wrap; font-family:SFMono-Regular,Menlo,monospace;">${escapeHtml(
+              result
+            )}</pre>
+          </td>
+        </tr>`
+      )
+      .join('');
+    return `
+      <div style="font-family:Arial,Helvetica,sans-serif; color:#0f172a;">
+        <h2 style="margin-bottom:12px;">Network Operations Results</h2>
+        <table style="border-collapse:collapse; width:100%; font-size:14px;">
+          <thead>
+            <tr>
+              <th style="border:1px solid #d1d5db; background:#0f172a; color:#fff; text-align:left; padding:8px;">Operation</th>
+              <th style="border:1px solid #d1d5db; background:#0f172a; color:#fff; text-align:left; padding:8px;">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  };
+
   const isSelectAllChecked = allOps
     .filter((op) => op !== 'snmp_walk')
     .every((op) => operations[op]);

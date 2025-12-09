@@ -14,6 +14,7 @@ import logging
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.utils.html import strip_tags
+from django.utils.html import strip_tags
 # Set up logging
 logger = logging.getLogger(__name__)
 import asyncio
@@ -701,7 +702,9 @@ def send_email(request):
         email_list = data.get('email_list', [])
         email_body = data.get('email_body', '')
         email_html = data.get('email_html', '')
+        email_html = data.get('email_html', '')
 
+        if not email_list or (not email_body and not email_html):
         if not email_list or (not email_body and not email_html):
             return JsonResponse({'success': False, 'message': 'Invalid input'}, status=400)
 
@@ -713,8 +716,10 @@ def send_email(request):
         send_mail(
             subject="Results from Web Page",
             message=plain_message or "Network operations results attached.",
+            message=plain_message or "Network operations results attached.",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=email_list,
+            html_message=html_message,
             html_message=html_message,
         )
 
