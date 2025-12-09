@@ -22,7 +22,7 @@ if [ "$ENV" = "prod" ]; then
   echo "Building Production Environment..."
   ENV_FILE_BE=".env.prod.be"
   ENV_FILE_FE=".env.prod.fe"
-  HOST_IP="3.90.164.200"
+  HOST_IP="18.212.236.236"
   COMPOSE_FILE="docker-compose.prod.yml"
 
   # Generate self-signed SSL certs if they don't exist
@@ -62,6 +62,10 @@ echo "Building backend container with $ENV_FILE_BE..."
 echo "Building frontend container with $ENV_FILE_FE..."
 "${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" build frontend \
   --build-arg ENV_FILE="$ENV_FILE_FE"
+
+# Reset the schema, run migrations from scratch, and create the default admin user.
+echo "Resetting database schema and bootstrapping admin credentials..."
+"${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" run --rm backend python manage.py reset_and_bootstrap
 
 echo "Starting all containers..."
 "${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" up -d

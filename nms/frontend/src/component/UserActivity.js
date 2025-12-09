@@ -3,6 +3,17 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // import useNavigate
 import '../assets/UserActivity.css';
 
+const formatDateTimeIST = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Kolkata',
+  }).format(date);
+};
+
 function UserActivity({ apiBaseUrl }) {
   const navigate = useNavigate(); // initialize navigate
   const [loading, setLoading] = useState(true);
@@ -72,7 +83,7 @@ function UserActivity({ apiBaseUrl }) {
               <td>{log.user_id}</td>
               <td>{log.email}</td>
               <td>{log.activity_type}</td>
-              <td>{new Date(log.timestamp).toLocaleString()}</td>
+              <td>{formatDateTimeIST(log.timestamp)}</td>
               <td>{log.duration}</td>
               <td>{log.session_status}</td>
             </tr>

@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../assets/Ping.css';
-import UserActivity from './UserActivity';
 
-function Ping({ apiBaseUrl }) {
+function Ping({ apiBaseUrl, setAuth }) {
   const navigate = useNavigate();
   const allOps = [
     'enable_ping',
@@ -27,9 +26,9 @@ function Ping({ apiBaseUrl }) {
   const [snmpVersion, setSnmpVersion] = useState('2c');
   const [showAbout, setShowAbout] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
-  const [showUserActivity, setShowUserActivity] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState(null);
+  const [lastRunAt, setLastRunAt] = useState(null);
 
 
   useEffect(() => {
@@ -75,6 +74,10 @@ function Ping({ apiBaseUrl }) {
       }
 
       if (response.ok) {
+        localStorage.removeItem('nmsAuth');
+        if (typeof setAuth === 'function') {
+          setAuth(null);
+        }
         navigate('/');
       } else {
         console.error('Logout failed:', data.message || 'Unknown error');
@@ -82,6 +85,37 @@ function Ping({ apiBaseUrl }) {
     } catch (error) {
       console.error('Logout error:', error);
     }finally{
+      setLoading(false);
+    }
+  };
+
+  const handleServiceCommunications = async () => {
+    try {
+      setLoading(true);
+      const csrfToken = getCookie('csrftoken');
+      const response = await fetch(`${apiBaseUrl}/api/auth/session-login/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || 'Unable to open Service Communications.');
+      }
+      localStorage.setItem('nmsAuth', JSON.stringify(data));
+      if (typeof setAuth === 'function') {
+        setAuth(data);
+      }
+      setShowSettingsDropdown(false);
+      navigate('/service-communications');
+    } catch (error) {
+      console.error('Service Communications error:', error);
+      alert(error.message || 'Failed to load Service Communications.');
+    } finally {
       setLoading(false);
     }
   };
@@ -115,49 +149,6 @@ function Ping({ apiBaseUrl }) {
       newOps[op] = op === 'snmp_walk' ? false : !allMajorSelected;
     });
     setOperations(newOps);
-  };
-
-  const escapeHtml = (value) =>
-    String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
-  const buildEmailTableHtml = () => {
-    if (!results.length) {
-      return '<p>No network operations were executed.</p>';
-    }
-    const tableRows = results
-      .map(
-        ({ operation, result }) => `
-        <tr>
-          <td style="border:1px solid #d1d5db; padding:8px; font-weight:600;">${escapeHtml(operation)}</td>
-          <td style="border:1px solid #d1d5db; padding:8px;">
-            <pre style="margin:0; white-space:pre-wrap; font-family:SFMono-Regular,Menlo,monospace;">${escapeHtml(
-              result
-            )}</pre>
-          </td>
-        </tr>`
-      )
-      .join('');
-    return `
-      <div style="font-family:Arial,Helvetica,sans-serif; color:#0f172a;">
-        <h2 style="margin-bottom:12px;">Network Operations Results</h2>
-        <table style="border-collapse:collapse; width:100%; font-size:14px;">
-          <thead>
-            <tr>
-              <th style="border:1px solid #d1d5db; background:#0f172a; color:#fff; text-align:left; padding:8px;">Operation</th>
-              <th style="border:1px solid #d1d5db; background:#0f172a; color:#fff; text-align:left; padding:8px;">Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tableRows}
-          </tbody>
-        </table>
-      </div>
-    `;
   };
 
   const isSelectAllChecked = allOps
@@ -215,6 +206,7 @@ function Ping({ apiBaseUrl }) {
         console.log(data);
         if (data.success) {
         setResults(data.results);
+        setLastRunAt(new Date());
         } else {
         alert(data.error || 'Error processing the request.');
         }
@@ -225,6 +217,49 @@ function Ping({ apiBaseUrl }) {
     }
     };
 
+
+  const escapeHtml = (value) =>
+    String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  const buildEmailTableHtml = () => {
+    if (!results.length) {
+      return '<p>No network operations were executed.</p>';
+    }
+    const tableRows = results
+      .map(
+        ({ operation, result }) => `
+        <tr>
+          <td style="border:1px solid #d1d5db; padding:8px; font-weight:600;">${escapeHtml(operation)}</td>
+          <td style="border:1px solid #d1d5db; padding:8px;">
+            <pre style="margin:0; white-space:pre-wrap; font-family:SFMono-Regular,Menlo,monospace;">${escapeHtml(
+              result
+            )}</pre>
+          </td>
+        </tr>`
+      )
+      .join('');
+    return `
+      <div style="font-family:Arial,Helvetica,sans-serif; color:#0f172a;">
+        <h2 style="margin-bottom:12px;">Network Operations Results</h2>
+        <table style="border-collapse:collapse; width:100%; font-size:14px;">
+          <thead>
+            <tr>
+              <th style="border:1px solid #d1d5db; background:#0f172a; color:#fff; text-align:left; padding:8px;">Operation</th>
+              <th style="border:1px solid #d1d5db; background:#0f172a; color:#fff; text-align:left; padding:8px;">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  };
 
   const handleSendEmail = async () => {
     const emailArray = emailList
@@ -287,6 +322,8 @@ function Ping({ apiBaseUrl }) {
     sessionStorage.removeItem('ip_address');
     setEmailStatus(null);
   };
+
+  const activeOperationCount = Object.values(operations).filter(Boolean).length;
 
   const renderSNMPFields = () => {
     if (!showSnmpFields) return null;
@@ -352,10 +389,15 @@ function Ping({ apiBaseUrl }) {
             <span className="settings-icon" onClick={() => setShowSettingsDropdown((prev) => !prev)}>⚙️</span>
             {showSettingsDropdown && (
               <div className="settings-dropdown">
-                <div onClick={() => {
-                  navigate('/user-activity');
-                  setShowSettingsDropdown(false);
-                }}>👤 User</div>
+                <div
+                  onClick={() => {
+                    navigate('/user-activity');
+                    setShowSettingsDropdown(false);
+                  }}
+                >
+                  👤 User
+                </div>
+                <div onClick={handleServiceCommunications}>🛰️ Service Communications</div>
               </div>
             )}
           </div>
@@ -421,85 +463,149 @@ function Ping({ apiBaseUrl }) {
         )}
 
         <main className="main-content">
-          <form onSubmit={handleSubmit}>
-            <div className="input-section">
-              <input
-                name="start_ip"
-                type="text"
-                value={startIp}
-                onChange={(e) => setStartIp(e.target.value)}
-                placeholder="Enter Your IP Address"
-                required
-              />
-              <button type="submit">Submit</button>
-              <button  style={{background:"red"}} type="button" onClick={clearForm}>
-                Clear
+          <section className="panel-card hero-card">
+            <div className="hero-text">
+              <h2>Network Operations Center</h2>
+              <p>
+                Execute diagnostics, observe telemetry, and share updates without leaving this dashboard.
+              </p>
+              <div className="action-toolbar">
+                <button type="button" className="ghost-button" onClick={() => setShowAbout(true)}>
+                  ℹ️ Quick tour
+                </button>
+              </div>
+            </div>
+            <div className="hero-stats">
+              <div className="stat-chip">
+                <span className="stat-label">Selected Ops</span>
+                <strong>{activeOperationCount}</strong>
+              </div>
+              <div className="stat-chip">
+                <span className="stat-label">Results</span>
+                <strong>{results.length}</strong>
+              </div>
+              <div className="stat-chip">
+                <span className="stat-label">Last Run</span>
+                <strong>{lastRunAt ? new Date(lastRunAt).toLocaleTimeString() : '—'}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel-card action-card">
+            <form onSubmit={handleSubmit}>
+              <div className="input-section">
+                <input
+                  className="ip-input"
+                  name="start_ip"
+                  type="text"
+                  value={startIp}
+                  onChange={(e) => setStartIp(e.target.value)}
+                  placeholder="Enter IPs / ranges / hostnames"
+                  required
+                />
+                <button type="submit">Run Diagnostics</button>
+                <button className="danger-outline" type="button" onClick={clearForm}>
+                  Clear
+                </button>
+              </div>
+            </form>
+            <div className="action-buttons">
+              <button type="button" onClick={handleSelectAll} disabled={operations.snmp_walk}>
+                {isSelectAllChecked ? 'Deselect All' : 'Select All'}
+              </button>
+              <button type="button" onClick={() => setSidebarOpen((prev) => !prev)}>
+                {sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+              </button>
+              <button type="button" onClick={downloadCSV}>
+                Download CSV
               </button>
             </div>
-          </form>
+          </section>
 
-          {results.length > 0 && (
-            <section className="results-section">
-              <h3>Results</h3>
-              <div className="email-actions">
-                <input
-                  type="text"
-                  name="email_list"
-                  placeholder="Email addresses (comma separated)"
-                  value={emailList}
-                  onChange={(e) => setEmailList(e.target.value)}
-                />
-                <button onClick={handleSendEmail}>Send Email</button>
-                <button onClick={downloadCSV}>Download CSV</button>
+          <section className="panel-card results-card">
+            <div className="results-section">
+              <div className="results-header">
+                <div>
+                  <h3>Results</h3>
+                  <p className="results-subtitle">
+                    {results.length
+                      ? 'Diagnostics are listed chronologically.'
+                      : 'Run diagnostics to populate this feed.'}
+                  </p>
+                </div>
+                <div className="email-actions">
+                  <input
+                    type="text"
+                    name="email_list"
+                    placeholder="Email addresses (comma separated)"
+                    value={emailList}
+                    onChange={(e) => setEmailList(e.target.value)}
+                  />
+                  <button type="button" onClick={handleSendEmail}>
+                    Send Email
+                  </button>
+                </div>
               </div>
               {emailStatus && (
                 <p className={`email-status email-status-${emailStatus.type}`}>{emailStatus.message}</p>
               )}
-
-              <table className="result-table">
-                <thead>
-                  <tr>
-                    <th>Operation</th>
-                    <th>Result</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map(({ operation, result }, i) => (
-                    <tr key={i}>
-                      <td>{operation}</td>
-                      <td>
-                        <pre>{result}</pre>
-                      </td>
+              {results.length ? (
+                <table className="result-table">
+                  <thead>
+                    <tr>
+                      <th>Operation</th>
+                      <th>Result</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
+                  </thead>
+                  <tbody>
+                    {results.map(({ operation, result }, i) => (
+                      <tr key={i}>
+                        <td>{operation}</td>
+                        <td>
+                          <pre>{result}</pre>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="empty-results">
+                  <p>No diagnostics yet. Select an operation and run your first test.</p>
+                </div>
+              )}
+            </div>
+          </section>
         </main>
 
         {showAbout && (
           <div className="about-popup">
             <div className="popup-overlay" onClick={() => setShowAbout(false)}></div>
-            <div className="popup-content">
+            <div className="popup-content tour-panel">
               <button className="close-btn" onClick={() => setShowAbout(false)}>✖</button>
-              <iframe
-                src="/about.pdf"
-                title="About PDF"
-                width="100%"
-                height="500px"
-                frameBorder="0"
-              />
-            </div>
-          </div>
-        )}
-
-        {showUserActivity && (
-          <div className="user-activity-modal">
-            <div className="popup-overlay" onClick={() => setShowUserActivity(false)}></div>
-            <div className="popup-content">
-              <button className="close-btn" onClick={() => setShowUserActivity(false)}>✖</button>
-              <UserActivity />
+              <h3>About this workspace</h3>
+              <p>
+                Network Operations collects diagnostics (ping, traceroute, DNS, SNMP, MTR) and lets you
+                notify distribution lists instantly. Service Communications manages teams, incidents, and
+                distribution lists used for messaging stakeholders.
+              </p>
+              <div className="tour-columns">
+                <div>
+                  <h4>Network Operations</h4>
+                  <ol>
+                    <li>Select the checks you need from the sidebar.</li>
+                    <li>Enter IPs, ranges, or hostnames and click Run Diagnostics.</li>
+                    <li>Review results, export CSV, or email stakeholders.</li>
+                  </ol>
+                </div>
+                <div>
+                  <h4>Service Communications</h4>
+                  <ol>
+                    <li>Create or select a team to manage templates/lists.</li>
+                    <li>Open incidents, send timeline updates, or close with final messaging.</li>
+                    <li>Leverage distribution lists for consistent, audited communications.</li>
+                  </ol>
+                </div>
+              </div>
             </div>
           </div>
         )}

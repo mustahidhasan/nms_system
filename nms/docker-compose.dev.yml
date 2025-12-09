@@ -24,11 +24,12 @@ services:
       args:
         ENV_FILE: .env.dev.fe
     container_name: nms-frontend-dev
+    env_file:
+      - ./frontend/.env.dev.fe
     environment:
       - CHOKIDAR_USEPOLLING=true
     volumes:
       - ./frontend:/app
-      - ./frontend/.env.dev.fe:/app/.env
       - /app/node_modules
     ports:
       - "3000:3000"

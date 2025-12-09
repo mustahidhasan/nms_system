@@ -1,26 +1,32 @@
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../assets/Login.css';
-import React, { useState, useEffect, useRef } from 'react';
 
-function Login({ apiBaseUrl }) {
+function Login({ legacyBaseUrl }) {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const pollingRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
 
   const startPollingLoginStatus = () => {
     let attempts = 0;
-    const maxAttempts = 20; // e.g. poll max 20 times (~20 sec)
+    const maxAttempts = 20;
     pollingRef.current = setInterval(async () => {
-      attempts++;
+      attempts += 1;
       try {
-        const res = await fetch(`${apiBaseUrl}/azure-login/status/`, {
+        const res = await fetch(`${legacyBaseUrl}/azure-login/status/`, {
           credentials: 'include',
         });
         const data = await res.json();
         if (data.success) {
           clearInterval(pollingRef.current);
           setLoading(false);
-          navigate('/dashboard');
+          navigate('/diagnostics');
         } else if (attempts >= maxAttempts) {
           clearInterval(pollingRef.current);
           setLoading(false);
@@ -31,24 +37,21 @@ function Login({ apiBaseUrl }) {
         setLoading(false);
         alert('Error checking login status.');
       }
-    }, 1000); // poll every 1 second
+    }, 1000);
   };
 
   const handleSSOLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${apiBaseUrl}/azure-login/`);
+      const response = await fetch(`${legacyBaseUrl}/azure-login/`);
       const data = await response.json();
 
       if (data.login_url) {
-        // redirect to Azure login page
         window.location.href = data.login_url;
       } else if (data.success) {
-        // login already done
         setLoading(false);
-        navigate('/dashboard');
+        navigate('/diagnostics');
       } else {
-        // no immediate success or redirect - start polling
         startPollingLoginStatus();
       }
     } catch (error) {
@@ -57,13 +60,6 @@ function Login({ apiBaseUrl }) {
       alert('Login failed.');
     }
   };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
 
   return (
     <div className="login-container">
