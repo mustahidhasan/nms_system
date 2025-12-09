@@ -702,13 +702,11 @@ def send_email(request):
         email_list = data.get('email_list', [])
         email_body = data.get('email_body', '')
         email_html = data.get('email_html', '')
-        email_html = data.get('email_html', '')
 
-        if not email_list or (not email_body and not email_html):
         if not email_list or (not email_body and not email_html):
             return JsonResponse({'success': False, 'message': 'Invalid input'}, status=400)
 
-        html_message = email_html if isinstance(email_html, str) and email_html.strip() else None
+        html_message = email_html.strip() if isinstance(email_html, str) and email_html.strip() else None
         plain_message = email_body.strip() if isinstance(email_body, str) else ''
         if not plain_message and html_message:
             plain_message = strip_tags(html_message)
@@ -716,10 +714,8 @@ def send_email(request):
         send_mail(
             subject="Results from Web Page",
             message=plain_message or "Network operations results attached.",
-            message=plain_message or "Network operations results attached.",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=email_list,
-            html_message=html_message,
             html_message=html_message,
         )
 
