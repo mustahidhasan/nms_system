@@ -63,9 +63,9 @@ echo "Building frontend container with $ENV_FILE_FE..."
 "${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" build frontend \
   --build-arg ENV_FILE="$ENV_FILE_FE"
 
-# Apply database migrations before starting the stack to keep the schema up to date.
-echo "Applying database migrations..."
-"${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" run --rm backend python manage.py migrate --noinput
+# Reset the schema, run migrations from scratch, and create the default admin user.
+echo "Resetting database schema and bootstrapping admin credentials..."
+"${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" run --rm backend python manage.py reset_and_bootstrap
 
 echo "Starting all containers..."
 "${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" up -d
