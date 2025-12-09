@@ -345,6 +345,19 @@
   z-index: 1;
 }
 
+.service-communications .form-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.service-communications .form-actions button + button {
+  background: transparent;
+  border: 1px dashed var(--sc-border);
+  color: var(--sc-green);
+}
+
 @media (max-width: 640px) {
   .service-communications form.sc-form {
     padding: 1.25rem;
@@ -791,6 +804,31 @@
   overflow-wrap: anywhere;
 }
 
+.list-item-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.list-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.list-actions button {
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  border-radius: 999px;
+  padding: 0.2rem 0.85rem;
+  cursor: pointer;
+}
+
+.list-actions button.danger {
+  border-color: #f8c7c7;
+  color: #b91c1c;
+}
+
 .service-communications .form-hint button {
   color: var(--sc-green);
 }
@@ -826,4 +864,18 @@
 
 .backdrop {
   background: rgba(28, 64, 29, 0.4);
+}
+
+.service-communications .toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--sc-green);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  box-shadow: 0 20px 40px rgba(20, 64, 29, 0.4);
+  font-weight: 600;
+  z-index: 120;
 }

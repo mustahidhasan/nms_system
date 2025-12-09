@@ -2,7 +2,12 @@ import re
 
 from django.contrib.auth import get_user_model
 
-from USER.models import UserRole, get_user_role, user_is_global_team_admin
+from USER.models import (
+    UserRole,
+    get_user_role,
+    user_is_global_team_admin,
+    user_is_system_admin,
+)
 from rest_framework import serializers
 from rest_framework.fields import empty
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -16,6 +21,7 @@ from .models import (
     MessageAttachment,
 )
 from .constants import ANNOUNCEMENT_TEMPLATES
+from .permissions import user_can_manage_team
 
 User = get_user_model()
 
@@ -81,6 +87,9 @@ class TeamMembershipSerializer(serializers.ModelSerializer):
 
 class TeamSerializer(serializers.ModelSerializer):
     membership_role = serializers.SerializerMethodField()
+    created_by = serializers.IntegerField(source="created_by_id", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
 
     class Meta:
         model = Team
@@ -92,8 +101,19 @@ class TeamSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "membership_role",
+            "created_by",
+            "created_by_name",
+            "can_manage",
         ]
-        read_only_fields = ["slug", "created_at", "updated_at", "membership_role"]
+        read_only_fields = [
+            "slug",
+            "created_at",
+            "updated_at",
+            "membership_role",
+            "created_by",
+            "created_by_name",
+            "can_manage",
+        ]
 
     def get_membership_role(self, obj):
         request = self.context.get("request")
@@ -104,6 +124,26 @@ class TeamSerializer(serializers.ModelSerializer):
             return TeamMembership.Role.TEAM_ADMIN
         membership = obj.memberships.filter(user=user).first()
         return membership.role if membership else None
+
+    def get_can_manage(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated:
+            return False
+        if user_is_system_admin(user):
+            return True
+        if obj.created_by_id and obj.created_by_id == user.id:
+            return True
+        return user_can_manage_team(user, obj)
+
+    def get_created_by_name(self, obj):
+        creator = getattr(obj, "created_by", None)
+        if not creator:
+            return None
+        full_name = creator.get_full_name()
+        if full_name:
+            return full_name
+        return creator.email or getattr(creator, "username", None)
 
 
 class DistributionListEntrySerializer(serializers.ModelSerializer):
@@ -116,6 +156,9 @@ class DistributionListEntrySerializer(serializers.ModelSerializer):
 class DistributionListSerializer(serializers.ModelSerializer):
     entries = DistributionListEntrySerializer(many=True, required=False)
     scope = serializers.CharField(read_only=True)
+    created_by = serializers.IntegerField(source="created_by_id", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
 
     class Meta:
         model = DistributionList
@@ -128,8 +171,19 @@ class DistributionListSerializer(serializers.ModelSerializer):
             "entries",
             "created_at",
             "updated_at",
+            "created_by",
+            "created_by_name",
+            "can_manage",
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "scope"]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "scope",
+            "created_by",
+            "created_by_name",
+            "can_manage",
+        ]
 
     def create(self, validated_data):
         entries = validated_data.pop("entries", [])
@@ -159,6 +213,28 @@ class DistributionListSerializer(serializers.ModelSerializer):
                     **entry_data,
                 )
         return instance
+
+    def get_can_manage(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated:
+            return False
+        if user_is_system_admin(user):
+            return True
+        if obj.created_by_id and obj.created_by_id == user.id:
+            return True
+        if obj.team:
+            return user_can_manage_team(user, obj.team)
+        return False
+
+    def get_created_by_name(self, obj):
+        creator = getattr(obj, "created_by", None)
+        if not creator:
+            return None
+        full_name = creator.get_full_name()
+        if full_name:
+            return full_name
+        return creator.email or getattr(creator, "username", None)
 
 
 class MessageAttachmentSerializer(serializers.ModelSerializer):

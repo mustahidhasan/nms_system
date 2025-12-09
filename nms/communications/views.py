@@ -75,28 +75,37 @@ class TeamViewSet(viewsets.ModelViewSet):
         qs = Team.objects.all().prefetch_related("memberships")
         if user_is_global_team_admin(user):
             return qs
-        return qs.filter(memberships__user=user).distinct()
+        return qs.filter(Q(memberships__user=user) | Q(created_by=user)).distinct()
 
     def perform_create(self, serializer):
         user = self.request.user
-        if not user_is_system_admin(user):
-            raise PermissionDenied("Only system administrators can create teams.")
         team = serializer.save(created_by=user)
-        TeamMembership.objects.get_or_create(
-            team=team, user=user, defaults={"role": TeamMembership.Role.TEAM_ADMIN}
+        membership, created = TeamMembership.objects.get_or_create(
+            team=team,
+            user=user,
+            defaults={"role": TeamMembership.Role.TEAM_ADMIN},
         )
+        if not created and membership.role != TeamMembership.Role.TEAM_ADMIN:
+            membership.role = TeamMembership.Role.TEAM_ADMIN
+            membership.save(update_fields=["role"])
 
     def perform_update(self, serializer):
-        user = self.request.user
-        if not user_is_system_admin(user):
-            raise PermissionDenied("Only system administrators can update teams.")
+        team = serializer.instance
+        self._ensure_team_manager(self.request.user, team)
         serializer.save()
 
     def perform_destroy(self, instance):
-        user = self.request.user
-        if not user_is_system_admin(user):
-            raise PermissionDenied("Only system administrators can delete teams.")
+        self._ensure_team_manager(self.request.user, instance)
         instance.delete()
+
+    def _ensure_team_manager(self, user, team):
+        if user_is_system_admin(user):
+            return
+        if team.created_by_id == user.id:
+            return
+        if user_can_manage_team(user, team):
+            return
+        raise PermissionDenied("You do not have permission to modify this team.")
 
 
 class DistributionListViewSet(viewsets.ModelViewSet):
@@ -114,7 +123,9 @@ class DistributionListViewSet(viewsets.ModelViewSet):
                 return qs.filter(team_id=team_id)
             return qs
 
-        qs = qs.filter(Q(team__memberships__user=user) | Q(team__isnull=True)).distinct()
+        qs = qs.filter(
+            Q(team__memberships__user=user) | Q(team__isnull=True) | Q(created_by=user)
+        ).distinct()
         if team_id:
             if team_id == "global":
                 return qs.filter(team__isnull=True)
@@ -133,21 +144,24 @@ class DistributionListViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         distribution_list = serializer.instance
         user = self.request.user
-        team = distribution_list.team
-        if team is None and not user_is_system_admin(user):
-            raise PermissionDenied("Only system administrators can modify global lists.")
-        if team and not user_can_manage_team(user, team):
-            raise PermissionDenied("Only team admins can modify this list.")
+        if not self._user_can_manage_list(user, distribution_list):
+            raise PermissionDenied("You do not have permission to modify this list.")
         serializer.save()
 
     def perform_destroy(self, instance):
-        user = self.request.user
-        team = instance.team
-        if team is None and not user_is_system_admin(user):
-            raise PermissionDenied("Only system administrators can delete global lists.")
-        if team and not user_can_manage_team(user, team):
-            raise PermissionDenied("Only team admins can delete this list.")
+        if not self._user_can_manage_list(self.request.user, instance):
+            raise PermissionDenied("You do not have permission to delete this list.")
         instance.delete()
+
+    def _user_can_manage_list(self, user, distribution_list):
+        if user_is_system_admin(user):
+            return True
+        if distribution_list.created_by_id == user.id:
+            return True
+        team = distribution_list.team
+        if team and user_can_manage_team(user, team):
+            return True
+        return False
 
 
 class IncidentViewSet(viewsets.ModelViewSet):

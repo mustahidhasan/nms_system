@@ -128,6 +128,11 @@ const defaultListForm = {
   scope: 'team',
 };
 
+const defaultTeamForm = {
+  name: '',
+  description: '',
+};
+
 const defaultCloseForm = {
   subject: '',
   body: '',
@@ -148,14 +153,20 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [messageForm, setMessageForm] = useState(() => buildDefaultMessageForm(auth));
   const [messageFiles, setMessageFiles] = useState([]);
   const [listForm, setListForm] = useState(defaultListForm);
+  const [teamForm, setTeamForm] = useState(defaultTeamForm);
   const [closeForm, setCloseForm] = useState(defaultCloseForm);
+  const [editingTeamId, setEditingTeamId] = useState(null);
+  const [editingListId, setEditingListId] = useState(null);
+  const [editingListTeamId, setEditingListTeamId] = useState(null);
   const [summary, setSummary] = useState({ open_incident_count: 0, recent_messages: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [activeSubNav, setActiveSubNav] = useState('overview');
+  const [toastMessage, setToastMessage] = useState('');
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
+  const toastTimeoutRef = useRef(null);
 
   const previousIncidentRef = useRef(null);
 
@@ -190,6 +201,28 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     const email = auth?.user?.email || '';
     return email.slice(0, 2).toUpperCase() || 'SC';
   }, [auth]);
+
+  const showToast = useCallback((message) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    if (!message) {
+      setToastMessage('');
+      return;
+    }
+    setToastMessage(message);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage('');
+    }, 3500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSectionNav = useCallback((sectionId) => {
     setActiveSubNav(sectionId);
@@ -362,17 +395,12 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     const bootstrap = async () => {
       try {
         setLoading(true);
-        const [templateData, teamData] = await Promise.all([
-          apiRequest('/templates/'),
-          apiRequest('/teams/'),
-        ]);
+        const [templateData, teamResult] = await Promise.all([apiRequest('/templates/'), loadTeams()]);
         setTemplates(toArray(templateData));
-        const normalizedTeams = toArray(teamData);
-        setTeams(normalizedTeams);
-        const initialTeam = selectedTeam || normalizedTeams[0]?.id || null;
-        if (!selectedTeam && initialTeam) {
-          setSelectedTeam(initialTeam);
-        }
+        const initialTeam =
+          (teamResult && Object.prototype.hasOwnProperty.call(teamResult, 'selected')
+            ? teamResult.selected
+            : null) ?? selectedTeam ?? null;
         await Promise.all([loadIncidents(), loadDistributionLists(initialTeam), loadSummary()]);
         setError('');
       } catch (err) {
@@ -414,6 +442,28 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const loadTeams = async () => {
+    const data = await apiRequest('/teams/');
+    const normalized = toArray(data);
+    setTeams(normalized);
+    let nextTeamSelection = null;
+    setSelectedTeam((prevSelected) => {
+      if (
+        prevSelected !== null &&
+        prevSelected !== undefined &&
+        normalized.some((team) => Number(team.id) === Number(prevSelected))
+      ) {
+        nextTeamSelection = prevSelected;
+        return prevSelected;
+      }
+      const fallback = normalized.length ? Number(normalized[0].id) : null;
+      const sanitized = fallback !== null && !Number.isNaN(fallback) ? fallback : null;
+      nextTeamSelection = sanitized;
+      return sanitized;
+    });
+    return { teams: normalized, selected: nextTeamSelection };
+  };
 
   const loadSummary = async () => {
     const data = await apiRequest('/dashboard/summary/');
@@ -625,6 +675,81 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       setIncidentForm(buildDefaultIncidentForm());
       await loadIncidents();
       await loadSummary();
+      showToast('Incident is created');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTeamSubmit = async (event) => {
+    event.preventDefault();
+    if (!teamForm.name.trim()) {
+      setError('Team name is required.');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError('');
+      const payload = {
+        name: teamForm.name.trim(),
+        description: teamForm.description,
+      };
+      if (editingTeamId) {
+        await apiRequest(`/teams/${editingTeamId}/`, { method: 'PATCH', body: payload });
+        showToast('Team updated');
+      } else {
+        const created = await apiRequest('/teams/', { method: 'POST', body: payload });
+        if (created?.id) {
+          const createdId = Number(created.id);
+          setSelectedTeam(Number.isNaN(createdId) ? created.id : createdId);
+        }
+        showToast('Team created');
+      }
+      setTeamForm(defaultTeamForm);
+      setEditingTeamId(null);
+      await loadTeams();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTeamEdit = (team) => {
+    if (!team) return;
+    setEditingTeamId(team.id);
+    setTeamForm({
+      name: team.name || '',
+      description: team.description || '',
+    });
+    setActiveSubNav('teams');
+  };
+
+  const handleCancelTeamEdit = () => {
+    setEditingTeamId(null);
+    setTeamForm(defaultTeamForm);
+  };
+
+  const handleTeamDelete = async (teamId) => {
+    if (!teamId) return;
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm('Delete this team and its related incidents?');
+      if (!confirmed) {
+        return;
+      }
+    }
+    try {
+      setLoading(true);
+      setError('');
+      await apiRequest(`/teams/${teamId}/`, { method: 'DELETE' });
+      if (editingTeamId === teamId) {
+        setEditingTeamId(null);
+        setTeamForm(defaultTeamForm);
+      }
+      showToast('Team deleted');
+      await loadTeams();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -691,6 +816,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       }));
       setMessageFiles([]);
       await loadMessages(selectedIncident);
+      showToast('Message sent');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -712,32 +838,101 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       });
   };
 
+  const formatEntriesForInput = (entries) => {
+    if (!Array.isArray(entries) || !entries.length) {
+      return '';
+    }
+    return entries
+      .map((entry) => (entry.description ? `${entry.email} | ${entry.description}` : entry.email))
+      .join('\n');
+  };
+
+  const resetListForm = () => {
+    setListForm(defaultListForm);
+    setEditingListId(null);
+    setEditingListTeamId(null);
+  };
+
   const handleDistributionListSubmit = async (event) => {
     event.preventDefault();
     try {
       setLoading(true);
       setError('');
       const entries = parseEntriesFromEmails();
-      if (listForm.scope === 'team' && !selectedTeam) {
+      const targetTeam =
+        editingListId != null
+          ? editingListTeamId
+          : listForm.scope === 'team'
+          ? selectedTeam
+          : null;
+      if (listForm.scope === 'team' && !targetTeam) {
         throw new Error('Select a team before creating a team-scoped list.');
       }
-      const created = await apiRequest('/distribution-lists/', {
-        method: 'POST',
-        body: {
-          name: listForm.name,
-          description: listForm.description,
-          team: listForm.scope === 'team' ? selectedTeam : null,
-          entries,
-        },
-      });
-      setListForm(defaultListForm);
-      await loadDistributionLists();
-      if (created?.id) {
-        setIncidentForm((prev) => ({
-          ...prev,
-          distributionLists: Array.from(new Set([...prev.distributionLists, created.id])),
-        }));
+      const payload = {
+        name: listForm.name,
+        description: listForm.description,
+        team: targetTeam,
+        entries,
+      };
+      if (editingListId) {
+        await apiRequest(`/distribution-lists/${editingListId}/`, {
+          method: 'PATCH',
+          body: payload,
+        });
+        showToast('Distribution list updated');
+      } else {
+        const created = await apiRequest('/distribution-lists/', {
+          method: 'POST',
+          body: payload,
+        });
+        showToast('Distribution list is created');
+        if (created?.id) {
+          const normalizedId = Number.isNaN(Number(created.id)) ? created.id : Number(created.id);
+          setIncidentForm((prev) => ({
+            ...prev,
+            distributionLists: Array.from(new Set([...prev.distributionLists, normalizedId])),
+          }));
+        }
       }
+      resetListForm();
+      await loadDistributionLists();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDistributionListEdit = (list) => {
+    if (!list) return;
+    setEditingListId(list.id);
+    setEditingListTeamId(list.team || null);
+    setListForm({
+      name: list.name || '',
+      description: list.description || '',
+      emails: formatEntriesForInput(list.entries),
+      scope: list.team ? 'team' : 'global',
+    });
+    setActiveSubNav('lists');
+  };
+
+  const handleDistributionListDelete = async (listId) => {
+    if (!listId) return;
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm('Delete this distribution list?');
+      if (!confirmed) {
+        return;
+      }
+    }
+    try {
+      setLoading(true);
+      setError('');
+      await apiRequest(`/distribution-lists/${listId}/`, { method: 'DELETE' });
+      if (editingListId === listId) {
+        resetListForm();
+      }
+      showToast('Distribution list deleted');
+      await loadDistributionLists();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -761,6 +956,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       });
       setCloseForm(defaultCloseForm);
       await Promise.all([loadIncidents(), loadMessages(selectedIncident), loadSummary()]);
+      showToast('Final message sent, incident is closed');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -813,39 +1009,112 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         );
       case 'teams':
         return (
-          <section className="tab-panel">
-            <h2>Teams & Templates</h2>
-            <label className="form-field">
-              <span>Select Team</span>
-              <select
-                value={selectedTeam || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSelectedTeam(value ? Number(value) : null);
-                }}
-              >
-                <option value="" disabled>
-                  Select a team
-                </option>
-                {Array.isArray(teams) &&
-                  teams.map((team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.name}
-                    </option>
+          <div className="tab-stack">
+            <section className="tab-panel">
+              <h2>Teams & Templates</h2>
+              <label className="form-field">
+                <span>Select Team</span>
+                <select
+                  value={selectedTeam || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSelectedTeam(value ? Number(value) : null);
+                  }}
+                >
+                  <option value="" disabled>
+                    Select a team
+                  </option>
+                  {Array.isArray(teams) &&
+                    teams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <div className="template-hints">
+                <h4>Templates</h4>
+                <ul>
+                  {templateOptions.map((template) => (
+                    <li key={template.id}>
+                      <strong>{template.label}</strong>: {template.subject}
+                    </li>
                   ))}
-              </select>
-            </label>
-            <div className="template-hints">
-              <h4>Templates</h4>
-              <ul>
-                {templateOptions.map((template) => (
-                  <li key={template.id}>
-                    <strong>{template.label}</strong>: {template.subject}
-                  </li>
-                ))}
+                </ul>
+              </div>
+            </section>
+            <section className="tab-panel">
+              <h2>{editingTeamId ? 'Edit Team' : 'Create Team'}</h2>
+              <form onSubmit={handleTeamSubmit} className="form-grid sc-form">
+                <label className="form-field">
+                  <span>Team Name</span>
+                  <input
+                    type="text"
+                    placeholder="Operations Squad"
+                    value={teamForm.name}
+                    onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                    required
+                  />
+                </label>
+                <label className="form-field">
+                  <span>Description</span>
+                  <textarea
+                    placeholder="Optional description"
+                    value={teamForm.description}
+                    onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
+                  />
+                </label>
+                <div className="form-actions">
+                  <button type="submit" disabled={loading}>
+                    {editingTeamId ? 'Update Team' : 'Save Team'}
+                  </button>
+                  {editingTeamId && (
+                    <button type="button" onClick={handleCancelTeamEdit}>
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+              <h3>Your Teams</h3>
+              <ul className="list-view">
+                {Array.isArray(teams) && teams.length ? (
+                  teams.map((team) => (
+                    <li key={team.id}>
+                      <div className="list-item-header">
+                        <strong>{team.name}</strong>
+                        {team.can_manage && (
+                          <div className="list-actions">
+                            <button type="button" onClick={() => handleTeamEdit(team)}>
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() => handleTeamDelete(team.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {team.description && <p>{team.description}</p>}
+                      <small>
+                        Role:{' '}
+                        {team.membership_role
+                          ? team.membership_role
+                              .split('_')
+                              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                              .join(' ')
+                          : 'Member'}
+                      </small>
+                    </li>
+                  ))
+                ) : (
+                  <li>No teams available yet.</li>
+                )}
               </ul>
-            </div>
-          </section>
+            </section>
+          </div>
         );
       case 'incident':
         return (
@@ -1247,7 +1516,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         return (
           <div className="tab-stack">
             <section className="tab-panel">
-              <h2>Create Distribution List</h2>
+              <h2>{editingListId ? 'Edit Distribution List' : 'Create Distribution List'}</h2>
               <form onSubmit={handleDistributionListSubmit} className="form-grid sc-form">
                 <label className="form-field">
                   <span>List Name</span>
@@ -1281,6 +1550,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                       type="radio"
                       value="team"
                       checked={listForm.scope === 'team'}
+                      disabled={Boolean(editingListId)}
                       onChange={(e) => setListForm({ ...listForm, scope: e.target.value })}
                     />
                     <span>Team list</span>
@@ -1290,26 +1560,58 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                       type="radio"
                       value="global"
                       checked={listForm.scope === 'global'}
+                      disabled={Boolean(editingListId)}
                       onChange={(e) => setListForm({ ...listForm, scope: e.target.value })}
                     />
                     <span>Global list</span>
                   </label>
                 </div>
-                <button type="submit" disabled={loading}>
-                  Save Distribution List
-                </button>
+                <div className="form-actions">
+                  <button type="submit" disabled={loading}>
+                    {editingListId ? 'Update Distribution List' : 'Save Distribution List'}
+                  </button>
+                  {editingListId && (
+                    <button type="button" onClick={resetListForm}>
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </form>
             </section>
             <section className="tab-panel">
               <h2>Stored Lists</h2>
               <ul className="list-view">
-                {distributionLists.map((list) => (
-                  <li key={list.id}>
-                    <strong>{list.name}</strong> ({list.scope})
-                    <p>{list.description}</p>
-                    <small>{Array.isArray(list.entries) ? list.entries.length : 0} recipients</small>
-                  </li>
-                ))}
+                {distributionLists.length ? (
+                  distributionLists.map((list) => (
+                    <li key={list.id}>
+                      <div className="list-item-header">
+                        <div>
+                          <strong>{list.name}</strong> ({list.scope})
+                        </div>
+                        {list.can_manage && (
+                          <div className="list-actions">
+                            <button type="button" onClick={() => handleDistributionListEdit(list)}>
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() => handleDistributionListDelete(list.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {list.description && <p>{list.description}</p>}
+                      <small>{Array.isArray(list.entries) ? list.entries.length : 0} recipients</small>
+                      <br />
+                      <small>Created by: {list.created_by_name || '—'}</small>
+                    </li>
+                  ))
+                ) : (
+                  <li>No lists available yet.</li>
+                )}
               </ul>
             </section>
           </div>
@@ -1382,6 +1684,12 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       {error && <div className="alert">{error}</div>}
 
       <div className="tab-content">{renderTabContent()}</div>
+
+      {toastMessage && (
+        <div className="toast" role="status" aria-live="polite">
+          {toastMessage}
+        </div>
+      )}
 
       {loading && <div className="backdrop">Working...</div>}
     </div>
