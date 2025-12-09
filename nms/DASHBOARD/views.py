@@ -13,6 +13,7 @@ import json
 import logging
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from django.utils.html import strip_tags
 # Set up logging
 logger = logging.getLogger(__name__)
 import asyncio
@@ -699,15 +700,22 @@ def send_email(request):
         data = json.loads(request.body)
         email_list = data.get('email_list', [])
         email_body = data.get('email_body', '')
+        email_html = data.get('email_html', '')
 
-        if not email_list or not email_body:
+        if not email_list or (not email_body and not email_html):
             return JsonResponse({'success': False, 'message': 'Invalid input'}, status=400)
+
+        html_message = email_html if isinstance(email_html, str) and email_html.strip() else None
+        plain_message = email_body.strip() if isinstance(email_body, str) else ''
+        if not plain_message and html_message:
+            plain_message = strip_tags(html_message)
 
         send_mail(
             subject="Results from Web Page",
-            message=email_body,
+            message=plain_message or "Network operations results attached.",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=email_list,
+            html_message=html_message,
         )
 
         return JsonResponse({'success': True, 'message': 'Email sent successfully!'})
