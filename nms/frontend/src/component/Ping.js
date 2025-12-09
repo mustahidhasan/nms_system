@@ -30,6 +30,7 @@ function Ping({ apiBaseUrl, setAuth }) {
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState(null);
+  const [lastRunAt, setLastRunAt] = useState(null);
 
 
   useEffect(() => {
@@ -207,6 +208,7 @@ function Ping({ apiBaseUrl, setAuth }) {
         console.log(data);
         if (data.success) {
         setResults(data.results);
+        setLastRunAt(new Date());
         } else {
         alert(data.error || 'Error processing the request.');
         }
@@ -322,6 +324,8 @@ function Ping({ apiBaseUrl, setAuth }) {
     sessionStorage.removeItem('ip_address');
     setEmailStatus(null);
   };
+
+  const activeOperationCount = Object.values(operations).filter(Boolean).length;
 
   const renderSNMPFields = () => {
     if (!showSnmpFields) return null;
@@ -461,61 +465,121 @@ function Ping({ apiBaseUrl, setAuth }) {
         )}
 
         <main className="main-content">
-          <form onSubmit={handleSubmit}>
-            <div className="input-section">
-              <input
-                name="start_ip"
-                type="text"
-                value={startIp}
-                onChange={(e) => setStartIp(e.target.value)}
-                placeholder="Enter Your IP Address"
-                required
-              />
-              <button type="submit">Submit</button>
-              <button  style={{background:"red"}} type="button" onClick={clearForm}>
-                Clear
+          <section className="panel-card hero-card">
+            <div className="hero-text">
+              <h2>Network Operations Center</h2>
+              <p>
+                Execute diagnostics, observe telemetry, and share updates without leaving this dashboard.
+              </p>
+              <div className="action-toolbar">
+                <button type="button" className="ghost-button" onClick={() => setShowAbout(true)}>
+                  ℹ️ Quick tour
+                </button>
+                <button type="button" className="ghost-button" onClick={() => setShowUserActivity(true)}>
+                  🕒 Recent activity
+                </button>
+              </div>
+            </div>
+            <div className="hero-stats">
+              <div className="stat-chip">
+                <span className="stat-label">Selected Ops</span>
+                <strong>{activeOperationCount}</strong>
+              </div>
+              <div className="stat-chip">
+                <span className="stat-label">Results</span>
+                <strong>{results.length}</strong>
+              </div>
+              <div className="stat-chip">
+                <span className="stat-label">Last Run</span>
+                <strong>{lastRunAt ? new Date(lastRunAt).toLocaleTimeString() : '—'}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel-card action-card">
+            <form onSubmit={handleSubmit}>
+              <div className="input-section">
+                <input
+                  className="ip-input"
+                  name="start_ip"
+                  type="text"
+                  value={startIp}
+                  onChange={(e) => setStartIp(e.target.value)}
+                  placeholder="Enter IPs / ranges / hostnames"
+                  required
+                />
+                <button type="submit">Run Diagnostics</button>
+                <button className="danger-outline" type="button" onClick={clearForm}>
+                  Clear
+                </button>
+              </div>
+            </form>
+            <div className="action-buttons">
+              <button type="button" onClick={handleSelectAll} disabled={operations.snmp_walk}>
+                {isSelectAllChecked ? 'Deselect All' : 'Select All'}
+              </button>
+              <button type="button" onClick={() => setSidebarOpen((prev) => !prev)}>
+                {sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+              </button>
+              <button type="button" onClick={downloadCSV}>
+                Download CSV
               </button>
             </div>
-          </form>
+          </section>
 
-          {results.length > 0 && (
-            <section className="results-section">
-              <h3>Results</h3>
-              <div className="email-actions">
-                <input
-                  type="text"
-                  name="email_list"
-                  placeholder="Email addresses (comma separated)"
-                  value={emailList}
-                  onChange={(e) => setEmailList(e.target.value)}
-                />
-                <button onClick={handleSendEmail}>Send Email</button>
-                <button onClick={downloadCSV}>Download CSV</button>
+          <section className="panel-card results-card">
+            <div className="results-section">
+              <div className="results-header">
+                <div>
+                  <h3>Results</h3>
+                  <p className="results-subtitle">
+                    {results.length
+                      ? 'Diagnostics are listed chronologically.'
+                      : 'Run diagnostics to populate this feed.'}
+                  </p>
+                </div>
+                <div className="email-actions">
+                  <input
+                    type="text"
+                    name="email_list"
+                    placeholder="Email addresses (comma separated)"
+                    value={emailList}
+                    onChange={(e) => setEmailList(e.target.value)}
+                  />
+                  <button type="button" onClick={handleSendEmail}>
+                    Send Email
+                  </button>
+                </div>
               </div>
               {emailStatus && (
                 <p className={`email-status email-status-${emailStatus.type}`}>{emailStatus.message}</p>
               )}
-
-              <table className="result-table">
-                <thead>
-                  <tr>
-                    <th>Operation</th>
-                    <th>Result</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map(({ operation, result }, i) => (
-                    <tr key={i}>
-                      <td>{operation}</td>
-                      <td>
-                        <pre>{result}</pre>
-                      </td>
+              {results.length ? (
+                <table className="result-table">
+                  <thead>
+                    <tr>
+                      <th>Operation</th>
+                      <th>Result</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
+                  </thead>
+                  <tbody>
+                    {results.map(({ operation, result }, i) => (
+                      <tr key={i}>
+                        <td>{operation}</td>
+                        <td>
+                          <pre>{result}</pre>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="empty-results">
+                  <p>No diagnostics yet. Select an operation and run your first test.</p>
+                </div>
+              )}
+            </div>
+          </section>
         </main>
 
         {showAbout && (

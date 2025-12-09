@@ -22,7 +22,7 @@ if [ "$ENV" = "prod" ]; then
   echo "Building Production Environment..."
   ENV_FILE_BE=".env.prod.be"
   ENV_FILE_FE=".env.prod.fe"
-  HOST_IP="3.90.164.200"
+  HOST_IP="18.212.236.236"
   COMPOSE_FILE="docker-compose.prod.yml"
 
   # Generate self-signed SSL certs if they don't exist
