@@ -24,7 +24,7 @@ if [ "$ENV" = "prod" ]; then
   ENV_FILE_FE=".env.prod.fe"
   HOST_IP="18.212.236.236"
   COMPOSE_FILE="docker-compose.prod.yml"
-  CERT_TARGET_DIR="./certs"
+  CERT_TARGET_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/certs"
   CERT_TARGET_CRT="$CERT_TARGET_DIR/server.crt"
   CERT_TARGET_KEY="$CERT_TARGET_DIR/server.key"
 
