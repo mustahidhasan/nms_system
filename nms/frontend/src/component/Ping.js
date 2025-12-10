@@ -93,7 +93,7 @@ function Ping({ apiBaseUrl, setAuth }) {
     try {
       setLoading(true);
       const csrfToken = getCookie('csrftoken');
-      const response = await fetch(`${apiBaseUrl}/api/auth/session-login/`, {
+      const response = await fetch(`${apiBaseUrl}/auth/session-login/`, {
         method: 'POST',
         credentials: 'include',
         headers: {
