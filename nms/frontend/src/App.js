@@ -56,7 +56,7 @@ function App() {
             />
           }
         />
-        <Route path="/dashboard" element={<Ping apiBaseUrl={baseUrl} setAuth={setAuth} />} />
+        <Route path="/dashboard" element={<Ping apiBaseUrl={apiBaseUrl} setAuth={setAuth} />} />
         <Route
           path="/service-communications"
           element={
@@ -69,7 +69,7 @@ function App() {
         />
         <Route path="/admin/*" element={<AdminRedirect adminBaseUrl={baseUrl} />} />
         <Route path="/diagnostics" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/user-activity" element={<UserActivity apiBaseUrl={baseUrl} />} />
+        <Route path="/user-activity" element={<UserActivity apiBaseUrl={apiBaseUrl} />} />
         <Route path="/oauth2/callback" element={<OAuthCallback apiBaseUrl={baseUrl} />} />
         <Route
           path="*"
