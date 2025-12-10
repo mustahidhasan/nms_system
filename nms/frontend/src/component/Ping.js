@@ -1,6 +1,7 @@
 // src/components/Ping.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { flushSync } from 'react-dom';
 import '../assets/Ping.css';
 
 function Ping({ apiBaseUrl, setAuth }) {
@@ -106,10 +107,12 @@ function Ping({ apiBaseUrl, setAuth }) {
       if (!response.ok) {
         throw new Error(data.detail || 'Unable to open Service Communications.');
       }
-      localStorage.setItem('nmsAuth', JSON.stringify(data));
-      if (typeof setAuth === 'function') {
-        setAuth(data);
-      }
+      flushSync(() => {
+        localStorage.setItem('nmsAuth', JSON.stringify(data));
+        if (typeof setAuth === 'function') {
+          setAuth(data);
+        }
+      });
       setShowSettingsDropdown(false);
       navigate('/service-communications');
     } catch (error) {
