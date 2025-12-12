@@ -1104,14 +1104,12 @@ const parseEntriesFromEmails = (rawInput) => {
   };
 
   const launchIncidentPanel = (panel) => {
-    if (!panel || !selectedIncidentDetails || typeof window === 'undefined') return;
-    const url = new URL(window.location.origin + location.pathname);
-    url.searchParams.set('incident', selectedIncidentDetails.id);
-    url.searchParams.set('panel', panel);
-    const opened = window.open(url.toString(), '_blank', 'noopener,noreferrer');
-    if (!opened) {
-      setActiveIncidentModal(panel);
-    }
+    if (!panel || !selectedIncidentDetails) return;
+    setActiveIncidentModal(panel);
+    const params = new URLSearchParams(location.search || '');
+    params.set('incident', selectedIncidentDetails.id);
+    params.set('panel', panel);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
 
   const scrollToIncidentForm = () => {

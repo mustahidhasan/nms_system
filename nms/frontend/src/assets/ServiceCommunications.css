@@ -907,6 +907,8 @@
   border-radius: 999px;
   padding: 0.2rem 0.85rem;
   cursor: pointer;
+  color: var(--sc-green);
+  font-weight: 600;
 }
 
 .list-actions button.danger {
