@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../App.css';
 import '../assets/ServiceCommunications.css';
 
@@ -9,7 +9,7 @@ const SUB_NAV_SECTIONS = [
   { id: 'overview', label: 'Overview' },
   { id: 'teams', label: 'Teams & Templates' },
   { id: 'incident', label: 'Create Incident' },
-  { id: 'active', label: 'Active Incidents' },
+  { id: 'active', label: 'All Incidents' },
   { id: 'lists', label: 'Distribution Lists' },
 ];
 
@@ -141,6 +141,7 @@ const defaultCloseForm = {
 
 function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = auth?.access;
   const [teams, setTeams] = useState(() => (Array.isArray(auth?.teams) ? auth.teams : []));
   const [selectedTeam, setSelectedTeam] = useState(() => auth?.teams?.[0]?.id || null);
@@ -153,6 +154,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [messageForm, setMessageForm] = useState(() => buildDefaultMessageForm(auth));
   const [messageFiles, setMessageFiles] = useState([]);
   const [listForm, setListForm] = useState(defaultListForm);
+  const [inlineListForm, setInlineListForm] = useState(defaultListForm);
   const [teamForm, setTeamForm] = useState(defaultTeamForm);
   const [closeForm, setCloseForm] = useState(defaultCloseForm);
   const [editingTeamId, setEditingTeamId] = useState(null);
@@ -164,6 +166,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [activeSubNav, setActiveSubNav] = useState('overview');
   const [toastMessage, setToastMessage] = useState('');
+  const [activeIncidentModal, setActiveIncidentModal] = useState(null);
+  const [pendingPanelFromQuery, setPendingPanelFromQuery] = useState(null);
+  const [showInlineListModal, setShowInlineListModal] = useState(false);
+  const [forceTeamFromIncident, setForceTeamFromIncident] = useState(false);
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
   const toastTimeoutRef = useRef(null);
@@ -522,8 +528,8 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   }, [distributionLists, selectedTeam]);
 
   const selectedIncidentDetails = useMemo(
-    () => filteredIncidents.find((incident) => incident.id === selectedIncident),
-    [filteredIncidents, selectedIncident]
+    () => incidents.find((incident) => incident.id === selectedIncident),
+    [incidents, selectedIncident]
   );
 
   useEffect(() => {
@@ -581,6 +587,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   }, [selectedIncident, incidents, auth]);
 
   useEffect(() => {
+    setActiveIncidentModal(null);
+  }, [selectedIncident]);
+
+  useEffect(() => {
     setMessageForm((prev) => {
       const allowedIds = availableLists.map((list) => list.id);
       const filtered = prev.distributionLists.filter((id) => allowedIds.includes(id));
@@ -607,6 +617,46 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       return { ...prev, distributionLists: nextLists };
     });
   }, [availableLists, selectedIncidentDetails]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const incidentParam = params.get('incident');
+    const panelParam = params.get('panel');
+    if (incidentParam) {
+      const parsed = Number(incidentParam);
+      const normalized = Number.isNaN(parsed) ? incidentParam : parsed;
+      setSelectedIncident((prev) => (prev === normalized ? prev : normalized));
+      setActiveSubNav('active');
+      setForceTeamFromIncident(true);
+    }
+    if (panelParam === 'timeline' || panelParam === 'close') {
+      setPendingPanelFromQuery(panelParam);
+    } else {
+      setPendingPanelFromQuery(null);
+    }
+    if (!incidentParam) {
+      setForceTeamFromIncident(false);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!pendingPanelFromQuery) return;
+    if (!selectedIncidentDetails) return;
+    setActiveIncidentModal(pendingPanelFromQuery);
+    setPendingPanelFromQuery(null);
+  }, [pendingPanelFromQuery, selectedIncidentDetails]);
+
+  const selectedIncidentTeam = selectedIncidentDetails?.team;
+
+  useEffect(() => {
+    if (!forceTeamFromIncident) return;
+    if (!selectedIncidentTeam) return;
+    if (selectedTeam === selectedIncidentTeam) {
+      setForceTeamFromIncident(false);
+      return;
+    }
+    setSelectedTeam(selectedIncidentTeam);
+  }, [forceTeamFromIncident, selectedIncidentTeam, selectedTeam]);
 
   const handleIncidentDistributionChange = (event) => {
     const values = Array.from(event.target.selectedOptions).map((option) => Number(option.value));
@@ -816,7 +866,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       }));
       setMessageFiles([]);
       await loadMessages(selectedIncident);
-      showToast('Message sent');
+      showToast('Email sent');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -824,19 +874,19 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     }
   };
 
-  const parseEntriesFromEmails = () => {
-    return listForm.emails
-      .split(/[\n,;]+/)
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .map((item) => {
-        const [address, entryDescription] = item.split('|').map((part) => part.trim());
-        return {
-          email: address,
-          description: entryDescription || '',
-        };
-      });
-  };
+const parseEntriesFromEmails = (rawInput) => {
+  return (rawInput || '')
+    .split(/[\n,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const [address, entryDescription] = item.split('|').map((part) => part.trim());
+      return {
+        email: address,
+        description: entryDescription || '',
+      };
+    });
+};
 
   const formatEntriesForInput = (entries) => {
     if (!Array.isArray(entries) || !entries.length) {
@@ -858,7 +908,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     try {
       setLoading(true);
       setError('');
-      const entries = parseEntriesFromEmails();
+      const entries = parseEntriesFromEmails(listForm.emails);
       const targetTeam =
         editingListId != null
           ? editingListTeamId
@@ -940,6 +990,85 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     }
   };
 
+  const openInlineListModal = () => {
+    setInlineListForm({
+      name: '',
+      description: '',
+      emails: '',
+      scope: selectedTeam ? 'team' : 'global',
+    });
+    setShowInlineListModal(true);
+  };
+
+  const closeInlineListModal = () => {
+    setShowInlineListModal(false);
+    setInlineListForm(defaultListForm);
+  };
+
+  const handleInlineListSubmit = async (event) => {
+    event.preventDefault();
+    if (!inlineListForm.name.trim()) {
+      setError('List name is required.');
+      return;
+    }
+    const entries = parseEntriesFromEmails(inlineListForm.emails);
+    const payload = {
+      name: inlineListForm.name.trim(),
+      description: inlineListForm.description,
+      entries,
+    };
+    if (inlineListForm.scope === 'team') {
+      if (!selectedTeam) {
+        setError('Select a team before creating a team-scoped list.');
+        return;
+      }
+      payload.team = selectedTeam;
+    } else {
+      payload.team = null;
+    }
+    try {
+      setLoading(true);
+      setError('');
+      const created = await apiRequest('/distribution-lists/', {
+        method: 'POST',
+        body: payload,
+      });
+      showToast('Distribution list created');
+      closeInlineListModal();
+      await loadDistributionLists();
+      if (created?.id) {
+        const normalizedId = Number.isNaN(Number(created.id)) ? created.id : Number(created.id);
+        setIncidentForm((prev) => {
+          const nextLists = Array.from(new Set([...(prev.distributionLists || []), normalizedId]));
+          return { ...prev, distributionLists: nextLists };
+        });
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearPanelQuery = useCallback(() => {
+    const params = new URLSearchParams(location.search || '');
+    const hadPanel = params.has('panel');
+    const hadIncident = params.has('incident');
+    if (!hadPanel && !hadIncident) {
+      return;
+    }
+    params.delete('panel');
+    params.delete('incident');
+    const nextSearch = params.toString();
+    navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ''}`, { replace: true });
+  }, [location.pathname, location.search, navigate]);
+
+  const closeIncidentModal = useCallback(() => {
+    setActiveIncidentModal(null);
+    setPendingPanelFromQuery(null);
+    clearPanelQuery();
+  }, [clearPanelQuery]);
+
   const handleCloseIncident = async (event) => {
     event.preventDefault();
     if (!selectedIncident) return;
@@ -957,6 +1086,12 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       setCloseForm(defaultCloseForm);
       await Promise.all([loadIncidents(), loadMessages(selectedIncident), loadSummary()]);
       showToast('Final message sent, incident is closed');
+      const params = new URLSearchParams(location.search || '');
+      const launchedFromClosePanel = params.get('panel') === 'close';
+      closeIncidentModal();
+      if (launchedFromClosePanel && typeof window !== 'undefined' && window.opener) {
+        window.close();
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -964,8 +1099,15 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     }
   };
 
-  const scrollToDistributionListForm = () => {
-    setActiveSubNav('lists');
+  const launchIncidentPanel = (panel) => {
+    if (!panel || !selectedIncidentDetails || typeof window === 'undefined') return;
+    const url = new URL(window.location.origin + location.pathname);
+    url.searchParams.set('incident', selectedIncidentDetails.id);
+    url.searchParams.set('panel', panel);
+    const opened = window.open(url.toString(), '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      setActiveIncidentModal(panel);
+    }
   };
 
   const scrollToIncidentForm = () => {
@@ -1002,7 +1144,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                 Create New Incident
               </button>
               <button type="button" className="sc-action" onClick={scrollToActiveIncidents}>
-                View All Active Incidents
+                View All Incidents
               </button>
             </div>
           </section>
@@ -1229,7 +1371,12 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                 </select>
               </label>
               <label className="form-field">
-                <span>Distribution Lists</span>
+                <div className="field-header">
+                  <span>Distribution Lists</span>
+                  <button type="button" className="text-link" onClick={openInlineListModal}>
+                    + Create Distribution List
+                  </button>
+                </div>
                 <select
                   multiple
                   value={incidentForm.distributionLists.map(String)}
@@ -1244,10 +1391,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                 </select>
                 {availableLists.length === 0 && (
                   <small className="form-hint">
-                    No distribution lists yet.{' '}
-                    <button type="button" onClick={scrollToDistributionListForm} className="text-link">
-                      Create one in the Distribution Lists tab
-                    </button>
+                    No distribution lists yet. Use "Create Distribution List" to add one before saving.
                   </small>
                 )}
               </label>
@@ -1261,7 +1405,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         return (
           <div className="tab-stack">
             <section className="tab-panel">
-              <h2>Active Incidents</h2>
+              <h2>All Incidents</h2>
               <ul className="incident-list">
                 {filteredIncidents.map((incident) => (
                   <li
@@ -1282,7 +1426,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
               </ul>
             </section>
             <section className="tab-panel">
-              <h2>Message Timeline</h2>
+              <h2>Incident Workspace</h2>
               {selectedIncidentDetails ? (
                 <>
                   <div className="incident-details-card">
@@ -1308,201 +1452,21 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
                       <strong>Next Communication:</strong> {formatDateTime(selectedIncidentDetails.next_communication_time)}
                     </p>
                   </div>
-                  <form onSubmit={handleMessageSubmit} className="form-grid sc-form">
-                    <label className="form-field">
-                      <span>Subject</span>
-                      <input
-                        type="text"
-                        placeholder="Subject"
-                        value={messageForm.subject}
-                        onChange={(e) => setMessageForm({ ...messageForm, subject: e.target.value })}
-                        required
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Message Body</span>
-                      <textarea
-                        placeholder="Message body"
-                        value={messageForm.body}
-                        onChange={(e) => setMessageForm({ ...messageForm, body: e.target.value })}
-                        required
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Template</span>
-                      <select
-                        value={messageForm.templateType}
-                        onChange={(e) =>
-                          setMessageForm({ ...messageForm, templateType: e.target.value })
-                        }
-                      >
-                        {templateOptions.map((template) => (
-                          <option key={template.id} value={template.id}>
-                            {template.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="form-field">
-                      <span>Distribution Lists</span>
-                      <select
-                        multiple
-                        value={messageForm.distributionLists.map(String)}
-                        onChange={handleMessageDistributionChange}
-                      >
-                        {availableLists.map((list) => (
-                          <option key={list.id} value={list.id}>
-                            {list.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="form-field">
-                      <span>Point of Contact</span>
-                      <input
-                        type="text"
-                        placeholder="Point of contact"
-                        value={messageForm.pointOfContact}
-                        onChange={(e) =>
-                          setMessageForm({ ...messageForm, pointOfContact: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Override Problem Description</span>
-                      <textarea
-                        placeholder="Optional override"
-                        value={messageForm.problemDescription}
-                        onChange={(e) =>
-                          setMessageForm({ ...messageForm, problemDescription: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Override Workaround</span>
-                      <textarea
-                        placeholder="Optional override"
-                        value={messageForm.workaround}
-                        onChange={(e) =>
-                          setMessageForm({ ...messageForm, workaround: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Override Next Communication</span>
-                      <input
-                        type="datetime-local"
-                        value={messageForm.nextCommunicationTime}
-                        onChange={(e) =>
-                          setMessageForm({ ...messageForm, nextCommunicationTime: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Extra Recipients</span>
-                      <textarea
-                        placeholder="Comma or newline separated emails"
-                        value={messageForm.extraRecipients}
-                        onChange={(e) =>
-                          setMessageForm({ ...messageForm, extraRecipients: e.target.value })
-                        }
-                        rows={2}
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Attachments</span>
-                      <input
-                        type="file"
-                        multiple
-                        onChange={(e) => setMessageFiles(Array.from(e.target.files))}
-                      />
-                    </label>
-                    <button type="submit" disabled={loading}>
-                      Send Message
+                  <div className="incident-action-buttons">
+                    <button type="button" onClick={() => launchIncidentPanel('timeline')}>
+                      Open Email Timeline
                     </button>
-                  </form>
-                  <hr />
-                  <form onSubmit={handleCloseIncident} className="form-grid sc-form">
-                    <h3>Close Incident</h3>
-                    <label className="form-field">
-                      <span>Final Subject</span>
-                      <input
-                        type="text"
-                        placeholder="Final subject"
-                        value={closeForm.subject}
-                        onChange={(e) => setCloseForm({ ...closeForm, subject: e.target.value })}
-                        required
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Final Message Body</span>
-                      <textarea
-                        placeholder="Final message body"
-                        value={closeForm.body}
-                        onChange={(e) => setCloseForm({ ...closeForm, body: e.target.value })}
-                        required
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Distribution List</span>
-                      <select
-                        value={closeForm.distribution_list}
-                        onChange={(e) =>
-                          setCloseForm({ ...closeForm, distribution_list: e.target.value })
-                        }
-                      >
-                        <option value="">Use incident default list</option>
-                        {availableLists.map((list) => (
-                          <option key={list.id} value={list.id}>
-                            {list.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <button type="submit" disabled={loading}>
-                      Close Incident & Notify
+                    <button
+                      type="button"
+                      onClick={() => launchIncidentPanel('close')}
+                      disabled={(selectedIncidentDetails.status || '').toLowerCase() === 'closed'}
+                    >
+                      Close Incident
                     </button>
-                  </form>
-                  <ul className="timeline">
-                    {messages.map((message) => (
-                      <li key={message.id}>
-                        <div className="timeline-header">
-                          <strong>{message.subject}</strong>
-                          <span>{formatDateTime(message.created_at)}</span>
-                        </div>
-                        <p>{message.body}</p>
-                        <div className="timeline-meta">
-                          <small>POC: {message.point_of_contact || '—'}</small>
-                          <small>Next Communication: {formatDateTime(message.next_communication_time)}</small>
-                        </div>
-                        <p>
-                          <strong>Problem:</strong> {message.problem_description || '—'}
-                        </p>
-                        {message.workaround && (
-                          <p>
-                            <strong>Workaround:</strong> {message.workaround}
-                          </p>
-                        )}
-                        <small>
-                          Distribution:{' '}
-                          {(() => {
-                            const listNames = [
-                              ...(message.distribution_lists || []),
-                            ].map((id) => distributionLookup.get(id)?.name || `List ${id}`);
-                            if (!listNames.length && message.distribution_list) {
-                              listNames.push(
-                                distributionLookup.get(message.distribution_list)?.name ||
-                                  `List ${message.distribution_list}`
-                              );
-                            }
-                            return listNames.length ? listNames.join(', ') : '—';
-                          })()}
-                        </small>
-                        <br />
-                        <small>Delivery: {message.delivery_status}</small>
-                      </li>
-                    ))}
-                  </ul>
+                  </div>
+                  <p className="empty-state">
+                    Use the actions above to send an email update or finish the incident workflow.
+                  </p>
                 </>
               ) : (
                 <p className="empty-state">
@@ -1621,6 +1585,308 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     }
   };
 
+  const showTimelineModal = activeIncidentModal === 'timeline' && Boolean(selectedIncidentDetails);
+  const showCloseModal = activeIncidentModal === 'close' && Boolean(selectedIncidentDetails);
+  const showListModal = showInlineListModal;
+
+  const timelineModal = showTimelineModal ? (
+    <div className="sc-modal-overlay" role="dialog" aria-modal="true" onClick={closeIncidentModal}>
+      <div className="sc-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="sc-modal-header">
+          <h3>Email Timeline</h3>
+          <button type="button" className="modal-close" onClick={closeIncidentModal} aria-label="Close timeline">
+            ✖
+          </button>
+        </div>
+        <div className="sc-modal-body">
+          <div className="incident-details-card">
+            <p>
+              <strong>INC:</strong> {selectedIncidentDetails?.inc_number || '—'}
+            </p>
+            <p>
+              <strong>Status:</strong> {selectedIncidentDetails?.status || '—'}
+            </p>
+            <p>
+              <strong>Next Communication:</strong>{' '}
+              {formatDateTime(selectedIncidentDetails?.next_communication_time)}
+            </p>
+          </div>
+          <form onSubmit={handleMessageSubmit} className="form-grid sc-form">
+            <label className="form-field">
+              <span>Subject</span>
+              <input
+                type="text"
+                placeholder="Subject"
+                value={messageForm.subject}
+                onChange={(e) => setMessageForm({ ...messageForm, subject: e.target.value })}
+                required
+              />
+            </label>
+            <label className="form-field">
+              <span>Email Body</span>
+              <textarea
+                placeholder="Email body"
+                value={messageForm.body}
+                onChange={(e) => setMessageForm({ ...messageForm, body: e.target.value })}
+                required
+              />
+            </label>
+            <label className="form-field">
+              <span>Template</span>
+              <select
+                value={messageForm.templateType}
+                onChange={(e) => setMessageForm({ ...messageForm, templateType: e.target.value })}
+              >
+                {templateOptions.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="form-field">
+              <div className="field-header">
+                <span>Distribution Lists</span>
+                <button type="button" className="text-link" onClick={openInlineListModal}>
+                  + Create Distribution List
+                </button>
+              </div>
+              <select
+                multiple
+                value={messageForm.distributionLists.map(String)}
+                onChange={handleMessageDistributionChange}
+              >
+                {availableLists.map((list) => (
+                  <option key={list.id} value={list.id}>
+                    {list.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="form-field">
+              <span>Point of Contact</span>
+              <input
+                type="text"
+                placeholder="Point of contact"
+                value={messageForm.pointOfContact}
+                onChange={(e) => setMessageForm({ ...messageForm, pointOfContact: e.target.value })}
+              />
+            </label>
+            <label className="form-field">
+              <span>Override Problem Description</span>
+              <textarea
+                placeholder="Optional override"
+                value={messageForm.problemDescription}
+                onChange={(e) =>
+                  setMessageForm({ ...messageForm, problemDescription: e.target.value })
+                }
+              />
+            </label>
+            <label className="form-field">
+              <span>Override Workaround</span>
+              <textarea
+                placeholder="Optional override"
+                value={messageForm.workaround}
+                onChange={(e) => setMessageForm({ ...messageForm, workaround: e.target.value })}
+              />
+            </label>
+            <label className="form-field">
+              <span>Override Next Communication</span>
+              <input
+                type="datetime-local"
+                value={messageForm.nextCommunicationTime}
+                onChange={(e) =>
+                  setMessageForm({ ...messageForm, nextCommunicationTime: e.target.value })
+                }
+              />
+            </label>
+            <label className="form-field">
+              <span>Extra Recipients</span>
+              <textarea
+                placeholder="Comma or newline separated emails"
+                value={messageForm.extraRecipients}
+                onChange={(e) => setMessageForm({ ...messageForm, extraRecipients: e.target.value })}
+                rows={2}
+              />
+            </label>
+            <label className="form-field">
+              <span>Attachments</span>
+              <input type="file" multiple onChange={(e) => setMessageFiles(Array.from(e.target.files))} />
+            </label>
+            <button type="submit" disabled={loading}>
+              Send Email
+            </button>
+          </form>
+          <hr />
+          <ul className="timeline">
+            {messages.map((message) => (
+              <li key={message.id}>
+                <div className="timeline-header">
+                  <strong>{message.subject}</strong>
+                  <span>{formatDateTime(message.created_at)}</span>
+                </div>
+                <p>{message.body}</p>
+                <div className="timeline-meta">
+                  <small>POC: {message.point_of_contact || '—'}</small>
+                  <small>Next Communication: {formatDateTime(message.next_communication_time)}</small>
+                </div>
+                <p>
+                  <strong>Problem:</strong> {message.problem_description || '—'}
+                </p>
+                {message.workaround && (
+                  <p>
+                    <strong>Workaround:</strong> {message.workaround}
+                  </p>
+                )}
+                <small>
+                  Distribution:{' '}
+                  {(() => {
+                    const listNames = [...(message.distribution_lists || [])].map(
+                      (id) => distributionLookup.get(id)?.name || `List ${id}`
+                    );
+                    if (!listNames.length && message.distribution_list) {
+                      listNames.push(
+                        distributionLookup.get(message.distribution_list)?.name ||
+                          `List ${message.distribution_list}`
+                      );
+                    }
+                    return listNames.length ? listNames.join(', ') : '—';
+                  })()}
+                </small>
+                <br />
+                <small>Delivery: {message.delivery_status}</small>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const closeModal = showCloseModal ? (
+    <div className="sc-modal-overlay" role="dialog" aria-modal="true" onClick={closeIncidentModal}>
+      <div className="sc-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="sc-modal-header">
+          <h3>Close Incident</h3>
+          <button type="button" className="modal-close" onClick={closeIncidentModal} aria-label="Close dialog">
+            ✖
+          </button>
+        </div>
+        <div className="sc-modal-body">
+          <form onSubmit={handleCloseIncident} className="form-grid sc-form">
+            <label className="form-field">
+              <span>Final Subject</span>
+              <input
+                type="text"
+                placeholder="Final subject"
+                value={closeForm.subject}
+                onChange={(e) => setCloseForm({ ...closeForm, subject: e.target.value })}
+                required
+              />
+            </label>
+            <label className="form-field">
+              <span>Final Message Body</span>
+              <textarea
+                placeholder="Final message body"
+                value={closeForm.body}
+                onChange={(e) => setCloseForm({ ...closeForm, body: e.target.value })}
+                required
+              />
+            </label>
+            <label className="form-field">
+              <span>Distribution List</span>
+              <select
+                value={closeForm.distribution_list}
+                onChange={(e) => setCloseForm({ ...closeForm, distribution_list: e.target.value })}
+              >
+                <option value="">Use incident default list</option>
+                {availableLists.map((list) => (
+                  <option key={list.id} value={list.id}>
+                    {list.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" disabled={loading}>
+              Close Incident & Notify
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const inlineListModal = showListModal ? (
+    <div className="sc-modal-overlay" role="dialog" aria-modal="true" onClick={closeInlineListModal}>
+      <div className="sc-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="sc-modal-header">
+          <h3>Create Distribution List</h3>
+          <button type="button" className="modal-close" onClick={closeInlineListModal} aria-label="Close dialog">
+            ✖
+          </button>
+        </div>
+        <div className="sc-modal-body">
+          <form onSubmit={handleInlineListSubmit} className="form-grid sc-form">
+            <label className="form-field">
+              <span>List Name</span>
+              <input
+                type="text"
+                placeholder="List name"
+                value={inlineListForm.name}
+                onChange={(e) => setInlineListForm({ ...inlineListForm, name: e.target.value })}
+                required
+              />
+            </label>
+            <label className="form-field">
+              <span>Description</span>
+              <textarea
+                placeholder="Optional description"
+                value={inlineListForm.description}
+                onChange={(e) => setInlineListForm({ ...inlineListForm, description: e.target.value })}
+              />
+            </label>
+            <label className="form-field">
+              <span>Email Addresses</span>
+              <textarea
+                placeholder="one@example.com | optional description"
+                value={inlineListForm.emails}
+                onChange={(e) => setInlineListForm({ ...inlineListForm, emails: e.target.value })}
+              />
+            </label>
+            <div className="radio-group">
+              <label className={`chip-control${inlineListForm.scope === 'team' ? ' active' : ''}`}>
+                <input
+                  type="radio"
+                  value="team"
+                  checked={inlineListForm.scope === 'team'}
+                  onChange={(e) => setInlineListForm({ ...inlineListForm, scope: e.target.value })}
+                />
+                <span>Team list</span>
+              </label>
+              <label className={`chip-control${inlineListForm.scope === 'global' ? ' active' : ''}`}>
+                <input
+                  type="radio"
+                  value="global"
+                  checked={inlineListForm.scope === 'global'}
+                  onChange={(e) => setInlineListForm({ ...inlineListForm, scope: e.target.value })}
+                />
+                <span>Global list</span>
+              </label>
+            </div>
+            <div className="form-actions">
+              <button type="submit" disabled={loading}>
+                Save Distribution List
+              </button>
+              <button type="button" className="secondary" onClick={closeInlineListModal}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="app-shell service-communications">
       <header className="app-header sc-header">
@@ -1684,6 +1950,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       {error && <div className="alert">{error}</div>}
 
       <div className="tab-content">{renderTabContent()}</div>
+
+      {timelineModal}
+      {closeModal}
+      {inlineListModal}
 
       {toastMessage && (
         <div className="toast" role="status" aria-live="polite">

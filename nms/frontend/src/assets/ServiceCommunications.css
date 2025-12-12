@@ -656,6 +656,13 @@
   cursor: pointer;
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   box-shadow: 0 12px 20px rgba(27, 107, 58, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 48px;
+  padding: 0.65rem 1.3rem;
+  white-space: normal;
 }
 
 .service-communications button:not(.subnav-item):not(.panel-toggle):not(.text-link):hover:not(:disabled) {
@@ -777,14 +784,18 @@
 
 .service-communications .radio-group {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.75rem;
-  align-items: center;
   color: var(--sc-text);
-  padding: 0.75rem;
-  border-radius: 999px;
+  padding: 1rem;
+  border-radius: 18px;
   border: 1px dashed #cfe3d2;
   background: rgba(255, 255, 255, 0.7);
+}
+
+.service-communications .radio-group .chip-control {
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .list-view {
@@ -860,6 +871,91 @@
   background: var(--sc-soft);
   padding: 1rem;
   overflow: hidden;
+}
+
+.incident-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.incident-action-buttons button {
+  flex: 1;
+  min-width: 220px;
+  text-align: center;
+  white-space: normal;
+}
+
+.form-field .field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.form-field .field-header .text-link {
+  font-size: 0.85rem;
+  text-transform: none;
+}
+
+.sc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 64, 29, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 150;
+}
+
+.sc-modal {
+  background: var(--sc-surface);
+  border-radius: 26px;
+  box-shadow: 0 30px 70px rgba(12, 38, 17, 0.4);
+  border: 1px solid var(--sc-border);
+  max-width: 960px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sc-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid var(--sc-border);
+}
+
+.sc-modal-header h3 {
+  margin: 0;
+  color: var(--sc-green);
+}
+
+.sc-modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.sc-modal-body .incident-details-card {
+  margin-bottom: 1rem;
+}
+
+.modal-close {
+  background: transparent !important;
+  border: none !important;
+  color: var(--sc-green);
+  font-size: 1.25rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: none !important;
 }
 
 .backdrop {

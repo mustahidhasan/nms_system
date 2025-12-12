@@ -38,8 +38,19 @@ function Ping({ apiBaseUrl, setAuth }) {
   }, []);
 
   useEffect(() => {
+    const storedLastRun = sessionStorage.getItem('last_run_at');
+    if (storedLastRun) setLastRunAt(storedLastRun);
+  }, []);
+
+  useEffect(() => {
     sessionStorage.setItem('ip_address', startIp);
   }, [startIp]);
+
+  useEffect(() => {
+    if (lastRunAt) {
+      sessionStorage.setItem('last_run_at', lastRunAt);
+    }
+  }, [lastRunAt]);
 
   function getCookie(name) {
     let cookieValue = null;
@@ -157,7 +168,7 @@ function Ping({ apiBaseUrl, setAuth }) {
   const isSelectAllChecked = allOps
     .filter((op) => op !== 'snmp_walk')
     .every((op) => operations[op]);
-  const showSnmpFields = operations.snmp_walk || operations.simple_snmp_walk;
+  const showSnmpFields = operations.snmp_walk;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -208,8 +219,9 @@ function Ping({ apiBaseUrl, setAuth }) {
         const data = await response.json();
         console.log(data);
         if (data.success) {
+        const runTimestamp = new Date().toISOString();
         setResults(data.results);
-        setLastRunAt(new Date());
+        setLastRunAt(runTimestamp);
         } else {
         alert(data.error || 'Error processing the request.');
         }
