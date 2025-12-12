@@ -464,6 +464,62 @@
   color: #4c5f46;
 }
 
+.template-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.template-card {
+  border: 1px solid var(--sc-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1rem 1.25rem;
+  box-shadow: 0 12px 30px rgba(27, 107, 58, 0.08);
+}
+
+.template-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.template-hints .template-label {
+  font-weight: 700;
+  color: var(--sc-green);
+}
+
+.template-hints .template-id {
+  color: #6c7f6f;
+}
+
+.template-hints .template-subject,
+.template-hints .template-body {
+  font-size: 0.92rem;
+  color: #4c5f46;
+  margin-top: 0.5rem;
+}
+
+.template-hints .template-snippet {
+  border: 1px dashed #d4e8d9;
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  background: var(--sc-soft);
+}
+
+.template-hints .template-body pre {
+  border: 1px dashed #d4e8d9;
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin: 0.35rem 0 0;
+  background: var(--sc-soft);
+  white-space: pre-wrap;
+  font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
 .service-communications input,
 .service-communications textarea,
 .service-communications select {
@@ -648,14 +704,10 @@
 }
 
 .service-communications button:not(.subnav-item):not(.panel-toggle):not(.text-link) {
-  background: var(--sc-green);
-  color: white;
-  border: none;
   border-radius: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 12px 20px rgba(27, 107, 58, 0.2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -663,9 +715,16 @@
   min-height: 48px;
   padding: 0.65rem 1.3rem;
   white-space: normal;
+  border: none;
+  box-shadow: 0 12px 20px rgba(27, 107, 58, 0.2);
 }
 
-.service-communications button:not(.subnav-item):not(.panel-toggle):not(.text-link):hover:not(:disabled) {
+.service-communications button.primary {
+  background: var(--sc-green);
+  color: white;
+}
+
+.service-communications button.primary:hover:not(:disabled) {
   background: var(--sc-green-dark);
   transform: translateY(-1px);
 }
@@ -675,6 +734,21 @@
   color: var(--sc-green);
   border: 1px solid var(--sc-green);
   box-shadow: none;
+}
+
+.service-communications button.secondary:hover:not(:disabled) {
+  background: rgba(27, 107, 58, 0.08);
+}
+
+.service-communications button.tertiary {
+  background: #fef6e7;
+  color: #b35c00;
+  border: 1px solid #f2d6a2;
+  box-shadow: 0 10px 18px rgba(179, 92, 0, 0.15);
+}
+
+.service-communications button.tertiary:hover:not(:disabled) {
+  background: #fbe5c1;
 }
 
 .service-communications button:disabled {
@@ -956,6 +1030,10 @@
   border-radius: 50%;
   cursor: pointer;
   box-shadow: none !important;
+}
+
+.modal-close.danger {
+  color: #b91c1c;
 }
 
 .backdrop {

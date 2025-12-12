@@ -169,6 +169,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [activeIncidentModal, setActiveIncidentModal] = useState(null);
   const [pendingPanelFromQuery, setPendingPanelFromQuery] = useState(null);
   const [showInlineListModal, setShowInlineListModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [forceTeamFromIncident, setForceTeamFromIncident] = useState(false);
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
@@ -1005,6 +1006,9 @@ const parseEntriesFromEmails = (rawInput) => {
     setInlineListForm(defaultListForm);
   };
 
+  const openTemplateModal = () => setShowTemplateModal(true);
+  const closeTemplateModal = () => setShowTemplateModal(false);
+
   const handleInlineListSubmit = async (event) => {
     event.preventDefault();
     if (!inlineListForm.name.trim()) {
@@ -1176,13 +1180,10 @@ const parseEntriesFromEmails = (rawInput) => {
               </label>
               <div className="template-hints">
                 <h4>Templates</h4>
-                <ul>
-                  {templateOptions.map((template) => (
-                    <li key={template.id}>
-                      <strong>{template.label}</strong>: {template.subject}
-                    </li>
-                  ))}
-                </ul>
+                <p>Need sample wording before you send? View the standard templates for each message type.</p>
+                <button type="button" className="secondary" onClick={openTemplateModal}>
+                  View Templates
+                </button>
               </div>
             </section>
             <section className="tab-panel">
@@ -1207,11 +1208,11 @@ const parseEntriesFromEmails = (rawInput) => {
                   />
                 </label>
                 <div className="form-actions">
-                  <button type="submit" disabled={loading}>
+                  <button type="submit" className="primary" disabled={loading}>
                     {editingTeamId ? 'Update Team' : 'Save Team'}
                   </button>
                   {editingTeamId && (
-                    <button type="button" onClick={handleCancelTeamEdit}>
+                    <button type="button" className="secondary" onClick={handleCancelTeamEdit}>
                       Cancel
                     </button>
                   )}
@@ -1395,7 +1396,7 @@ const parseEntriesFromEmails = (rawInput) => {
                   </small>
                 )}
               </label>
-              <button type="submit" disabled={loading}>
+              <button type="submit" className="primary" disabled={loading}>
                 Save Incident
               </button>
             </form>
@@ -1453,11 +1454,12 @@ const parseEntriesFromEmails = (rawInput) => {
                     </p>
                   </div>
                   <div className="incident-action-buttons">
-                    <button type="button" onClick={() => launchIncidentPanel('timeline')}>
+                    <button type="button" className="primary" onClick={() => launchIncidentPanel('timeline')}>
                       Open Email Timeline
                     </button>
                     <button
                       type="button"
+                      className="tertiary"
                       onClick={() => launchIncidentPanel('close')}
                       disabled={(selectedIncidentDetails.status || '').toLowerCase() === 'closed'}
                     >
@@ -1531,14 +1533,14 @@ const parseEntriesFromEmails = (rawInput) => {
                   </label>
                 </div>
                 <div className="form-actions">
-                  <button type="submit" disabled={loading}>
-                    {editingListId ? 'Update Distribution List' : 'Save Distribution List'}
-                  </button>
-                  {editingListId && (
-                    <button type="button" onClick={resetListForm}>
-                      Cancel
+                    <button type="submit" className="primary" disabled={loading}>
+                      {editingListId ? 'Update Distribution List' : 'Save Distribution List'}
                     </button>
-                  )}
+                    {editingListId && (
+                      <button type="button" className="secondary" onClick={resetListForm}>
+                        Cancel
+                      </button>
+                    )}
                 </div>
               </form>
             </section>
@@ -1588,6 +1590,7 @@ const parseEntriesFromEmails = (rawInput) => {
   const showTimelineModal = activeIncidentModal === 'timeline' && Boolean(selectedIncidentDetails);
   const showCloseModal = activeIncidentModal === 'close' && Boolean(selectedIncidentDetails);
   const showListModal = showInlineListModal;
+  const showTemplatesModal = showTemplateModal;
 
   const timelineModal = showTimelineModal ? (
     <div className="sc-modal-overlay" role="dialog" aria-modal="true" onClick={closeIncidentModal}>
@@ -1713,10 +1716,10 @@ const parseEntriesFromEmails = (rawInput) => {
               <span>Attachments</span>
               <input type="file" multiple onChange={(e) => setMessageFiles(Array.from(e.target.files))} />
             </label>
-            <button type="submit" disabled={loading}>
-              Send Email
-            </button>
-          </form>
+                    <button type="submit" className="primary" disabled={loading}>
+                      Send Email
+                    </button>
+                  </form>
           <hr />
           <ul className="timeline">
             {messages.map((message) => (
@@ -1807,10 +1810,10 @@ const parseEntriesFromEmails = (rawInput) => {
                 ))}
               </select>
             </label>
-            <button type="submit" disabled={loading}>
-              Close Incident & Notify
-            </button>
-          </form>
+                    <button type="submit" className="primary" disabled={loading}>
+                      Close Incident & Notify
+                    </button>
+                  </form>
         </div>
       </div>
     </div>
@@ -1874,7 +1877,7 @@ const parseEntriesFromEmails = (rawInput) => {
               </label>
             </div>
             <div className="form-actions">
-              <button type="submit" disabled={loading}>
+              <button type="submit" className="primary" disabled={loading}>
                 Save Distribution List
               </button>
               <button type="button" className="secondary" onClick={closeInlineListModal}>
@@ -1882,6 +1885,45 @@ const parseEntriesFromEmails = (rawInput) => {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const templateModal = showTemplatesModal ? (
+    <div className="sc-modal-overlay" role="dialog" aria-modal="true" onClick={closeTemplateModal}>
+      <div className="sc-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="sc-modal-header">
+          <h3>Message Templates</h3>
+          <button type="button" className="modal-close danger" onClick={closeTemplateModal} aria-label="Close templates">
+            ✖
+          </button>
+        </div>
+        <div className="sc-modal-body template-modal-body">
+          {templateOptions.length ? (
+            <div className="template-cards">
+              {templateOptions.map((template) => (
+                <article key={template.id} className="template-card">
+                  <div className="template-card-header">
+                    <div>
+                      <div className="template-label">{template.label}</div>
+                      <small className="template-id">ID: {template.id}</small>
+                    </div>
+                  </div>
+                  <div className="template-subject">
+                    <strong>Subject</strong>
+                    <div className="template-snippet">{template.subject || '—'}</div>
+                  </div>
+                  <div className="template-body">
+                    <strong>Body</strong>
+                    <pre>{template.body || '—'}</pre>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>No templates available.</p>
+          )}
         </div>
       </div>
     </div>
@@ -1954,6 +1996,7 @@ const parseEntriesFromEmails = (rawInput) => {
       {timelineModal}
       {closeModal}
       {inlineListModal}
+      {templateModal}
 
       {toastMessage && (
         <div className="toast" role="status" aria-live="polite">
