@@ -1,10 +1,10 @@
 // src/components/Ping.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { flushSync } from 'react-dom';
 import '../assets/Ping.css';
 
-function Ping({ apiBaseUrl, setAuth }) {
+function Ping({ apiBaseUrl, setAuth, auth }) {
   const navigate = useNavigate();
   const allOps = [
     'enable_ping',
@@ -30,6 +30,38 @@ function Ping({ apiBaseUrl, setAuth }) {
   const [loading, setLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState(null);
   const [lastRunAt, setLastRunAt] = useState(null);
+  const storedAuth = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('nmsAuth');
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
+    }
+  }, []);
+  const effectiveAuth = auth || storedAuth;
+  const profileDisplayName = useMemo(() => {
+    const first = (effectiveAuth?.user?.first_name || '').trim();
+    if (first) return first;
+    const fallback = (effectiveAuth?.user?.name || '').trim();
+    if (fallback) {
+      const [firstWord] = fallback.split(/\s+/);
+      if (firstWord) return firstWord;
+    }
+    const email = (effectiveAuth?.user?.email || '').trim();
+    if (email) {
+      const [localPart] = email.split('@');
+      if (localPart) return localPart;
+    }
+    return 'Network User';
+  }, [effectiveAuth]);
+  const userInitials = useMemo(() => {
+    const first = (effectiveAuth?.user?.first_name || '').trim();
+    const last = (effectiveAuth?.user?.last_name || '').trim();
+    const initials = `${first.charAt(0)}${last.charAt(0)}`.trim();
+    if (initials) return initials.toUpperCase();
+    const email = effectiveAuth?.user?.email || '';
+    return email.slice(0, 2).toUpperCase() || 'NU';
+  }, [effectiveAuth]);
 
 
   useEffect(() => {
@@ -404,7 +436,11 @@ function Ping({ apiBaseUrl, setAuth }) {
             <span className="settings-icon" onClick={() => setShowSettingsDropdown((prev) => !prev)}>⚙️</span>
             {showSettingsDropdown && (
               <div className="settings-dropdown">
-                <div
+                <div className="settings-profile">
+                  <div className="settings-avatar">{userInitials}</div>
+                  <div className="settings-name">{profileDisplayName}</div>
+                </div>
+                <div className="settings-option"
                   onClick={() => {
                     navigate('/user-activity');
                     setShowSettingsDropdown(false);
@@ -412,7 +448,8 @@ function Ping({ apiBaseUrl, setAuth }) {
                 >
                   👤 User
                 </div>
-                <div onClick={handleServiceCommunications}>🛰️ Service Communications</div>
+                <div className="settings-option" onClick={handleServiceCommunications}>🛰️ Service Communications</div>
+                <div className="settings-option" onClick={handleLogout}>↩ Logout</div>
               </div>
             )}
           </div>

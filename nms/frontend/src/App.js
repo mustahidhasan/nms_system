@@ -56,7 +56,10 @@ function App() {
             />
           }
         />
-        <Route path="/dashboard" element={<Ping apiBaseUrl={apiBaseUrl} setAuth={setAuth} />} />
+        <Route
+          path="/dashboard"
+          element={<Ping apiBaseUrl={apiBaseUrl} auth={auth} setAuth={setAuth} />}
+        />
         <Route
           path="/service-communications"
           element={
