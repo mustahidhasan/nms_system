@@ -498,21 +498,51 @@ button:hover:not(:disabled) {
   right: 0;
   background-color: white;
   border: 1px solid #ccc;
-  border-radius: 6px;
-  min-width: 100px;
+  border-radius: 10px;
+  min-width: 200px;
   z-index: 999;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+  overflow: hidden;
 }
 
-.settings-dropdown div {
-  padding: 10px;
+.settings-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eee;
+}
+
+.settings-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #165a4a;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.settings-name {
+  font-weight: 600;
+  color: #12302a;
+}
+
+.settings-email {
+  color: #5c6b66;
+}
+
+.settings-option {
+  padding: 10px 14px;
   cursor: pointer;
   font-size: 14px;
   color: #333;
   transition: background-color 0.3s;
 }
 
-.settings-dropdown div:hover {
+.settings-option:hover {
   background-color: #f0f0f0;
 }
 
