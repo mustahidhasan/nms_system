@@ -248,15 +248,17 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     setIncidentStatusFilter(filterId);
   }, []);
 
-  const confirmDateSelection = useCallback(
-    (inputRef) => {
-      if (inputRef?.current) {
-        inputRef.current.blur();
-      }
-      showToast('Next communication time updated');
-    },
-    [showToast]
-  );
+  const confirmDateSelection = useCallback((inputRef, message, onConfirm) => {
+    if (typeof onConfirm === 'function') {
+      onConfirm();
+    }
+    if (inputRef?.current) {
+      inputRef.current.blur();
+    }
+    if (message) {
+      showToast(message);
+    }
+  }, [showToast]);
 
   const persistAuth = useCallback(
     (nextAuth) => {
@@ -1470,15 +1472,19 @@ const parseEntriesFromEmails = (rawInput) => {
                     type="datetime-local"
                     ref={incidentNextCommunicationRef}
                     value={incidentForm.nextCommunicationTime}
-                    onChange={(e) =>
-                      setIncidentForm({ ...incidentForm, nextCommunicationTime: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const nextValue = e.target.value;
+                      setIncidentForm({ ...incidentForm, nextCommunicationTime: nextValue });
+                      if (nextValue) {
+                        confirmDateSelection(incidentNextCommunicationRef, 'Next communication updated');
+                      }
+                    }}
                     required
                   />
                   <button
                     type="button"
                     className="date-ok-button"
-                    onClick={() => confirmDateSelection(incidentNextCommunicationRef)}
+                    onClick={() => confirmDateSelection(incidentNextCommunicationRef, 'Next communication updated')}
                   >
                     OK
                   </button>
@@ -1871,14 +1877,20 @@ const parseEntriesFromEmails = (rawInput) => {
                   type="datetime-local"
                   ref={messageNextCommunicationRef}
                   value={messageForm.nextCommunicationTime}
-                  onChange={(e) =>
-                    setMessageForm({ ...messageForm, nextCommunicationTime: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    setMessageForm({ ...messageForm, nextCommunicationTime: nextValue });
+                    if (nextValue) {
+                      confirmDateSelection(messageNextCommunicationRef, 'Message next communication updated');
+                    }
+                  }}
                 />
                 <button
                   type="button"
                   className="date-ok-button"
-                  onClick={() => confirmDateSelection(messageNextCommunicationRef)}
+                  onClick={() =>
+                    confirmDateSelection(messageNextCommunicationRef, 'Message next communication updated')
+                  }
                 >
                   OK
                 </button>
