@@ -442,10 +442,10 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
         <h2 className="title">Network Operations</h2>
         <div className="right-section">
           <img src="logo_right.png" alt="Right Logo" className="logo" />
-          <div className="settings-wrapper" ref={settingsMenuRef}>
+          <div className="sc-settings-trigger" ref={settingsMenuRef}>
             <button
               type="button"
-              className={`settings-icon icon-button ${showSettingsDropdown ? 'active' : ''}`}
+              className={`icon-button ${showSettingsDropdown ? 'active' : ''}`}
               aria-haspopup="menu"
               aria-expanded={showSettingsDropdown}
               onClick={() => setShowSettingsDropdown((prev) => !prev)}
@@ -453,17 +453,16 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
               ⚙️
             </button>
             {showSettingsDropdown && (
-              <div className="settings-dropdown" role="menu">
-                <div className="settings-profile">
-                  <div className="settings-avatar">{userInitials}</div>
-                  <div className="settings-details">
-                    <span className="settings-name">{profileDisplayName}</span>
-                    <small className="settings-meta">Network Operations</small>
+              <div className="sc-settings-dropdown" role="menu">
+                <div className="sc-profile-card" title={profileDisplayName}>
+                  <div className="sc-avatar">{userInitials}</div>
+                  <div className="sc-profile-details">
+                    <span>{profileDisplayName}</span>
+                    <small>Network Operations</small>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="settings-option"
                   onClick={() => {
                     navigate('/user-activity');
                     setShowSettingsDropdown(false);
@@ -471,10 +470,10 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
                 >
                   👤 User
                 </button>
-                <button type="button" className="settings-option" onClick={handleServiceCommunications}>
+                <button type="button" onClick={handleServiceCommunications}>
                   🛰️ Service Communications
                 </button>
-                <button type="button" className="settings-option" onClick={handleLogout}>
+                <button type="button" onClick={handleLogout}>
                   ↩ Logout
                 </button>
               </div>

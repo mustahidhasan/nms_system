@@ -151,6 +151,17 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const token = auth?.access;
   const [teams, setTeams] = useState(() => (Array.isArray(auth?.teams) ? auth.teams : []));
   const [selectedTeam, setSelectedTeam] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedTeam = window.localStorage.getItem('scSelectedTeam');
+        if (storedTeam) {
+          const parsedStored = Number(storedTeam);
+          return Number.isNaN(parsedStored) ? storedTeam : parsedStored;
+        }
+      } catch (err) {
+        // ignore storage issues
+      }
+    }
     const firstTeamId = auth?.teams?.[0]?.id;
     if (firstTeamId === undefined || firstTeamId === null) return null;
     const parsed = Number(firstTeamId);
@@ -482,6 +493,20 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeam]);
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      if (selectedTeam === null || selectedTeam === undefined) {
+        window.localStorage.removeItem('scSelectedTeam');
+      } else {
+        window.localStorage.setItem('scSelectedTeam', String(selectedTeam));
+      }
+    } catch (err) {
+      // ignore storage issues
+    }
+  }, [selectedTeam]);
 
   useEffect(() => {
     if (selectedIncident) {
@@ -547,9 +572,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   };
 
   const loadDistributionLists = async (teamId = selectedTeam) => {
+    const normalizeListArray = (lists) => toArray(lists).map(normalizeDistributionListItem);
     const globalPromise = apiRequest('/distribution-lists/?team=global');
     if (!teamId) {
-      const globalLists = toArray(await globalPromise);
+      const globalLists = normalizeListArray(await globalPromise);
       setDistributionLists(globalLists);
       return;
     }
@@ -557,19 +583,52 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       apiRequest(`/distribution-lists/?team=${teamId}`),
       globalPromise,
     ]);
-    const normalizedTeamLists = toArray(teamLists);
-    const normalizedGlobalLists = toArray(globalLists);
+    const normalizedTeamLists = normalizeListArray(teamLists);
+    const normalizedGlobalLists = normalizeListArray(globalLists);
     setDistributionLists([...normalizedTeamLists, ...normalizedGlobalLists]);
   };
 
   const normalizeDistributionListItem = (list) => {
     if (!list) return list;
-    let normalizedTeam = list.team;
-    if (normalizedTeam !== null && normalizedTeam !== undefined) {
-      const parsed = Number(normalizedTeam);
-      normalizedTeam = Number.isNaN(parsed) ? normalizedTeam : parsed;
-    }
-    return { ...list, team: normalizedTeam ?? null };
+    const normalizeTeamValue = (value) => {
+      if (value === null || value === undefined) {
+        return null;
+      }
+      if (typeof value === 'object') {
+        const candidate = value.id ?? value.pk ?? null;
+        return normalizeTeamValue(candidate);
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim().toLowerCase();
+        if (!trimmed || trimmed === 'global' || trimmed === 'null') {
+          return null;
+        }
+      }
+      const parsed = Number(value);
+      if (Number.isNaN(parsed)) {
+        return null;
+      }
+      return parsed;
+    };
+    const normalizedTeam = normalizeTeamValue(list.team);
+    const normalizedId = (() => {
+      if (list.id === undefined || list.id === null) return list.id;
+      const parsed = Number(list.id);
+      return Number.isNaN(parsed) ? list.id : parsed;
+    })();
+    const derivedScope = normalizedTeam === null ? 'global' : 'team';
+    const normalizedScope = (() => {
+      if (typeof list.scope === 'string' && list.scope.trim()) {
+        return list.scope.trim().toLowerCase();
+      }
+      return derivedScope;
+    })();
+    return {
+      ...list,
+      id: normalizedId,
+      team: normalizedTeam,
+      scope: normalizedScope,
+    };
   };
 
   const mergeDistributionListItem = useCallback(
