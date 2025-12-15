@@ -1,5 +1,5 @@
 // src/components/Ping.js
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { flushSync } from 'react-dom';
 import '../assets/Ping.css';
@@ -30,6 +30,7 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
   const [loading, setLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState(null);
   const [lastRunAt, setLastRunAt] = useState(null);
+  const settingsMenuRef = useRef(null);
   const storedAuth = useMemo(() => {
     try {
       const raw = localStorage.getItem('nmsAuth');
@@ -72,6 +73,15 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
   useEffect(() => {
     const storedLastRun = sessionStorage.getItem('last_run_at');
     if (storedLastRun) setLastRunAt(storedLastRun);
+  }, []);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
+        setShowSettingsDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -432,24 +442,40 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
         <h2 className="title">Network Operations</h2>
         <div className="right-section">
           <img src="logo_right.png" alt="Right Logo" className="logo" />
-          <div className="settings-wrapper">
-            <span className="settings-icon" onClick={() => setShowSettingsDropdown((prev) => !prev)}>⚙️</span>
+          <div className="sc-settings-trigger" ref={settingsMenuRef}>
+            <button
+              type="button"
+              className={`icon-button ${showSettingsDropdown ? 'active' : ''}`}
+              aria-haspopup="menu"
+              aria-expanded={showSettingsDropdown}
+              onClick={() => setShowSettingsDropdown((prev) => !prev)}
+            >
+              ⚙️
+            </button>
             {showSettingsDropdown && (
-              <div className="settings-dropdown">
-                <div className="settings-profile">
-                  <div className="settings-avatar">{userInitials}</div>
-                  <div className="settings-name">{profileDisplayName}</div>
+              <div className="sc-settings-dropdown" role="menu">
+                <div className="sc-profile-card" title={profileDisplayName}>
+                  <div className="sc-avatar">{userInitials}</div>
+                  <div className="sc-profile-details">
+                    <span>{profileDisplayName}</span>
+                    <small>Network Operations</small>
+                  </div>
                 </div>
-                <div className="settings-option"
+                <button
+                  type="button"
                   onClick={() => {
                     navigate('/user-activity');
                     setShowSettingsDropdown(false);
                   }}
                 >
                   👤 User
-                </div>
-                <div className="settings-option" onClick={handleServiceCommunications}>🛰️ Service Communications</div>
-                <div className="settings-option" onClick={handleLogout}>↩ Logout</div>
+                </button>
+                <button type="button" onClick={handleServiceCommunications}>
+                  🛰️ Service Communications
+                </button>
+                <button type="button" onClick={handleLogout}>
+                  ↩ Logout
+                </button>
               </div>
             )}
           </div>

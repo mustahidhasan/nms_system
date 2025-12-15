@@ -7,10 +7,16 @@ const REGION_OPTIONS = ['Global', 'India', 'Africa', 'Russia'];
 
 const SUB_NAV_SECTIONS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'teams', label: 'Teams & Templates' },
+  { id: 'teams', label: 'Teams' },
   { id: 'incident', label: 'Create Incident' },
   { id: 'active', label: 'All Incidents' },
   { id: 'lists', label: 'Distribution Lists' },
+];
+
+const INCIDENT_STATUS_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'open', label: 'Open' },
+  { id: 'closed', label: 'Closed' },
 ];
 
 const readCookie = (name) => {
@@ -144,14 +150,34 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const location = useLocation();
   const token = auth?.access;
   const [teams, setTeams] = useState(() => (Array.isArray(auth?.teams) ? auth.teams : []));
-  const [selectedTeam, setSelectedTeam] = useState(() => auth?.teams?.[0]?.id || null);
+  const [selectedTeam, setSelectedTeam] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedTeam = window.localStorage.getItem('scSelectedTeam');
+        if (storedTeam) {
+          const parsedStored = Number(storedTeam);
+          return Number.isNaN(parsedStored) ? storedTeam : parsedStored;
+        }
+      } catch (err) {
+        // ignore storage issues
+      }
+    }
+    const firstTeamId = auth?.teams?.[0]?.id;
+    if (firstTeamId === undefined || firstTeamId === null) return null;
+    const parsed = Number(firstTeamId);
+    return Number.isNaN(parsed) ? firstTeamId : parsed;
+  });
   const [incidents, setIncidents] = useState([]);
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [messages, setMessages] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [distributionLists, setDistributionLists] = useState([]);
   const [incidentForm, setIncidentForm] = useState(buildDefaultIncidentForm);
-  const [messageForm, setMessageForm] = useState(() => buildDefaultMessageForm(auth));
+  const [preferredMessageTemplate, setPreferredMessageTemplate] = useState('incident');
+  const [messageForm, setMessageForm] = useState(() => ({
+    ...buildDefaultMessageForm(auth),
+    templateType: 'incident',
+  }));
   const [messageFiles, setMessageFiles] = useState([]);
   const [listForm, setListForm] = useState(defaultListForm);
   const [inlineListForm, setInlineListForm] = useState(defaultListForm);
@@ -166,16 +192,20 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [activeSubNav, setActiveSubNav] = useState('overview');
   const [toastMessage, setToastMessage] = useState('');
+  const [emailSuccessModalVisible, setEmailSuccessModalVisible] = useState(false);
   const [activeIncidentModal, setActiveIncidentModal] = useState(null);
   const [pendingPanelFromQuery, setPendingPanelFromQuery] = useState(null);
   const [showInlineListModal, setShowInlineListModal] = useState(false);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [forceTeamFromIncident, setForceTeamFromIncident] = useState(false);
+  const [incidentStatusFilter, setIncidentStatusFilter] = useState('all');
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
   const toastTimeoutRef = useRef(null);
 
   const previousIncidentRef = useRef(null);
+  const incidentNextCommunicationRef = useRef(null);
+  const messageNextCommunicationRef = useRef(null);
+  const lastTemplateAppliedRef = useRef(null);
 
   const legacyBaseUrl = useMemo(() => {
     if (!apiBaseUrl) return '';
@@ -234,6 +264,41 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const handleSectionNav = useCallback((sectionId) => {
     setActiveSubNav(sectionId);
   }, []);
+
+  const handleStatusFilterChange = useCallback((filterId) => {
+    setIncidentStatusFilter(filterId);
+  }, []);
+
+  const handleTeamFilterChange = useCallback(
+    (event) => {
+      const value = event.target.value;
+      const normalized = value ? Number(value) : null;
+      setSelectedTeam(Number.isNaN(normalized) ? null : normalized);
+    },
+    [setSelectedTeam]
+  );
+
+  const confirmDateSelection = useCallback((inputRef, message, onConfirm) => {
+    if (typeof onConfirm === 'function') {
+      onConfirm();
+    }
+    if (inputRef?.current) {
+      inputRef.current.blur();
+    }
+    if (message) {
+      showToast(message);
+    }
+  }, [showToast]);
+
+  const handleSetDefaultTemplate = useCallback(
+    (templateId) => {
+      if (!templateId) return;
+      setPreferredMessageTemplate(templateId);
+      setMessageForm((prev) => ({ ...prev, templateType: templateId }));
+      showToast('Template selected for timeline updates');
+    },
+    [showToast]
+  );
 
   const persistAuth = useCallback(
     (nextAuth) => {
@@ -430,6 +495,20 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeam]);
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      if (selectedTeam === null || selectedTeam === undefined) {
+        window.localStorage.removeItem('scSelectedTeam');
+      } else {
+        window.localStorage.setItem('scSelectedTeam', String(selectedTeam));
+      }
+    } catch (err) {
+      // ignore storage issues
+    }
+  }, [selectedTeam]);
 
   useEffect(() => {
     if (selectedIncident) {
@@ -495,9 +574,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   };
 
   const loadDistributionLists = async (teamId = selectedTeam) => {
+    const normalizeListArray = (lists) => toArray(lists).map(normalizeDistributionListItem);
     const globalPromise = apiRequest('/distribution-lists/?team=global');
     if (!teamId) {
-      const globalLists = toArray(await globalPromise);
+      const globalLists = normalizeListArray(await globalPromise);
       setDistributionLists(globalLists);
       return;
     }
@@ -505,10 +585,117 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       apiRequest(`/distribution-lists/?team=${teamId}`),
       globalPromise,
     ]);
-    const normalizedTeamLists = toArray(teamLists);
-    const normalizedGlobalLists = toArray(globalLists);
+    const normalizedTeamLists = normalizeListArray(teamLists);
+    const normalizedGlobalLists = normalizeListArray(globalLists);
     setDistributionLists([...normalizedTeamLists, ...normalizedGlobalLists]);
   };
+
+  const normalizeDistributionListItem = (list) => {
+    if (!list) return list;
+    const normalizeTeamValue = (value) => {
+      if (value === null || value === undefined) {
+        return null;
+      }
+      if (typeof value === 'object') {
+        const candidate = value.id ?? value.pk ?? null;
+        return normalizeTeamValue(candidate);
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim().toLowerCase();
+        if (!trimmed || trimmed === 'global' || trimmed === 'null') {
+          return null;
+        }
+      }
+      const parsed = Number(value);
+      if (Number.isNaN(parsed)) {
+        return null;
+      }
+      return parsed;
+    };
+    const normalizedTeam = normalizeTeamValue(list.team);
+    const normalizedId = (() => {
+      if (list.id === undefined || list.id === null) return list.id;
+      const parsed = Number(list.id);
+      return Number.isNaN(parsed) ? list.id : parsed;
+    })();
+    const derivedScope = normalizedTeam === null ? 'global' : 'team';
+    const normalizedScope = (() => {
+      if (typeof list.scope === 'string' && list.scope.trim()) {
+        return list.scope.trim().toLowerCase();
+      }
+      return derivedScope;
+    })();
+    return {
+      ...list,
+      id: normalizedId,
+      team: normalizedTeam,
+      scope: normalizedScope,
+    };
+  };
+
+  const mergeDistributionListItem = useCallback(
+    (list) => {
+      if (!list || !list.id) return;
+      const normalized = normalizeDistributionListItem(list);
+      setDistributionLists((prev) => {
+        const current = Array.isArray(prev) ? [...prev] : [];
+        const existingIndex = current.findIndex((item) => item.id === normalized.id);
+        if (existingIndex >= 0) {
+          current[existingIndex] = { ...current[existingIndex], ...normalized };
+          return current;
+        }
+        return [...current, normalized];
+      });
+    },
+    [setDistributionLists]
+  );
+
+  const formatApiError = useCallback((err) => {
+    if (!err) return 'Something went wrong. Please try again.';
+    const data = err.responseData;
+    if (data) {
+      if (Array.isArray(data.non_field_errors) && data.non_field_errors.length) {
+        return data.non_field_errors.join(' ');
+      }
+      if (Array.isArray(data.entries)) {
+        const entryMessages = data.entries
+          .map((entryErr, index) => {
+            if (!entryErr) return null;
+            const fieldMessages = Object.entries(entryErr)
+              .map(([field, value]) => {
+                if (Array.isArray(value) && value.length) {
+                  return `${field.charAt(0).toUpperCase() + field.slice(1)} ${index + 1}: ${value.join(', ')}`;
+                }
+                if (typeof value === 'string' && value.trim()) {
+                  return `${field.charAt(0).toUpperCase() + field.slice(1)} ${index + 1}: ${value}`;
+                }
+                return null;
+              })
+              .filter(Boolean);
+            return fieldMessages.join(' ');
+          })
+          .filter(Boolean);
+        if (entryMessages.length) {
+          return entryMessages.join(' ');
+        }
+      }
+      const otherField = Object.entries(data)
+        .map(([field, value]) => {
+          if (Array.isArray(value) && value.length) {
+            return `${field}: ${value.join(', ')}`;
+          }
+          if (typeof value === 'string' && value.trim()) {
+            return `${field}: ${value}`;
+          }
+          return null;
+        })
+        .filter(Boolean);
+      if (otherField.length) {
+        return otherField[0];
+      }
+    }
+    return err.message || 'Something went wrong. Please try again.';
+  }, []);
 
   const distributionLookup = useMemo(() => {
     const map = new Map();
@@ -517,10 +704,26 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   }, [distributionLists]);
 
   const filteredIncidents = useMemo(() => {
-    const list = Array.isArray(incidents) ? incidents : [];
-    if (!selectedTeam) return list;
-    return list.filter((incident) => incident.team === selectedTeam);
-  }, [incidents, selectedTeam]);
+    let list = Array.isArray(incidents) ? incidents : [];
+    if (selectedTeam) {
+      list = list.filter((incident) => incident.team === selectedTeam);
+    }
+    if (incidentStatusFilter === 'open') {
+      return list.filter((incident) => (incident.status || '').toLowerCase() !== 'closed');
+    }
+    if (incidentStatusFilter === 'closed') {
+      return list.filter((incident) => (incident.status || '').toLowerCase() === 'closed');
+    }
+    return list;
+  }, [incidents, selectedTeam, incidentStatusFilter]);
+
+  useEffect(() => {
+    if (!selectedIncident) return;
+    const stillVisible = filteredIncidents.some((incident) => incident.id === selectedIncident);
+    if (!stillVisible) {
+      setSelectedIncident(null);
+    }
+  }, [filteredIncidents, selectedIncident]);
 
   const availableLists = useMemo(() => {
     const lists = Array.isArray(distributionLists) ? distributionLists : [];
@@ -532,6 +735,50 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     () => incidents.find((incident) => incident.id === selectedIncident),
     [incidents, selectedIncident]
   );
+
+  const selectedTeamLabel = useMemo(() => {
+    if (!selectedTeam) return '';
+    const found = (teams || []).find((team) => Number(team.id) === Number(selectedTeam));
+    return found?.name || '';
+  }, [teams, selectedTeam]);
+
+  const incidentTeamLookup = useMemo(() => {
+    const map = new Map();
+    (incidents || []).forEach((incident) => {
+      if (incident.reference_id) {
+        map.set(incident.reference_id, incident.team);
+      }
+    });
+    return map;
+  }, [incidents]);
+
+  const allOpenIncidentsCount = useMemo(
+    () =>
+      (incidents || []).filter(
+        (incident) => (incident.status || '').toLowerCase() !== 'closed'
+      ).length,
+    [incidents]
+  );
+
+  const teamOpenIncidentsCount = useMemo(
+    () =>
+      filteredIncidents.filter(
+        (incident) => (incident.status || '').toLowerCase() !== 'closed'
+      ).length,
+    [filteredIncidents]
+  );
+
+  const recentMessagesAll = useMemo(
+    () => (Array.isArray(summary?.recent_messages) ? summary.recent_messages : []),
+    [summary?.recent_messages]
+  );
+
+  const recentMessagesTeam = useMemo(() => {
+    if (!selectedTeam) return [];
+    return recentMessagesAll.filter(
+      (message) => incidentTeamLookup.get(message.incident_reference) === selectedTeam
+    );
+  }, [recentMessagesAll, incidentTeamLookup, selectedTeam]);
 
   useEffect(() => {
     setIncidentForm((prev) => {
@@ -555,7 +802,121 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     });
   }, [availableLists]);
 
+  useEffect(() => {
+    if (!error) return undefined;
+    const timeout = setTimeout(() => setError(''), 3000);
+    return () => clearTimeout(timeout);
+  }, [error]);
+
+  useEffect(() => {
+    if (!emailSuccessModalVisible) return undefined;
+    const timeout = setTimeout(() => setEmailSuccessModalVisible(false), 2000);
+    return () => clearTimeout(timeout);
+  }, [emailSuccessModalVisible]);
+
   const templateOptions = useMemo(() => templates || [], [templates]);
+  const templateLookup = useMemo(() => {
+    const map = new Map();
+    templateOptions.forEach((template) => {
+      if (template?.id) {
+        map.set(template.id, template);
+      }
+    });
+    return map;
+  }, [templateOptions]);
+
+  const messageTemplateContext = useMemo(() => {
+    const incident = selectedIncidentDetails;
+    const fallbackSummary =
+      incident?.summary || incident?.problem_description || messageForm.problemDescription || '';
+    const fallbackTitle = incident?.title || incident?.summary || messageForm.subject || '';
+    const nextCommunicationValue =
+      incident?.next_communication_time ||
+      (messageForm.nextCommunicationTime ? normalizeDateForApi(messageForm.nextCommunicationTime) : null);
+    const formattedNextUpdate = nextCommunicationValue ? formatDateTime(nextCommunicationValue) : '';
+    return {
+      title: fallbackTitle,
+      summary: fallbackSummary,
+      impact: incident?.impact || '',
+      severity: incident?.severity || '',
+      status: incident?.status || '',
+      next_update: formattedNextUpdate,
+      effective_date: formattedNextUpdate,
+    };
+  }, [
+    selectedIncidentDetails,
+    messageForm.problemDescription,
+    messageForm.subject,
+    messageForm.nextCommunicationTime,
+  ]);
+
+  useEffect(() => {
+    if (!templateOptions.length) return;
+    const exists = templateOptions.some((template) => template.id === preferredMessageTemplate);
+    if (!exists) {
+      const fallback = templateOptions[0].id;
+      setPreferredMessageTemplate(fallback);
+      setMessageForm((prev) => ({ ...prev, templateType: fallback }));
+    }
+  }, [templateOptions, preferredMessageTemplate]);
+
+  useEffect(() => {
+    if (!templateOptions.length) return;
+    const exists = templateOptions.some((template) => template.id === preferredMessageTemplate);
+    if (!exists) {
+      const fallback = templateOptions[0].id;
+      setPreferredMessageTemplate(fallback);
+      setMessageForm((prev) => ({ ...prev, templateType: fallback }));
+    }
+  }, [templateOptions, preferredMessageTemplate]);
+
+  const getTemplatePreview = useCallback(
+    (templateId) => {
+      if (!templateId) return null;
+      const template = templateLookup.get(templateId);
+      if (!template) return null;
+      const applyTokens = (value = '') =>
+        value.replace(/\{(\w+)\}/g, (_, token) => messageTemplateContext[token] ?? '');
+      return {
+        subject: applyTokens(template.subject || ''),
+        body: applyTokens(template.body || ''),
+      };
+    },
+    [templateLookup, messageTemplateContext]
+  );
+
+  const messageTemplatePreview = useMemo(
+    () => getTemplatePreview(messageForm.templateType),
+    [getTemplatePreview, messageForm.templateType]
+  );
+
+  useEffect(() => {
+    if (!messageTemplatePreview) return;
+    setMessageForm((prev) => {
+      if (prev.subject || prev.body) {
+        return prev;
+      }
+      lastTemplateAppliedRef.current = prev.templateType;
+      return {
+        ...prev,
+        subject: messageTemplatePreview.subject,
+        body: messageTemplatePreview.body,
+      };
+    });
+  }, [messageTemplatePreview]);
+
+  useEffect(() => {
+    if (!messageTemplatePreview) return;
+    if (lastTemplateAppliedRef.current === messageForm.templateType) {
+      return;
+    }
+    lastTemplateAppliedRef.current = messageForm.templateType;
+    setMessageForm((prev) => ({
+      ...prev,
+      subject: messageTemplatePreview.subject,
+      body: messageTemplatePreview.body,
+    }));
+  }, [messageForm.templateType, messageTemplatePreview]);
 
   useEffect(() => {
     setMessageForm((prev) => ({
@@ -567,7 +928,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   useEffect(() => {
     if (!selectedIncident) {
       previousIncidentRef.current = null;
-      setMessageForm(buildDefaultMessageForm(auth));
+      setMessageForm({
+        ...buildDefaultMessageForm(auth),
+        templateType: preferredMessageTemplate,
+      });
       return;
     }
     const details = incidents.find((incident) => incident.id === selectedIncident);
@@ -584,8 +948,9 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       distributionLists: Array.isArray(details.distribution_lists)
         ? details.distribution_lists
         : [],
+      templateType: prev.templateType || preferredMessageTemplate,
     }));
-  }, [selectedIncident, incidents, auth]);
+  }, [selectedIncident, incidents, auth, preferredMessageTemplate]);
 
   useEffect(() => {
     setActiveIncidentModal(null);
@@ -860,6 +1225,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
 
       setMessageForm(() => ({
         ...buildDefaultMessageForm(auth),
+        templateType: preferredMessageTemplate,
         problemDescription: selectedIncidentDetails?.problem_description || '',
         workaround: selectedIncidentDetails?.workaround || '',
         nextCommunicationTime: toLocalInputValue(selectedIncidentDetails?.next_communication_time),
@@ -868,6 +1234,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       setMessageFiles([]);
       await loadMessages(selectedIncident);
       showToast('Email sent');
+      setEmailSuccessModalVisible(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -925,30 +1292,34 @@ const parseEntriesFromEmails = (rawInput) => {
         team: targetTeam,
         entries,
       };
+      let result = null;
       if (editingListId) {
-        await apiRequest(`/distribution-lists/${editingListId}/`, {
+        result = await apiRequest(`/distribution-lists/${editingListId}/`, {
           method: 'PATCH',
           body: payload,
         });
         showToast('Distribution list updated');
       } else {
-        const created = await apiRequest('/distribution-lists/', {
+        result = await apiRequest('/distribution-lists/', {
           method: 'POST',
           body: payload,
         });
         showToast('Distribution list is created');
-        if (created?.id) {
-          const normalizedId = Number.isNaN(Number(created.id)) ? created.id : Number(created.id);
+        if (result?.id) {
+          const normalizedId = Number.isNaN(Number(result.id)) ? result.id : Number(result.id);
           setIncidentForm((prev) => ({
             ...prev,
             distributionLists: Array.from(new Set([...prev.distributionLists, normalizedId])),
           }));
         }
       }
+      if (result?.id) {
+        mergeDistributionListItem(result);
+      }
       resetListForm();
       await loadDistributionLists();
     } catch (err) {
-      setError(err.message);
+      setError(formatApiError(err));
     } finally {
       setLoading(false);
     }
@@ -1006,33 +1377,30 @@ const parseEntriesFromEmails = (rawInput) => {
     setInlineListForm(defaultListForm);
   };
 
-  const openTemplateModal = () => setShowTemplateModal(true);
-  const closeTemplateModal = () => setShowTemplateModal(false);
-
   const handleInlineListSubmit = async (event) => {
     event.preventDefault();
     if (!inlineListForm.name.trim()) {
       setError('List name is required.');
       return;
     }
-    const entries = parseEntriesFromEmails(inlineListForm.emails);
-    const payload = {
-      name: inlineListForm.name.trim(),
-      description: inlineListForm.description,
-      entries,
-    };
-    if (inlineListForm.scope === 'team') {
-      if (!selectedTeam) {
-        setError('Select a team before creating a team-scoped list.');
-        return;
-      }
-      payload.team = selectedTeam;
-    } else {
-      payload.team = null;
-    }
     try {
       setLoading(true);
       setError('');
+      const entries = parseEntriesFromEmails(inlineListForm.emails);
+      const payload = {
+        name: inlineListForm.name.trim(),
+        description: inlineListForm.description,
+        entries,
+      };
+      if (inlineListForm.scope === 'team') {
+        if (!selectedTeam) {
+          setError('Select a team before creating a team-scoped list.');
+          return;
+        }
+        payload.team = selectedTeam;
+      } else {
+        payload.team = null;
+      }
       const created = await apiRequest('/distribution-lists/', {
         method: 'POST',
         body: payload,
@@ -1041,6 +1409,7 @@ const parseEntriesFromEmails = (rawInput) => {
       closeInlineListModal();
       await loadDistributionLists();
       if (created?.id) {
+        mergeDistributionListItem(created);
         const normalizedId = Number.isNaN(Number(created.id)) ? created.id : Number(created.id);
         setIncidentForm((prev) => {
           const nextLists = Array.from(new Set([...(prev.distributionLists || []), normalizedId]));
@@ -1048,7 +1417,7 @@ const parseEntriesFromEmails = (rawInput) => {
         });
       }
     } catch (err) {
-      setError(err.message);
+      setError(formatApiError(err));
     } finally {
       setLoading(false);
     }
@@ -1127,18 +1496,49 @@ const parseEntriesFromEmails = (rawInput) => {
           <section className="sc-overview" data-tab="overview">
             <div className="summary-grid sc-overview-grid">
               <div className="summary-card">
-                <h3>Open Incidents</h3>
-                <p className="summary-value">{summary.open_incident_count}</p>
+                <h3>All Incidents</h3>
+                <p className="summary-value">{incidents.length}</p>
+                <small>Open: {allOpenIncidentsCount}</small>
+              </div>
+              <div className="summary-card">
+                <h3>Team: {selectedTeamLabel || 'Select a team'}</h3>
+                {selectedTeam ? (
+                  <>
+                    <p className="summary-value">{filteredIncidents.length}</p>
+                    <small>Open: {teamOpenIncidentsCount}</small>
+                  </>
+                ) : (
+                  <>
+                    <p className="summary-value">—</p>
+                    <small>Select a team to see details.</small>
+                  </>
+                )}
               </div>
               <div className="summary-card recent">
-                <h3>Recent Messages</h3>
+                <h3>Recent Messages (All)</h3>
                 <ul>
-                  {summary.recent_messages.map((item) => (
+                  {recentMessagesAll.map((item) => (
                     <li key={item.id}>
                       <strong>{item.incident_reference}</strong> — {item.subject}
                     </li>
                   ))}
+                  {!recentMessagesAll.length && <li>No recent messages.</li>}
                 </ul>
+              </div>
+              <div className="summary-card recent">
+                <h3>Recent Messages (Team)</h3>
+                {selectedTeam ? (
+                  <ul>
+                    {recentMessagesTeam.map((item) => (
+                      <li key={`team-${item.id}`}>
+                        <strong>{item.incident_reference}</strong> — {item.subject}
+                      </li>
+                    ))}
+                    {!recentMessagesTeam.length && <li>No recent messages for this team.</li>}
+                  </ul>
+                ) : (
+                  <p className="empty-state">Select a team to view messages.</p>
+                )}
               </div>
             </div>
             <div className="summary-actions">
@@ -1155,7 +1555,7 @@ const parseEntriesFromEmails = (rawInput) => {
         return (
           <div className="tab-stack">
             <section className="tab-panel">
-              <h2>Teams & Templates</h2>
+              <h2>Teams</h2>
               <label className="form-field">
                 <span>Select Team</span>
                 <select
@@ -1178,10 +1578,7 @@ const parseEntriesFromEmails = (rawInput) => {
               </label>
               <div className="template-hints">
                 <h4>Templates</h4>
-                <p>Need sample wording before you send? View the standard templates for each message type.</p>
-                <button type="button" className="secondary" onClick={openTemplateModal}>
-                  View Templates
-                </button>
+                <p>Template library is available directly inside the Email Timeline so you can preview and select wording without leaving the workflow.</p>
               </div>
             </section>
             <section className="tab-panel">
@@ -1258,6 +1655,14 @@ const parseEntriesFromEmails = (rawInput) => {
           </div>
         );
       case 'incident':
+        if (!selectedTeam) {
+          return (
+            <section className="tab-panel">
+              <h2>Create Incident</h2>
+              <p className="empty-state">Select a team using the filter above to create incidents.</p>
+            </section>
+          );
+        }
         return (
           <section className="tab-panel">
             <h2>Create Incident</h2>
@@ -1345,14 +1750,28 @@ const parseEntriesFromEmails = (rawInput) => {
               </div>
               <label className="form-field">
                 <span>Next Communication Time (UTC/local)</span>
-                <input
-                  type="datetime-local"
-                  value={incidentForm.nextCommunicationTime}
-                  onChange={(e) =>
-                    setIncidentForm({ ...incidentForm, nextCommunicationTime: e.target.value })
-                  }
-                  required
-                />
+                <div className="datetime-input">
+                  <input
+                    type="datetime-local"
+                    ref={incidentNextCommunicationRef}
+                    value={incidentForm.nextCommunicationTime}
+                    onChange={(e) => {
+                      const nextValue = e.target.value;
+                      setIncidentForm({ ...incidentForm, nextCommunicationTime: nextValue });
+                      if (nextValue) {
+                        confirmDateSelection(incidentNextCommunicationRef, 'Next communication updated');
+                      }
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="date-ok-button"
+                    onClick={() => confirmDateSelection(incidentNextCommunicationRef, 'Next communication updated')}
+                  >
+                    OK
+                  </button>
+                </div>
               </label>
               <label className="form-field">
                 <span>Templates</span>
@@ -1404,25 +1823,51 @@ const parseEntriesFromEmails = (rawInput) => {
         return (
           <div className="tab-stack">
             <section className="tab-panel">
-              <h2>All Incidents</h2>
-              <ul className="incident-list">
-                {filteredIncidents.map((incident) => (
-                  <li
-                    key={incident.id}
-                    className={incident.id === selectedIncident ? 'active' : ''}
-                    onClick={() => setSelectedIncident(incident.id)}
-                  >
-                    <div>
-                      <strong>{incident.reference_id || incident.inc_number || incident.id}</strong> — {incident.title}
-                      <span className={`status-pill ${incident.status}`}>{incident.status}</span>
-                    </div>
-                    <small>
-                      {incident.inc_number ? `${incident.inc_number} • ` : ''}
-                      {incident.incident_type?.toUpperCase()}
-                    </small>
-                  </li>
-                ))}
-              </ul>
+              <div className="panel-header compact">
+                <h2>All Incidents</h2>
+                <div
+                  className="incident-filter-chips"
+                  role="group"
+                  aria-label="Filter incidents by status"
+                >
+                  {INCIDENT_STATUS_FILTERS.map((filter) => (
+                    <button
+                      type="button"
+                      key={filter.id}
+                      className={`filter-chip ${incidentStatusFilter === filter.id ? 'active' : ''}`}
+                      onClick={() => handleStatusFilterChange(filter.id)}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {filteredIncidents.length ? (
+                <ul className="incident-list">
+                  {filteredIncidents.map((incident) => (
+                    <li
+                      key={incident.id}
+                      className={incident.id === selectedIncident ? 'active' : ''}
+                      onClick={() => setSelectedIncident(incident.id)}
+                    >
+                      <div>
+                        <strong>{incident.reference_id || incident.inc_number || incident.id}</strong> — {incident.title}
+                        <span className={`status-pill ${incident.status}`}>{incident.status}</span>
+                      </div>
+                      <small>
+                        {incident.inc_number ? `${incident.inc_number} • ` : ''}
+                        {incident.incident_type?.toUpperCase()}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="empty-state">
+                  {selectedTeam
+                    ? 'No incidents match the selected filters.'
+                    : 'Select a team to view incidents.'}
+                </p>
+              )}
             </section>
             <section className="tab-panel">
               <h2>Incident Workspace</h2>
@@ -1508,7 +1953,7 @@ const parseEntriesFromEmails = (rawInput) => {
                     onChange={(e) => setListForm({ ...listForm, emails: e.target.value })}
                   />
                 </label>
-                <div className="radio-group">
+                <div className="radio-group radio-row">
                   <label className={`chip-control${listForm.scope === 'team' ? ' active' : ''}`}>
                     <input
                       type="radio"
@@ -1588,8 +2033,6 @@ const parseEntriesFromEmails = (rawInput) => {
   const showTimelineModal = activeIncidentModal === 'timeline' && Boolean(selectedIncidentDetails);
   const showCloseModal = activeIncidentModal === 'close' && Boolean(selectedIncidentDetails);
   const showListModal = showInlineListModal;
-  const showTemplatesModal = showTemplateModal;
-
   const timelineModal = showTimelineModal ? (
     <div className="sc-modal-overlay" role="dialog" aria-modal="true" onClick={closeIncidentModal}>
       <div className="sc-modal" onClick={(event) => event.stopPropagation()}>
@@ -1614,6 +2057,61 @@ const parseEntriesFromEmails = (rawInput) => {
           </div>
           <form onSubmit={handleMessageSubmit} className="form-grid sc-form">
             <label className="form-field">
+              <span>Template</span>
+              <select
+                value={messageForm.templateType}
+                onChange={(e) => setMessageForm({ ...messageForm, templateType: e.target.value })}
+              >
+                {templateOptions.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {templateOptions.length > 0 && (
+              <div className="template-gallery">
+                <div className="template-gallery-header">
+                  <strong>Template Library</strong>
+                  <small>Select a template to set the default for Email Timeline.</small>
+                </div>
+                <div className="template-gallery-scroll">
+                  {templateOptions.map((template) => (
+                    <article
+                      key={template.id}
+                      className={`template-card${preferredMessageTemplate === template.id ? ' selected' : ''}`}
+                    >
+                      <div className="template-card-header">
+                        <div>
+                          <div className="template-label">{template.label}</div>
+                          <small className="template-id">ID: {template.id}</small>
+                        </div>
+                      </div>
+                      <div className="template-subject">
+                        <strong>Subject</strong>
+                        <div className="template-snippet">{template.subject || '—'}</div>
+                      </div>
+                      <div className="template-body">
+                        <strong>Body</strong>
+                        <pre>{template.body || '—'}</pre>
+                      </div>
+                      <div className="template-card-actions">
+                        <button
+                          type="button"
+                          className={`secondary template-select ${
+                            preferredMessageTemplate === template.id ? 'active' : ''
+                          }`}
+                          onClick={() => handleSetDefaultTemplate(template.id)}
+                        >
+                          {preferredMessageTemplate === template.id ? 'Selected for Timeline' : 'Use this template'}
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
+            <label className="form-field">
               <span>Subject</span>
               <input
                 type="text"
@@ -1631,19 +2129,6 @@ const parseEntriesFromEmails = (rawInput) => {
                 onChange={(e) => setMessageForm({ ...messageForm, body: e.target.value })}
                 required
               />
-            </label>
-            <label className="form-field">
-              <span>Template</span>
-              <select
-                value={messageForm.templateType}
-                onChange={(e) => setMessageForm({ ...messageForm, templateType: e.target.value })}
-              >
-                {templateOptions.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.label}
-                  </option>
-                ))}
-              </select>
             </label>
             <label className="form-field">
               <div className="field-header">
@@ -1693,13 +2178,29 @@ const parseEntriesFromEmails = (rawInput) => {
             </label>
             <label className="form-field">
               <span>Override Next Communication</span>
-              <input
-                type="datetime-local"
-                value={messageForm.nextCommunicationTime}
-                onChange={(e) =>
-                  setMessageForm({ ...messageForm, nextCommunicationTime: e.target.value })
-                }
-              />
+              <div className="datetime-input">
+                <input
+                  type="datetime-local"
+                  ref={messageNextCommunicationRef}
+                  value={messageForm.nextCommunicationTime}
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    setMessageForm({ ...messageForm, nextCommunicationTime: nextValue });
+                    if (nextValue) {
+                      confirmDateSelection(messageNextCommunicationRef, 'Message next communication updated');
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="date-ok-button"
+                  onClick={() =>
+                    confirmDateSelection(messageNextCommunicationRef, 'Message next communication updated')
+                  }
+                >
+                  OK
+                </button>
+              </div>
             </label>
             <label className="form-field">
               <span>Extra Recipients</span>
@@ -1714,10 +2215,10 @@ const parseEntriesFromEmails = (rawInput) => {
               <span>Attachments</span>
               <input type="file" multiple onChange={(e) => setMessageFiles(Array.from(e.target.files))} />
             </label>
-                    <button type="submit" className="primary" disabled={loading}>
-                      Send Email
-                    </button>
-                  </form>
+            <button type="submit" className="primary" disabled={loading}>
+              Send Email
+            </button>
+          </form>
           <hr />
           <ul className="timeline">
             {messages.map((message) => (
@@ -1854,7 +2355,7 @@ const parseEntriesFromEmails = (rawInput) => {
                 onChange={(e) => setInlineListForm({ ...inlineListForm, emails: e.target.value })}
               />
             </label>
-            <div className="radio-group">
+            <div className="radio-group radio-row">
               <label className={`chip-control${inlineListForm.scope === 'team' ? ' active' : ''}`}>
                 <input
                   type="radio"
@@ -1883,45 +2384,6 @@ const parseEntriesFromEmails = (rawInput) => {
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </div>
-  ) : null;
-
-  const templateModal = showTemplatesModal ? (
-    <div className="sc-modal-overlay" role="dialog" aria-modal="true" onClick={closeTemplateModal}>
-      <div className="sc-modal" onClick={(event) => event.stopPropagation()}>
-        <div className="sc-modal-header">
-          <h3>Message Templates</h3>
-          <button type="button" className="modal-close danger" onClick={closeTemplateModal} aria-label="Close templates">
-            ✖
-          </button>
-        </div>
-        <div className="sc-modal-body template-modal-body">
-          {templateOptions.length ? (
-            <div className="template-cards">
-              {templateOptions.map((template) => (
-                <article key={template.id} className="template-card">
-                  <div className="template-card-header">
-                    <div>
-                      <div className="template-label">{template.label}</div>
-                      <small className="template-id">ID: {template.id}</small>
-                    </div>
-                  </div>
-                  <div className="template-subject">
-                    <strong>Subject</strong>
-                    <div className="template-snippet">{template.subject || '—'}</div>
-                  </div>
-                  <div className="template-body">
-                    <strong>Body</strong>
-                    <pre>{template.body || '—'}</pre>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p>No templates available.</p>
-          )}
         </div>
       </div>
     </div>
@@ -1985,6 +2447,22 @@ const parseEntriesFromEmails = (rawInput) => {
             {section.label}
           </button>
         ))}
+        <div className="team-filter-control">
+          <label htmlFor="team-filter-select">Team</label>
+          <select
+            id="team-filter-select"
+            value={selectedTeam || ''}
+            onChange={handleTeamFilterChange}
+          >
+            <option value="">Select a team</option>
+            {Array.isArray(teams) &&
+              teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+          </select>
+        </div>
       </nav>
 
       {error && <div className="alert">{error}</div>}
@@ -1994,11 +2472,47 @@ const parseEntriesFromEmails = (rawInput) => {
       {timelineModal}
       {closeModal}
       {inlineListModal}
-      {templateModal}
 
       {toastMessage && (
         <div className="toast" role="status" aria-live="polite">
           {toastMessage}
+        </div>
+      )}
+      {emailSuccessModalVisible && (
+        <div
+          className="sc-modal-overlay"
+          role="alertdialog"
+          aria-modal="true"
+          onClick={() => setEmailSuccessModalVisible(false)}
+        >
+          <div
+            className="sc-modal success-modal"
+            role="document"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="sc-modal-header">
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setEmailSuccessModalVisible(false)}
+                aria-label="Close notification"
+              >
+                ✖
+              </button>
+            </div>
+            <div className="sc-modal-body success-body">
+              <div className="success-icon">✅</div>
+              <h3>Email Sent Successfully</h3>
+              <p>Your update has been shared with the selected distribution lists.</p>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => setEmailSuccessModalVisible(false)}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

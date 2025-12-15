@@ -5,7 +5,9 @@ import '../assets/Login.css';
 function Login({ apiBaseUrl, legacyBaseUrl }) {
   const navigate = useNavigate();
   const pollingRef = useRef(null);
+  const insightsRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -63,6 +65,23 @@ function Login({ apiBaseUrl, legacyBaseUrl }) {
     }
   };
 
+  const toggleInsights = () => setShowInsights((prev) => !prev);
+
+  useEffect(() => {
+    if (!showInsights) return undefined;
+    const handleClickOutside = (event) => {
+      if (
+        insightsRef.current &&
+        !insightsRef.current.contains(event.target) &&
+        !event.target.closest('.insights-trigger')
+      ) {
+        setShowInsights(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showInsights]);
+
   return (
     <div className="login-container">
       {loading && (
@@ -70,13 +89,47 @@ function Login({ apiBaseUrl, legacyBaseUrl }) {
           <div className="spinner" />
         </div>
       )}
-      <div className="login-box">
-        <img src="logo_left.png" className="logo-left" alt="LOGO1" />
-        <img src="logo_right.png" className="logo-right" alt="LOGO2" />
-        <h1>Log In</h1>
-        <button onClick={handleSSOLogin} disabled={loading}>
-          {loading ? 'Loading...' : 'LOGIN VIA SSO'}
-        </button>
+      <div className="login-frame">
+        <header className="login-header">
+          <img src="logo_left.png" className="logo-left" alt="Network logo" />
+          <div className="login-title">Network Management Operations</div>
+          <img src="logo_right.png" className="logo-right" alt="Operations logo" />
+          <button
+            type="button"
+            className={`insights-trigger ${showInsights ? 'active' : ''}`}
+            aria-expanded={showInsights}
+            aria-controls="login-insights"
+            onClick={toggleInsights}
+          >
+            ?
+          </button>
+          {showInsights && (
+            <div className="insights-popover" id="login-insights" role="dialog" ref={insightsRef}>
+              <button
+                type="button"
+                className="close-insights"
+                onClick={() => setShowInsights(false)}
+                aria-label="Close operational insights"
+              >
+                ✖
+              </button>
+              <p className="insights-title">Operational insights</p>
+              <ul>
+                <li>Send consistent updates using curated templates.</li>
+                <li>Audit timelines, incidents, and distribution lists in one workspace.</li>
+                <li>Track the next communication commitment without spreadsheets.</li>
+              </ul>
+            </div>
+          )}
+        </header>
+        <main className="login-box">
+          <h1>Welcome back</h1>
+          <p className="login-subtitle">Securely access diagnostics, ping tools, and incident workflows.</p>
+          <button type="button" onClick={handleSSOLogin} disabled={loading}>
+            {loading ? 'Signing you in…' : 'Login via SSO'}
+          </button>
+          <small className="login-hint">SSO is required. Reach out to the NMS team if you need access.</small>
+        </main>
       </div>
     </div>
   );

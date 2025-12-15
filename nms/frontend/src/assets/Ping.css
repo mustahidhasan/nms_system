@@ -481,69 +481,27 @@ button:hover:not(:disabled) {
 }
 
 
-.settings-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.settings-icon {
-  font-size: 22px;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-.settings-dropdown {
-  position: absolute;
-  top: 35px;
-  right: 0;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  min-width: 200px;
-  z-index: 999;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
-  overflow: hidden;
-}
-
-.settings-profile {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 12px 14px;
-  border-bottom: 1px solid #eee;
-}
-
-.settings-avatar {
-  width: 40px;
-  height: 40px;
+.icon-button {
+  background: transparent;
+  border: none;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: #165a4a;
-  color: #fff;
-  display: flex;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-}
-
-.settings-name {
-  font-weight: 600;
+  transition: color 0.2s ease, transform 0.2s.ease;
+  padding: 0;
   color: #12302a;
 }
 
-.settings-email {
-  color: #5c6b66;
-}
-
-.settings-option {
-  padding: 10px 14px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #333;
-  transition: background-color 0.3s;
-}
-
-.settings-option:hover {
-  background-color: #f0f0f0;
+.icon-button:hover,
+.icon-button.active {
+  color: #1b6b3a;
+  transform: translateY(-1px);
 }
 
 .user-activity-modal .popup-content {
