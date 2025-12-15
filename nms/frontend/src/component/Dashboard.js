@@ -535,6 +535,33 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     setDistributionLists([...normalizedTeamLists, ...normalizedGlobalLists]);
   };
 
+  const normalizeDistributionListItem = (list) => {
+    if (!list) return list;
+    let normalizedTeam = list.team;
+    if (normalizedTeam !== null && normalizedTeam !== undefined) {
+      const parsed = Number(normalizedTeam);
+      normalizedTeam = Number.isNaN(parsed) ? normalizedTeam : parsed;
+    }
+    return { ...list, team: normalizedTeam ?? null };
+  };
+
+  const mergeDistributionListItem = useCallback(
+    (list) => {
+      if (!list || !list.id) return;
+      const normalized = normalizeDistributionListItem(list);
+      setDistributionLists((prev) => {
+        const current = Array.isArray(prev) ? [...prev] : [];
+        const existingIndex = current.findIndex((item) => item.id === normalized.id);
+        if (existingIndex >= 0) {
+          current[existingIndex] = { ...current[existingIndex], ...normalized };
+          return current;
+        }
+        return [...current, normalized];
+      });
+    },
+    [setDistributionLists]
+  );
+
   const distributionLookup = useMemo(() => {
     const map = new Map();
     (distributionLists || []).forEach((list) => map.set(list.id, list));
@@ -1047,30 +1074,42 @@ const parseEntriesFromEmails = (rawInput) => {
         team: targetTeam,
         entries,
       };
+      let result = null;
       if (editingListId) {
-        await apiRequest(`/distribution-lists/${editingListId}/`, {
+        result = await apiRequest(`/distribution-lists/${editingListId}/`, {
           method: 'PATCH',
           body: payload,
         });
         showToast('Distribution list updated');
       } else {
-        const created = await apiRequest('/distribution-lists/', {
+        result = await apiRequest('/distribution-lists/', {
           method: 'POST',
           body: payload,
         });
         showToast('Distribution list is created');
-        if (created?.id) {
-          const normalizedId = Number.isNaN(Number(created.id)) ? created.id : Number(created.id);
+        if (result?.id) {
+          const normalizedId = Number.isNaN(Number(result.id)) ? result.id : Number(result.id);
           setIncidentForm((prev) => ({
             ...prev,
             distributionLists: Array.from(new Set([...prev.distributionLists, normalizedId])),
           }));
         }
       }
+      if (result?.id) {
+        mergeDistributionListItem(result);
+      }
       resetListForm();
       await loadDistributionLists();
     } catch (err) {
-      setError(err.message);
+      if (
+        err.responseData &&
+        Array.isArray(err.responseData.non_field_errors) &&
+        err.responseData.non_field_errors.length
+      ) {
+        setError(err.responseData.non_field_errors.join(' '));
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -1137,24 +1176,24 @@ const parseEntriesFromEmails = (rawInput) => {
       setError('List name is required.');
       return;
     }
-    const entries = parseEntriesFromEmails(inlineListForm.emails);
-    const payload = {
-      name: inlineListForm.name.trim(),
-      description: inlineListForm.description,
-      entries,
-    };
-    if (inlineListForm.scope === 'team') {
-      if (!selectedTeam) {
-        setError('Select a team before creating a team-scoped list.');
-        return;
-      }
-      payload.team = selectedTeam;
-    } else {
-      payload.team = null;
-    }
     try {
       setLoading(true);
       setError('');
+      const entries = parseEntriesFromEmails(inlineListForm.emails);
+      const payload = {
+        name: inlineListForm.name.trim(),
+        description: inlineListForm.description,
+        entries,
+      };
+      if (inlineListForm.scope === 'team') {
+        if (!selectedTeam) {
+          setError('Select a team before creating a team-scoped list.');
+          return;
+        }
+        payload.team = selectedTeam;
+      } else {
+        payload.team = null;
+      }
       const created = await apiRequest('/distribution-lists/', {
         method: 'POST',
         body: payload,
@@ -1163,6 +1202,7 @@ const parseEntriesFromEmails = (rawInput) => {
       closeInlineListModal();
       await loadDistributionLists();
       if (created?.id) {
+        mergeDistributionListItem(created);
         const normalizedId = Number.isNaN(Number(created.id)) ? created.id : Number(created.id);
         setIncidentForm((prev) => {
           const nextLists = Array.from(new Set([...(prev.distributionLists || []), normalizedId]));
@@ -1170,7 +1210,15 @@ const parseEntriesFromEmails = (rawInput) => {
         });
       }
     } catch (err) {
-      setError(err.message);
+      if (
+        err.responseData &&
+        Array.isArray(err.responseData.non_field_errors) &&
+        err.responseData.non_field_errors.length
+      ) {
+        setError(err.responseData.non_field_errors.join(' '));
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
