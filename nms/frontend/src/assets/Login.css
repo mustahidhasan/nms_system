@@ -90,6 +90,21 @@
   box-shadow: 0 30px 70px rgba(5, 46, 22, 0.35);
 }
 
+.close-insights {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  border: none;
+  background: transparent;
+  color: #fb3b0b;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.close-insights:hover {
+  color: #fb3b0b;
+}
+
 .insights-popover ul {
   margin: 0.5rem 0 0;
   padding-left: 1.1rem;

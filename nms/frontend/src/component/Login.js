@@ -5,6 +5,7 @@ import '../assets/Login.css';
 function Login({ apiBaseUrl, legacyBaseUrl }) {
   const navigate = useNavigate();
   const pollingRef = useRef(null);
+  const insightsRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
 
@@ -66,6 +67,21 @@ function Login({ apiBaseUrl, legacyBaseUrl }) {
 
   const toggleInsights = () => setShowInsights((prev) => !prev);
 
+  useEffect(() => {
+    if (!showInsights) return undefined;
+    const handleClickOutside = (event) => {
+      if (
+        insightsRef.current &&
+        !insightsRef.current.contains(event.target) &&
+        !event.target.closest('.insights-trigger')
+      ) {
+        setShowInsights(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showInsights]);
+
   return (
     <div className="login-container">
       {loading && (
@@ -88,7 +104,15 @@ function Login({ apiBaseUrl, legacyBaseUrl }) {
             ?
           </button>
           {showInsights && (
-            <div className="insights-popover" id="login-insights" role="dialog">
+            <div className="insights-popover" id="login-insights" role="dialog" ref={insightsRef}>
+              <button
+                type="button"
+                className="close-insights"
+                onClick={() => setShowInsights(false)}
+                aria-label="Close operational insights"
+              >
+                ✖
+              </button>
               <p className="insights-title">Operational insights</p>
               <ul>
                 <li>Send consistent updates using curated templates.</li>
