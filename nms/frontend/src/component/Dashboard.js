@@ -198,7 +198,6 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [showInlineListModal, setShowInlineListModal] = useState(false);
   const [forceTeamFromIncident, setForceTeamFromIncident] = useState(false);
   const [incidentStatusFilter, setIncidentStatusFilter] = useState('all');
-  const [confirmedTemplateId, setConfirmedTemplateId] = useState(null);
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
   const toastTimeoutRef = useRef(null);
@@ -890,7 +889,6 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     () => getTemplatePreview(messageForm.templateType),
     [getTemplatePreview, messageForm.templateType]
   );
-  const templateConfirmationValid = confirmedTemplateId === messageForm.templateType;
 
   useEffect(() => {
     if (!messageTemplatePreview) return;
@@ -920,31 +918,12 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     }));
   }, [messageForm.templateType, messageTemplatePreview]);
 
-  const handleApplyMessageTemplate = useCallback(() => {
-    if (!messageTemplatePreview) {
-      showToast('Select a template to apply');
-      return;
-    }
-    setMessageForm((prev) => ({
-      ...prev,
-      subject: messageTemplatePreview.subject,
-      body: messageTemplatePreview.body,
-    }));
-    lastTemplateAppliedRef.current = messageForm.templateType;
-    setConfirmedTemplateId(messageForm.templateType);
-    showToast('Template applied to message');
-  }, [messageTemplatePreview, messageForm.templateType, showToast]);
-
   useEffect(() => {
     setMessageForm((prev) => ({
       ...prev,
       pointOfContact: prev.pointOfContact || getDefaultPointOfContact(auth),
     }));
   }, [auth]);
-
-  useEffect(() => {
-    setConfirmedTemplateId(null);
-  }, [selectedIncident]);
 
   useEffect(() => {
     if (!selectedIncident) {
@@ -976,10 +955,6 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   useEffect(() => {
     setActiveIncidentModal(null);
   }, [selectedIncident]);
-
-  useEffect(() => {
-    setConfirmedTemplateId(null);
-  }, [messageForm.templateType]);
 
   useEffect(() => {
     setMessageForm((prev) => {
@@ -1217,10 +1192,6 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       setError('Add a distribution list to this incident before sending a message.');
       return;
     }
-    if (confirmedTemplateId !== messageForm.templateType) {
-      setError('Press "Apply Template" before sending the update.');
-      return;
-    }
     try {
       setLoading(true);
       setError('');
@@ -1261,7 +1232,6 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         distributionLists: selectedIncidentDetails?.distribution_lists || [],
       }));
       setMessageFiles([]);
-      setConfirmedTemplateId(null);
       await loadMessages(selectedIncident);
       showToast('Email sent');
       setEmailSuccessModalVisible(true);
@@ -2087,25 +2057,6 @@ const parseEntriesFromEmails = (rawInput) => {
           </div>
           <form onSubmit={handleMessageSubmit} className="form-grid sc-form">
             <label className="form-field">
-              <span>Subject</span>
-              <input
-                type="text"
-                placeholder="Subject"
-                value={messageForm.subject}
-                onChange={(e) => setMessageForm({ ...messageForm, subject: e.target.value })}
-                required
-              />
-            </label>
-            <label className="form-field">
-              <span>Email Body</span>
-              <textarea
-                placeholder="Email body"
-                value={messageForm.body}
-                onChange={(e) => setMessageForm({ ...messageForm, body: e.target.value })}
-                required
-              />
-            </label>
-            <label className="form-field">
               <span>Template</span>
               <select
                 value={messageForm.templateType}
@@ -2118,23 +2069,6 @@ const parseEntriesFromEmails = (rawInput) => {
                 ))}
               </select>
             </label>
-            {messageTemplatePreview && (
-              <div className="template-preview">
-                <div className="template-preview-section">
-                  <span>Preview Subject</span>
-                  <p>{messageTemplatePreview.subject || '—'}</p>
-                </div>
-                <div className="template-preview-section">
-                  <span>Preview Body</span>
-                  <pre>{messageTemplatePreview.body || '—'}</pre>
-                </div>
-                <div className="template-preview-actions">
-                  <button type="button" className="secondary" onClick={handleApplyMessageTemplate}>
-                    Apply Template
-                  </button>
-                </div>
-              </div>
-            )}
             {templateOptions.length > 0 && (
               <div className="template-gallery">
                 <div className="template-gallery-header">
@@ -2177,6 +2111,25 @@ const parseEntriesFromEmails = (rawInput) => {
                 </div>
               </div>
             )}
+            <label className="form-field">
+              <span>Subject</span>
+              <input
+                type="text"
+                placeholder="Subject"
+                value={messageForm.subject}
+                onChange={(e) => setMessageForm({ ...messageForm, subject: e.target.value })}
+                required
+              />
+            </label>
+            <label className="form-field">
+              <span>Email Body</span>
+              <textarea
+                placeholder="Email body"
+                value={messageForm.body}
+                onChange={(e) => setMessageForm({ ...messageForm, body: e.target.value })}
+                required
+              />
+            </label>
             <label className="form-field">
               <div className="field-header">
                 <span>Distribution Lists</span>
@@ -2262,14 +2215,7 @@ const parseEntriesFromEmails = (rawInput) => {
               <span>Attachments</span>
               <input type="file" multiple onChange={(e) => setMessageFiles(Array.from(e.target.files))} />
             </label>
-            {!templateConfirmationValid && (
-              <p className="template-apply-hint">Press "Apply Template" to enable sending.</p>
-            )}
-            <button
-              type="submit"
-              className="primary"
-              disabled={loading || !templateConfirmationValid}
-            >
+            <button type="submit" className="primary" disabled={loading}>
               Send Email
             </button>
           </form>

@@ -1153,18 +1153,6 @@
   font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
-.template-preview-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.template-apply-hint {
-  color: #b35c00;
-  font-size: 0.9rem;
-  text-align: right;
-  margin: -0.25rem 0 0.5rem;
-}
-
 .form-field .field-header {
   display: flex;
   justify-content: space-between;
