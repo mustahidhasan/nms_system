@@ -478,6 +478,11 @@
   box-shadow: 0 12px 30px rgba(27, 107, 58, 0.08);
 }
 
+.template-card.selected {
+  border-color: var(--sc-green);
+  box-shadow: 0 20px 40px rgba(27, 107, 58, 0.18);
+}
+
 .template-card-header {
   display: flex;
   justify-content: space-between;
@@ -518,6 +523,48 @@
   background: var(--sc-soft);
   white-space: pre-wrap;
   font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.template-card-actions {
+  margin-top: 0.75rem;
+}
+
+.template-select {
+  width: 100%;
+  justify-content: center;
+}
+
+.template-select.active {
+  background: var(--sc-green);
+  color: #ffffff;
+  border-color: var(--sc-green);
+}
+
+.template-gallery {
+  margin-top: 1rem;
+  border: 1px solid var(--sc-border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.template-gallery-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--sc-green-muted);
+}
+
+.template-gallery-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-right: 0.25rem;
 }
 
 .service-communications input,
@@ -873,20 +920,25 @@
   flex-wrap: wrap;
   align-items: stretch;
   gap: 0.75rem;
+  width: 100%;
 }
 
 .service-communications .radio-group .chip-control {
   width: 100%;
   justify-content: flex-start;
+  min-width: 0;
 }
 
 .service-communications .radio-group.radio-row .chip-control {
-  flex: 1 1 180px;
+  flex: 1 1 calc(50% - 0.75rem);
   justify-content: center;
+  min-width: 160px;
+  max-width: calc(50% - 0.5rem);
 }
 
 .service-communications .radio-group.radio-row .chip-control span {
   text-align: center;
+  width: 100%;
 }
 
 .list-view {

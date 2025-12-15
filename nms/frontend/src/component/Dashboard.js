@@ -7,7 +7,7 @@ const REGION_OPTIONS = ['Global', 'India', 'Africa', 'Russia'];
 
 const SUB_NAV_SECTIONS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'teams', label: 'Teams & Templates' },
+  { id: 'teams', label: 'Teams' },
   { id: 'incident', label: 'Create Incident' },
   { id: 'active', label: 'All Incidents' },
   { id: 'lists', label: 'Distribution Lists' },
@@ -157,7 +157,11 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [templates, setTemplates] = useState([]);
   const [distributionLists, setDistributionLists] = useState([]);
   const [incidentForm, setIncidentForm] = useState(buildDefaultIncidentForm);
-  const [messageForm, setMessageForm] = useState(() => buildDefaultMessageForm(auth));
+  const [preferredMessageTemplate, setPreferredMessageTemplate] = useState('incident');
+  const [messageForm, setMessageForm] = useState(() => ({
+    ...buildDefaultMessageForm(auth),
+    templateType: 'incident',
+  }));
   const [messageFiles, setMessageFiles] = useState([]);
   const [listForm, setListForm] = useState(defaultListForm);
   const [inlineListForm, setInlineListForm] = useState(defaultListForm);
@@ -175,7 +179,6 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [activeIncidentModal, setActiveIncidentModal] = useState(null);
   const [pendingPanelFromQuery, setPendingPanelFromQuery] = useState(null);
   const [showInlineListModal, setShowInlineListModal] = useState(false);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [forceTeamFromIncident, setForceTeamFromIncident] = useState(false);
   const [incidentStatusFilter, setIncidentStatusFilter] = useState('all');
   const refreshPromiseRef = useRef(null);
@@ -259,6 +262,16 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       showToast(message);
     }
   }, [showToast]);
+
+  const handleSetDefaultTemplate = useCallback(
+    (templateId) => {
+      if (!templateId) return;
+      setPreferredMessageTemplate(templateId);
+      setMessageForm((prev) => ({ ...prev, templateType: templateId }));
+      showToast('Template selected for timeline updates');
+    },
+    [showToast]
+  );
 
   const persistAuth = useCallback(
     (nextAuth) => {
@@ -712,6 +725,16 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     messageForm.nextCommunicationTime,
   ]);
 
+  useEffect(() => {
+    if (!templateOptions.length) return;
+    const exists = templateOptions.some((template) => template.id === preferredMessageTemplate);
+    if (!exists) {
+      const fallback = templateOptions[0].id;
+      setPreferredMessageTemplate(fallback);
+      setMessageForm((prev) => ({ ...prev, templateType: fallback }));
+    }
+  }, [templateOptions, preferredMessageTemplate]);
+
   const getTemplatePreview = useCallback(
     (templateId) => {
       if (!templateId) return null;
@@ -769,7 +792,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   useEffect(() => {
     if (!selectedIncident) {
       previousIncidentRef.current = null;
-      setMessageForm(buildDefaultMessageForm(auth));
+      setMessageForm({
+        ...buildDefaultMessageForm(auth),
+        templateType: preferredMessageTemplate,
+      });
       return;
     }
     const details = incidents.find((incident) => incident.id === selectedIncident);
@@ -786,8 +812,9 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       distributionLists: Array.isArray(details.distribution_lists)
         ? details.distribution_lists
         : [],
+      templateType: prev.templateType || preferredMessageTemplate,
     }));
-  }, [selectedIncident, incidents, auth]);
+  }, [selectedIncident, incidents, auth, preferredMessageTemplate]);
 
   useEffect(() => {
     setActiveIncidentModal(null);
@@ -1062,6 +1089,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
 
       setMessageForm(() => ({
         ...buildDefaultMessageForm(auth),
+        templateType: preferredMessageTemplate,
         problemDescription: selectedIncidentDetails?.problem_description || '',
         workaround: selectedIncidentDetails?.workaround || '',
         nextCommunicationTime: toLocalInputValue(selectedIncidentDetails?.next_communication_time),
@@ -1212,9 +1240,6 @@ const parseEntriesFromEmails = (rawInput) => {
     setInlineListForm(defaultListForm);
   };
 
-  const openTemplateModal = () => setShowTemplateModal(true);
-  const closeTemplateModal = () => setShowTemplateModal(false);
-
   const handleInlineListSubmit = async (event) => {
     event.preventDefault();
     if (!inlineListForm.name.trim()) {
@@ -1362,7 +1387,7 @@ const parseEntriesFromEmails = (rawInput) => {
         return (
           <div className="tab-stack">
             <section className="tab-panel">
-              <h2>Teams & Templates</h2>
+              <h2>Teams</h2>
               <label className="form-field">
                 <span>Select Team</span>
                 <select
@@ -1385,10 +1410,7 @@ const parseEntriesFromEmails = (rawInput) => {
               </label>
               <div className="template-hints">
                 <h4>Templates</h4>
-                <p>Need sample wording before you send? View the standard templates for each message type.</p>
-                <button type="button" className="secondary" onClick={openTemplateModal}>
-                  View Templates
-                </button>
+                <p>Template library is available directly inside the Email Timeline so you can preview and select wording without leaving the workflow.</p>
               </div>
             </section>
             <section className="tab-panel">
@@ -1466,8 +1488,8 @@ const parseEntriesFromEmails = (rawInput) => {
         );
       case 'incident':
         return (
-          <section className="tab-panel">
-            <h2>Create Incident</h2>
+        <section className="tab-panel">
+          <h2>Create Incident</h2>
             <form onSubmit={handleIncidentSubmit} className="form-grid sc-form">
               <label className="form-field">
                 <span>INC Number</span>
@@ -1835,8 +1857,6 @@ const parseEntriesFromEmails = (rawInput) => {
   const showTimelineModal = activeIncidentModal === 'timeline' && Boolean(selectedIncidentDetails);
   const showCloseModal = activeIncidentModal === 'close' && Boolean(selectedIncidentDetails);
   const showListModal = showInlineListModal;
-  const showTemplatesModal = showTemplateModal;
-
   const timelineModal = showTimelineModal ? (
     <div className="sc-modal-overlay" role="dialog" aria-modal="true" onClick={closeIncidentModal}>
       <div className="sc-modal" onClick={(event) => event.stopPropagation()}>
@@ -1906,6 +1926,48 @@ const parseEntriesFromEmails = (rawInput) => {
                   <button type="button" className="secondary" onClick={handleApplyMessageTemplate}>
                     Apply Template
                   </button>
+                </div>
+              </div>
+            )}
+            {templateOptions.length > 0 && (
+              <div className="template-gallery">
+                <div className="template-gallery-header">
+                  <strong>Template Library</strong>
+                  <small>Select a template to set the default for Email Timeline.</small>
+                </div>
+                <div className="template-gallery-scroll">
+                  {templateOptions.map((template) => (
+                    <article
+                      key={template.id}
+                      className={`template-card${preferredMessageTemplate === template.id ? ' selected' : ''}`}
+                    >
+                      <div className="template-card-header">
+                        <div>
+                          <div className="template-label">{template.label}</div>
+                          <small className="template-id">ID: {template.id}</small>
+                        </div>
+                      </div>
+                      <div className="template-subject">
+                        <strong>Subject</strong>
+                        <div className="template-snippet">{template.subject || '—'}</div>
+                      </div>
+                      <div className="template-body">
+                        <strong>Body</strong>
+                        <pre>{template.body || '—'}</pre>
+                      </div>
+                      <div className="template-card-actions">
+                        <button
+                          type="button"
+                          className={`secondary template-select ${
+                            preferredMessageTemplate === template.id ? 'active' : ''
+                          }`}
+                          onClick={() => handleSetDefaultTemplate(template.id)}
+                        >
+                          {preferredMessageTemplate === template.id ? 'Selected for Timeline' : 'Use this template'}
+                        </button>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </div>
             )}
@@ -2168,45 +2230,6 @@ const parseEntriesFromEmails = (rawInput) => {
     </div>
   ) : null;
 
-  const templateModal = showTemplatesModal ? (
-    <div className="sc-modal-overlay" role="dialog" aria-modal="true" onClick={closeTemplateModal}>
-      <div className="sc-modal" onClick={(event) => event.stopPropagation()}>
-        <div className="sc-modal-header">
-          <h3>Message Templates</h3>
-          <button type="button" className="modal-close danger" onClick={closeTemplateModal} aria-label="Close templates">
-            ✖
-          </button>
-        </div>
-        <div className="sc-modal-body template-modal-body">
-          {templateOptions.length ? (
-            <div className="template-cards">
-              {templateOptions.map((template) => (
-                <article key={template.id} className="template-card">
-                  <div className="template-card-header">
-                    <div>
-                      <div className="template-label">{template.label}</div>
-                      <small className="template-id">ID: {template.id}</small>
-                    </div>
-                  </div>
-                  <div className="template-subject">
-                    <strong>Subject</strong>
-                    <div className="template-snippet">{template.subject || '—'}</div>
-                  </div>
-                  <div className="template-body">
-                    <strong>Body</strong>
-                    <pre>{template.body || '—'}</pre>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p>No templates available.</p>
-          )}
-        </div>
-      </div>
-    </div>
-  ) : null;
-
   return (
     <div className="app-shell service-communications">
       <header className="app-header sc-header">
@@ -2274,7 +2297,6 @@ const parseEntriesFromEmails = (rawInput) => {
       {timelineModal}
       {closeModal}
       {inlineListModal}
-      {templateModal}
 
       {toastMessage && (
         <div className="toast" role="status" aria-live="polite">
