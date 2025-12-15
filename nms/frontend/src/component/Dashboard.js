@@ -204,6 +204,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const previousIncidentRef = useRef(null);
   const incidentNextCommunicationRef = useRef(null);
   const messageNextCommunicationRef = useRef(null);
+  const lastTemplateAppliedRef = useRef(null);
 
   const legacyBaseUrl = useMemo(() => {
     if (!apiBaseUrl) return '';
@@ -888,6 +889,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       if (prev.subject || prev.body) {
         return prev;
       }
+      lastTemplateAppliedRef.current = prev.templateType;
       return {
         ...prev,
         subject: messageTemplatePreview.subject,
@@ -895,6 +897,19 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       };
     });
   }, [messageTemplatePreview]);
+
+  useEffect(() => {
+    if (!messageTemplatePreview) return;
+    if (lastTemplateAppliedRef.current === messageForm.templateType) {
+      return;
+    }
+    lastTemplateAppliedRef.current = messageForm.templateType;
+    setMessageForm((prev) => ({
+      ...prev,
+      subject: messageTemplatePreview.subject,
+      body: messageTemplatePreview.body,
+    }));
+  }, [messageForm.templateType, messageTemplatePreview]);
 
   const handleApplyMessageTemplate = useCallback(() => {
     if (!messageTemplatePreview) {
@@ -906,8 +921,9 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       subject: messageTemplatePreview.subject,
       body: messageTemplatePreview.body,
     }));
+    lastTemplateAppliedRef.current = messageForm.templateType;
     showToast('Template applied to message');
-  }, [messageTemplatePreview, showToast]);
+  }, [messageTemplatePreview, messageForm.templateType, showToast]);
 
   useEffect(() => {
     setMessageForm((prev) => ({
