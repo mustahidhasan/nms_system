@@ -150,7 +150,12 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const location = useLocation();
   const token = auth?.access;
   const [teams, setTeams] = useState(() => (Array.isArray(auth?.teams) ? auth.teams : []));
-  const [selectedTeam, setSelectedTeam] = useState(() => auth?.teams?.[0]?.id || null);
+  const [selectedTeam, setSelectedTeam] = useState(() => {
+    const firstTeamId = auth?.teams?.[0]?.id;
+    if (firstTeamId === undefined || firstTeamId === null) return null;
+    const parsed = Number(firstTeamId);
+    return Number.isNaN(parsed) ? firstTeamId : parsed;
+  });
   const [incidents, setIncidents] = useState([]);
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -250,6 +255,15 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const handleStatusFilterChange = useCallback((filterId) => {
     setIncidentStatusFilter(filterId);
   }, []);
+
+  const handleTeamFilterChange = useCallback(
+    (event) => {
+      const value = event.target.value;
+      const normalized = value ? Number(value) : null;
+      setSelectedTeam(Number.isNaN(normalized) ? null : normalized);
+    },
+    [setSelectedTeam]
+  );
 
   const confirmDateSelection = useCallback((inputRef, message, onConfirm) => {
     if (typeof onConfirm === 'function') {
@@ -661,6 +675,50 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     [incidents, selectedIncident]
   );
 
+  const selectedTeamLabel = useMemo(() => {
+    if (!selectedTeam) return '';
+    const found = (teams || []).find((team) => Number(team.id) === Number(selectedTeam));
+    return found?.name || '';
+  }, [teams, selectedTeam]);
+
+  const incidentTeamLookup = useMemo(() => {
+    const map = new Map();
+    (incidents || []).forEach((incident) => {
+      if (incident.reference_id) {
+        map.set(incident.reference_id, incident.team);
+      }
+    });
+    return map;
+  }, [incidents]);
+
+  const allOpenIncidentsCount = useMemo(
+    () =>
+      (incidents || []).filter(
+        (incident) => (incident.status || '').toLowerCase() !== 'closed'
+      ).length,
+    [incidents]
+  );
+
+  const teamOpenIncidentsCount = useMemo(
+    () =>
+      filteredIncidents.filter(
+        (incident) => (incident.status || '').toLowerCase() !== 'closed'
+      ).length,
+    [filteredIncidents]
+  );
+
+  const recentMessagesAll = useMemo(
+    () => (Array.isArray(summary?.recent_messages) ? summary.recent_messages : []),
+    [summary?.recent_messages]
+  );
+
+  const recentMessagesTeam = useMemo(() => {
+    if (!selectedTeam) return [];
+    return recentMessagesAll.filter(
+      (message) => incidentTeamLookup.get(message.incident_reference) === selectedTeam
+    );
+  }, [recentMessagesAll, incidentTeamLookup, selectedTeam]);
+
   useEffect(() => {
     setIncidentForm((prev) => {
       const allowedIds = availableLists.map((list) => list.id);
@@ -724,6 +782,16 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     messageForm.subject,
     messageForm.nextCommunicationTime,
   ]);
+
+  useEffect(() => {
+    if (!templateOptions.length) return;
+    const exists = templateOptions.some((template) => template.id === preferredMessageTemplate);
+    if (!exists) {
+      const fallback = templateOptions[0].id;
+      setPreferredMessageTemplate(fallback);
+      setMessageForm((prev) => ({ ...prev, templateType: fallback }));
+    }
+  }, [templateOptions, preferredMessageTemplate]);
 
   useEffect(() => {
     if (!templateOptions.length) return;
@@ -1359,18 +1427,49 @@ const parseEntriesFromEmails = (rawInput) => {
           <section className="sc-overview" data-tab="overview">
             <div className="summary-grid sc-overview-grid">
               <div className="summary-card">
-                <h3>Open Incidents</h3>
-                <p className="summary-value">{summary.open_incident_count}</p>
+                <h3>All Incidents</h3>
+                <p className="summary-value">{incidents.length}</p>
+                <small>Open: {allOpenIncidentsCount}</small>
+              </div>
+              <div className="summary-card">
+                <h3>Team: {selectedTeamLabel || 'Select a team'}</h3>
+                {selectedTeam ? (
+                  <>
+                    <p className="summary-value">{filteredIncidents.length}</p>
+                    <small>Open: {teamOpenIncidentsCount}</small>
+                  </>
+                ) : (
+                  <>
+                    <p className="summary-value">—</p>
+                    <small>Select a team to see details.</small>
+                  </>
+                )}
               </div>
               <div className="summary-card recent">
-                <h3>Recent Messages</h3>
+                <h3>Recent Messages (All)</h3>
                 <ul>
-                  {summary.recent_messages.map((item) => (
+                  {recentMessagesAll.map((item) => (
                     <li key={item.id}>
                       <strong>{item.incident_reference}</strong> — {item.subject}
                     </li>
                   ))}
+                  {!recentMessagesAll.length && <li>No recent messages.</li>}
                 </ul>
+              </div>
+              <div className="summary-card recent">
+                <h3>Recent Messages (Team)</h3>
+                {selectedTeam ? (
+                  <ul>
+                    {recentMessagesTeam.map((item) => (
+                      <li key={`team-${item.id}`}>
+                        <strong>{item.incident_reference}</strong> — {item.subject}
+                      </li>
+                    ))}
+                    {!recentMessagesTeam.length && <li>No recent messages for this team.</li>}
+                  </ul>
+                ) : (
+                  <p className="empty-state">Select a team to view messages.</p>
+                )}
               </div>
             </div>
             <div className="summary-actions">
@@ -1487,9 +1586,17 @@ const parseEntriesFromEmails = (rawInput) => {
           </div>
         );
       case 'incident':
+        if (!selectedTeam) {
+          return (
+            <section className="tab-panel">
+              <h2>Create Incident</h2>
+              <p className="empty-state">Select a team using the filter above to create incidents.</p>
+            </section>
+          );
+        }
         return (
-        <section className="tab-panel">
-          <h2>Create Incident</h2>
+          <section className="tab-panel">
+            <h2>Create Incident</h2>
             <form onSubmit={handleIncidentSubmit} className="form-grid sc-form">
               <label className="form-field">
                 <span>INC Number</span>
@@ -2288,6 +2395,22 @@ const parseEntriesFromEmails = (rawInput) => {
             {section.label}
           </button>
         ))}
+        <div className="team-filter-control">
+          <label htmlFor="team-filter-select">Team</label>
+          <select
+            id="team-filter-select"
+            value={selectedTeam || ''}
+            onChange={handleTeamFilterChange}
+          >
+            <option value="">Select a team</option>
+            {Array.isArray(teams) &&
+              teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+          </select>
+        </div>
       </nav>
 
       {error && <div className="alert">{error}</div>}

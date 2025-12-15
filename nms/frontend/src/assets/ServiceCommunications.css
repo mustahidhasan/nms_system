@@ -123,6 +123,8 @@
   border-bottom: 1px solid var(--sc-border);
   box-shadow: 0 4px 16px rgba(27, 107, 58, 0.05);
   overflow-x: auto;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .sc-subnav .subnav-item {
@@ -139,6 +141,31 @@
 .sc-subnav .subnav-item.active {
   background: var(--sc-green);
   color: white;
+}
+
+.team-filter-control {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  flex-shrink: 0;
+}
+
+.team-filter-control label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sc-green-muted);
+}
+
+.team-filter-control select {
+  border: 1px solid var(--sc-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-weight: 600;
+  color: var(--sc-green);
+  background: #ffffff;
 }
 
 .icon-button {
