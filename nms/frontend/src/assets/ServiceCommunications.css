@@ -1158,6 +1158,13 @@
   justify-content: flex-end;
 }
 
+.template-apply-hint {
+  color: #b35c00;
+  font-size: 0.9rem;
+  text-align: right;
+  margin: -0.25rem 0 0.5rem;
+}
+
 .form-field .field-header {
   display: flex;
   justify-content: space-between;
@@ -1218,15 +1225,71 @@
 }
 
 .modal-close {
-  background: transparent !important;
-  border: none !important;
-  color: var(--sc-green);
+  background: rgba(198, 40, 40, 0.08) !important;
+  border: 1px solid rgba(198, 40, 40, 0.2) !important;
+  color: #c62828;
   font-size: 1.25rem;
   width: 38px;
   height: 38px;
   border-radius: 50%;
   cursor: pointer;
   box-shadow: none !important;
+}
+
+.modal-close:hover {
+  background: rgba(198, 40, 40, 0.08) !important;
+  color: #8b1f1f;
+}
+
+.sc-modal.success-modal {
+  max-width: 420px;
+  padding: 1rem 1.5rem 2rem;
+  background: linear-gradient(145deg, #ffffff 0%, #ecf8ef 100%);
+  border: 1px solid #d7efe0;
+}
+
+.sc-modal.success-modal .sc-modal-header {
+  border-bottom: none;
+  justify-content: flex-end;
+  padding: 0.25rem 0;
+}
+
+.success-body {
+  text-align: center;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.success-body h3 {
+  margin: 0;
+  color: var(--sc-green);
+}
+
+.success-body p {
+  margin: 0 auto;
+  color: #4a684a;
+  max-width: 260px;
+}
+
+.success-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #b1e0c0 100%);
+  color: var(--sc-green);
+  box-shadow: 0 10px 25px rgba(27, 107, 58, 0.35);
+}
+
+.success-body button.primary {
+  margin: 0 auto;
+  min-width: 160px;
 }
 
 .modal-close.danger {

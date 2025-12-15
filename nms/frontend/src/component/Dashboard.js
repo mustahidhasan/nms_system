@@ -192,11 +192,13 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [activeSubNav, setActiveSubNav] = useState('overview');
   const [toastMessage, setToastMessage] = useState('');
+  const [emailSuccessModalVisible, setEmailSuccessModalVisible] = useState(false);
   const [activeIncidentModal, setActiveIncidentModal] = useState(null);
   const [pendingPanelFromQuery, setPendingPanelFromQuery] = useState(null);
   const [showInlineListModal, setShowInlineListModal] = useState(false);
   const [forceTeamFromIncident, setForceTeamFromIncident] = useState(false);
   const [incidentStatusFilter, setIncidentStatusFilter] = useState('all');
+  const [confirmedTemplateId, setConfirmedTemplateId] = useState(null);
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
   const toastTimeoutRef = useRef(null);
@@ -807,6 +809,12 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     return () => clearTimeout(timeout);
   }, [error]);
 
+  useEffect(() => {
+    if (!emailSuccessModalVisible) return undefined;
+    const timeout = setTimeout(() => setEmailSuccessModalVisible(false), 2000);
+    return () => clearTimeout(timeout);
+  }, [emailSuccessModalVisible]);
+
   const templateOptions = useMemo(() => templates || [], [templates]);
   const templateLookup = useMemo(() => {
     const map = new Map();
@@ -882,6 +890,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     () => getTemplatePreview(messageForm.templateType),
     [getTemplatePreview, messageForm.templateType]
   );
+  const templateConfirmationValid = confirmedTemplateId === messageForm.templateType;
 
   useEffect(() => {
     if (!messageTemplatePreview) return;
@@ -922,6 +931,7 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       body: messageTemplatePreview.body,
     }));
     lastTemplateAppliedRef.current = messageForm.templateType;
+    setConfirmedTemplateId(messageForm.templateType);
     showToast('Template applied to message');
   }, [messageTemplatePreview, messageForm.templateType, showToast]);
 
@@ -931,6 +941,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       pointOfContact: prev.pointOfContact || getDefaultPointOfContact(auth),
     }));
   }, [auth]);
+
+  useEffect(() => {
+    setConfirmedTemplateId(null);
+  }, [selectedIncident]);
 
   useEffect(() => {
     if (!selectedIncident) {
@@ -962,6 +976,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   useEffect(() => {
     setActiveIncidentModal(null);
   }, [selectedIncident]);
+
+  useEffect(() => {
+    setConfirmedTemplateId(null);
+  }, [messageForm.templateType]);
 
   useEffect(() => {
     setMessageForm((prev) => {
@@ -1199,6 +1217,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       setError('Add a distribution list to this incident before sending a message.');
       return;
     }
+    if (confirmedTemplateId !== messageForm.templateType) {
+      setError('Press "Apply Template" before sending the update.');
+      return;
+    }
     try {
       setLoading(true);
       setError('');
@@ -1239,8 +1261,10 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
         distributionLists: selectedIncidentDetails?.distribution_lists || [],
       }));
       setMessageFiles([]);
+      setConfirmedTemplateId(null);
       await loadMessages(selectedIncident);
       showToast('Email sent');
+      setEmailSuccessModalVisible(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -2238,10 +2262,17 @@ const parseEntriesFromEmails = (rawInput) => {
               <span>Attachments</span>
               <input type="file" multiple onChange={(e) => setMessageFiles(Array.from(e.target.files))} />
             </label>
-                    <button type="submit" className="primary" disabled={loading}>
-                      Send Email
-                    </button>
-                  </form>
+            {!templateConfirmationValid && (
+              <p className="template-apply-hint">Press "Apply Template" to enable sending.</p>
+            )}
+            <button
+              type="submit"
+              className="primary"
+              disabled={loading || !templateConfirmationValid}
+            >
+              Send Email
+            </button>
+          </form>
           <hr />
           <ul className="timeline">
             {messages.map((message) => (
@@ -2499,6 +2530,43 @@ const parseEntriesFromEmails = (rawInput) => {
       {toastMessage && (
         <div className="toast" role="status" aria-live="polite">
           {toastMessage}
+        </div>
+      )}
+      {emailSuccessModalVisible && (
+        <div
+          className="sc-modal-overlay"
+          role="alertdialog"
+          aria-modal="true"
+          onClick={() => setEmailSuccessModalVisible(false)}
+        >
+          <div
+            className="sc-modal success-modal"
+            role="document"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="sc-modal-header">
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setEmailSuccessModalVisible(false)}
+                aria-label="Close notification"
+              >
+                ✖
+              </button>
+            </div>
+            <div className="sc-modal-body success-body">
+              <div className="success-icon">✅</div>
+              <h3>Email Sent Successfully</h3>
+              <p>Your update has been shared with the selected distribution lists.</p>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => setEmailSuccessModalVisible(false)}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
