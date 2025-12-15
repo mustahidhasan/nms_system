@@ -13,6 +13,12 @@ const SUB_NAV_SECTIONS = [
   { id: 'lists', label: 'Distribution Lists' },
 ];
 
+const INCIDENT_STATUS_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'open', label: 'Open' },
+  { id: 'closed', label: 'Closed' },
+];
+
 const readCookie = (name) => {
   if (!document?.cookie) return null;
   return document.cookie
@@ -171,11 +177,14 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const [showInlineListModal, setShowInlineListModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [forceTeamFromIncident, setForceTeamFromIncident] = useState(false);
+  const [incidentStatusFilter, setIncidentStatusFilter] = useState('all');
   const refreshPromiseRef = useRef(null);
   const settingsMenuRef = useRef(null);
   const toastTimeoutRef = useRef(null);
 
   const previousIncidentRef = useRef(null);
+  const incidentNextCommunicationRef = useRef(null);
+  const messageNextCommunicationRef = useRef(null);
 
   const legacyBaseUrl = useMemo(() => {
     if (!apiBaseUrl) return '';
@@ -234,6 +243,20 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   const handleSectionNav = useCallback((sectionId) => {
     setActiveSubNav(sectionId);
   }, []);
+
+  const handleStatusFilterChange = useCallback((filterId) => {
+    setIncidentStatusFilter(filterId);
+  }, []);
+
+  const confirmDateSelection = useCallback(
+    (inputRef) => {
+      if (inputRef?.current) {
+        inputRef.current.blur();
+      }
+      showToast('Next communication time updated');
+    },
+    [showToast]
+  );
 
   const persistAuth = useCallback(
     (nextAuth) => {
@@ -517,10 +540,26 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   }, [distributionLists]);
 
   const filteredIncidents = useMemo(() => {
-    const list = Array.isArray(incidents) ? incidents : [];
-    if (!selectedTeam) return list;
-    return list.filter((incident) => incident.team === selectedTeam);
-  }, [incidents, selectedTeam]);
+    let list = Array.isArray(incidents) ? incidents : [];
+    if (selectedTeam) {
+      list = list.filter((incident) => incident.team === selectedTeam);
+    }
+    if (incidentStatusFilter === 'open') {
+      return list.filter((incident) => (incident.status || '').toLowerCase() !== 'closed');
+    }
+    if (incidentStatusFilter === 'closed') {
+      return list.filter((incident) => (incident.status || '').toLowerCase() === 'closed');
+    }
+    return list;
+  }, [incidents, selectedTeam, incidentStatusFilter]);
+
+  useEffect(() => {
+    if (!selectedIncident) return;
+    const stillVisible = filteredIncidents.some((incident) => incident.id === selectedIncident);
+    if (!stillVisible) {
+      setSelectedIncident(null);
+    }
+  }, [filteredIncidents, selectedIncident]);
 
   const availableLists = useMemo(() => {
     const lists = Array.isArray(distributionLists) ? distributionLists : [];
@@ -556,6 +595,87 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
   }, [availableLists]);
 
   const templateOptions = useMemo(() => templates || [], [templates]);
+  const templateLookup = useMemo(() => {
+    const map = new Map();
+    templateOptions.forEach((template) => {
+      if (template?.id) {
+        map.set(template.id, template);
+      }
+    });
+    return map;
+  }, [templateOptions]);
+
+  const messageTemplateContext = useMemo(() => {
+    const incident = selectedIncidentDetails;
+    const fallbackSummary =
+      incident?.summary || incident?.problem_description || messageForm.problemDescription || '';
+    const fallbackTitle = incident?.title || incident?.summary || messageForm.subject || '';
+    const nextCommunicationValue =
+      incident?.next_communication_time ||
+      (messageForm.nextCommunicationTime ? normalizeDateForApi(messageForm.nextCommunicationTime) : null);
+    const formattedNextUpdate = nextCommunicationValue ? formatDateTime(nextCommunicationValue) : '';
+    return {
+      title: fallbackTitle,
+      summary: fallbackSummary,
+      impact: incident?.impact || '',
+      severity: incident?.severity || '',
+      status: incident?.status || '',
+      next_update: formattedNextUpdate,
+      effective_date: formattedNextUpdate,
+    };
+  }, [
+    selectedIncidentDetails,
+    messageForm.problemDescription,
+    messageForm.subject,
+    messageForm.nextCommunicationTime,
+  ]);
+
+  const getTemplatePreview = useCallback(
+    (templateId) => {
+      if (!templateId) return null;
+      const template = templateLookup.get(templateId);
+      if (!template) return null;
+      const applyTokens = (value = '') =>
+        value.replace(/\{(\w+)\}/g, (_, token) => messageTemplateContext[token] ?? '');
+      return {
+        subject: applyTokens(template.subject || ''),
+        body: applyTokens(template.body || ''),
+      };
+    },
+    [templateLookup, messageTemplateContext]
+  );
+
+  const messageTemplatePreview = useMemo(
+    () => getTemplatePreview(messageForm.templateType),
+    [getTemplatePreview, messageForm.templateType]
+  );
+
+  useEffect(() => {
+    if (!messageTemplatePreview) return;
+    setMessageForm((prev) => {
+      if (prev.subject || prev.body) {
+        return prev;
+      }
+      return {
+        ...prev,
+        subject: messageTemplatePreview.subject,
+        body: messageTemplatePreview.body,
+      };
+    });
+  }, [messageTemplatePreview]);
+
+  const handleApplyMessageTemplate = useCallback(() => {
+    if (!messageTemplatePreview) {
+      showToast('Select a template to apply');
+      return;
+    }
+    setMessageForm((prev) => ({
+      ...prev,
+      subject: messageTemplatePreview.subject,
+      body: messageTemplatePreview.body,
+    }));
+    showToast('Template applied to message');
+  }, [messageTemplatePreview, showToast]);
 
   useEffect(() => {
     setMessageForm((prev) => ({
@@ -1345,14 +1465,24 @@ const parseEntriesFromEmails = (rawInput) => {
               </div>
               <label className="form-field">
                 <span>Next Communication Time (UTC/local)</span>
-                <input
-                  type="datetime-local"
-                  value={incidentForm.nextCommunicationTime}
-                  onChange={(e) =>
-                    setIncidentForm({ ...incidentForm, nextCommunicationTime: e.target.value })
-                  }
-                  required
-                />
+                <div className="datetime-input">
+                  <input
+                    type="datetime-local"
+                    ref={incidentNextCommunicationRef}
+                    value={incidentForm.nextCommunicationTime}
+                    onChange={(e) =>
+                      setIncidentForm({ ...incidentForm, nextCommunicationTime: e.target.value })
+                    }
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="date-ok-button"
+                    onClick={() => confirmDateSelection(incidentNextCommunicationRef)}
+                  >
+                    OK
+                  </button>
+                </div>
               </label>
               <label className="form-field">
                 <span>Templates</span>
@@ -1404,25 +1534,51 @@ const parseEntriesFromEmails = (rawInput) => {
         return (
           <div className="tab-stack">
             <section className="tab-panel">
-              <h2>All Incidents</h2>
-              <ul className="incident-list">
-                {filteredIncidents.map((incident) => (
-                  <li
-                    key={incident.id}
-                    className={incident.id === selectedIncident ? 'active' : ''}
-                    onClick={() => setSelectedIncident(incident.id)}
-                  >
-                    <div>
-                      <strong>{incident.reference_id || incident.inc_number || incident.id}</strong> — {incident.title}
-                      <span className={`status-pill ${incident.status}`}>{incident.status}</span>
-                    </div>
-                    <small>
-                      {incident.inc_number ? `${incident.inc_number} • ` : ''}
-                      {incident.incident_type?.toUpperCase()}
-                    </small>
-                  </li>
-                ))}
-              </ul>
+              <div className="panel-header compact">
+                <h2>All Incidents</h2>
+                <div
+                  className="incident-filter-chips"
+                  role="group"
+                  aria-label="Filter incidents by status"
+                >
+                  {INCIDENT_STATUS_FILTERS.map((filter) => (
+                    <button
+                      type="button"
+                      key={filter.id}
+                      className={`filter-chip ${incidentStatusFilter === filter.id ? 'active' : ''}`}
+                      onClick={() => handleStatusFilterChange(filter.id)}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {filteredIncidents.length ? (
+                <ul className="incident-list">
+                  {filteredIncidents.map((incident) => (
+                    <li
+                      key={incident.id}
+                      className={incident.id === selectedIncident ? 'active' : ''}
+                      onClick={() => setSelectedIncident(incident.id)}
+                    >
+                      <div>
+                        <strong>{incident.reference_id || incident.inc_number || incident.id}</strong> — {incident.title}
+                        <span className={`status-pill ${incident.status}`}>{incident.status}</span>
+                      </div>
+                      <small>
+                        {incident.inc_number ? `${incident.inc_number} • ` : ''}
+                        {incident.incident_type?.toUpperCase()}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="empty-state">
+                  {selectedTeam
+                    ? 'No incidents match the selected filters.'
+                    : 'Select a team to view incidents.'}
+                </p>
+              )}
             </section>
             <section className="tab-panel">
               <h2>Incident Workspace</h2>
@@ -1508,7 +1664,7 @@ const parseEntriesFromEmails = (rawInput) => {
                     onChange={(e) => setListForm({ ...listForm, emails: e.target.value })}
                   />
                 </label>
-                <div className="radio-group">
+                <div className="radio-group radio-row">
                   <label className={`chip-control${listForm.scope === 'team' ? ' active' : ''}`}>
                     <input
                       type="radio"
@@ -1645,6 +1801,23 @@ const parseEntriesFromEmails = (rawInput) => {
                 ))}
               </select>
             </label>
+            {messageTemplatePreview && (
+              <div className="template-preview">
+                <div className="template-preview-section">
+                  <span>Preview Subject</span>
+                  <p>{messageTemplatePreview.subject || '—'}</p>
+                </div>
+                <div className="template-preview-section">
+                  <span>Preview Body</span>
+                  <pre>{messageTemplatePreview.body || '—'}</pre>
+                </div>
+                <div className="template-preview-actions">
+                  <button type="button" className="secondary" onClick={handleApplyMessageTemplate}>
+                    Apply Template
+                  </button>
+                </div>
+              </div>
+            )}
             <label className="form-field">
               <div className="field-header">
                 <span>Distribution Lists</span>
@@ -1693,13 +1866,23 @@ const parseEntriesFromEmails = (rawInput) => {
             </label>
             <label className="form-field">
               <span>Override Next Communication</span>
-              <input
-                type="datetime-local"
-                value={messageForm.nextCommunicationTime}
-                onChange={(e) =>
-                  setMessageForm({ ...messageForm, nextCommunicationTime: e.target.value })
-                }
-              />
+              <div className="datetime-input">
+                <input
+                  type="datetime-local"
+                  ref={messageNextCommunicationRef}
+                  value={messageForm.nextCommunicationTime}
+                  onChange={(e) =>
+                    setMessageForm({ ...messageForm, nextCommunicationTime: e.target.value })
+                  }
+                />
+                <button
+                  type="button"
+                  className="date-ok-button"
+                  onClick={() => confirmDateSelection(messageNextCommunicationRef)}
+                >
+                  OK
+                </button>
+              </div>
             </label>
             <label className="form-field">
               <span>Extra Recipients</span>
@@ -1854,7 +2037,7 @@ const parseEntriesFromEmails = (rawInput) => {
                 onChange={(e) => setInlineListForm({ ...inlineListForm, emails: e.target.value })}
               />
             </label>
-            <div className="radio-group">
+            <div className="radio-group radio-row">
               <label className={`chip-control${inlineListForm.scope === 'team' ? ' active' : ''}`}>
                 <input
                   type="radio"
