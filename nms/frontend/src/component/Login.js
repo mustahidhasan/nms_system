@@ -76,7 +76,7 @@ function Login({ apiBaseUrl, legacyBaseUrl }) {
       <div className="login-frame">
         <header className="login-header">
           <img src="logo_left.png" className="logo-left" alt="Network logo" />
-          <div className="login-title">Network Management Suite</div>
+          <div className="login-title">Network Management Operations</div>
           <img src="logo_right.png" className="logo-right" alt="Operations logo" />
           <button
             type="button"
