@@ -562,6 +562,53 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
     [setDistributionLists]
   );
 
+  const formatApiError = useCallback((err) => {
+    if (!err) return 'Something went wrong. Please try again.';
+    const data = err.responseData;
+    if (data) {
+      if (Array.isArray(data.non_field_errors) && data.non_field_errors.length) {
+        return data.non_field_errors.join(' ');
+      }
+      if (Array.isArray(data.entries)) {
+        const entryMessages = data.entries
+          .map((entryErr, index) => {
+            if (!entryErr) return null;
+            const fieldMessages = Object.entries(entryErr)
+              .map(([field, value]) => {
+                if (Array.isArray(value) && value.length) {
+                  return `${field.charAt(0).toUpperCase() + field.slice(1)} ${index + 1}: ${value.join(', ')}`;
+                }
+                if (typeof value === 'string' && value.trim()) {
+                  return `${field.charAt(0).toUpperCase() + field.slice(1)} ${index + 1}: ${value}`;
+                }
+                return null;
+              })
+              .filter(Boolean);
+            return fieldMessages.join(' ');
+          })
+          .filter(Boolean);
+        if (entryMessages.length) {
+          return entryMessages.join(' ');
+        }
+      }
+      const otherField = Object.entries(data)
+        .map(([field, value]) => {
+          if (Array.isArray(value) && value.length) {
+            return `${field}: ${value.join(', ')}`;
+          }
+          if (typeof value === 'string' && value.trim()) {
+            return `${field}: ${value}`;
+          }
+          return null;
+        })
+        .filter(Boolean);
+      if (otherField.length) {
+        return otherField[0];
+      }
+    }
+    return err.message || 'Something went wrong. Please try again.';
+  }, []);
+
   const distributionLookup = useMemo(() => {
     const map = new Map();
     (distributionLists || []).forEach((list) => map.set(list.id, list));
@@ -622,6 +669,12 @@ function Dashboard({ apiBaseUrl, auth, setAuth }) {
       return alreadyDefault ? prev : { ...prev, distributionLists: defaultSelection };
     });
   }, [availableLists]);
+
+  useEffect(() => {
+    if (!error) return undefined;
+    const timeout = setTimeout(() => setError(''), 3000);
+    return () => clearTimeout(timeout);
+  }, [error]);
 
   const templateOptions = useMemo(() => templates || [], [templates]);
   const templateLookup = useMemo(() => {
@@ -1101,15 +1154,7 @@ const parseEntriesFromEmails = (rawInput) => {
       resetListForm();
       await loadDistributionLists();
     } catch (err) {
-      if (
-        err.responseData &&
-        Array.isArray(err.responseData.non_field_errors) &&
-        err.responseData.non_field_errors.length
-      ) {
-        setError(err.responseData.non_field_errors.join(' '));
-      } else {
-        setError(err.message);
-      }
+      setError(formatApiError(err));
     } finally {
       setLoading(false);
     }
@@ -1210,15 +1255,7 @@ const parseEntriesFromEmails = (rawInput) => {
         });
       }
     } catch (err) {
-      if (
-        err.responseData &&
-        Array.isArray(err.responseData.non_field_errors) &&
-        err.responseData.non_field_errors.length
-      ) {
-        setError(err.responseData.non_field_errors.join(' '));
-      } else {
-        setError(err.message);
-      }
+      setError(formatApiError(err));
     } finally {
       setLoading(false);
     }
