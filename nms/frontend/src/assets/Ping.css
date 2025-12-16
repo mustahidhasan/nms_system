@@ -5,7 +5,7 @@
   font-family: 'Segoe UI', sans-serif;
   display: flex;
   flex-direction: column;
-  padding: 0 24px 24px;
+  padding: 0 24px 160px;
   box-sizing: border-box;
 }
 
@@ -32,10 +32,23 @@
 
 .title {
   flex: 1;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
   font-size: 24px;
   color: #247e00;
   margin: 0;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+}
+
+.version-tag {
+  font-size: 0.65em;
+  color: #1b5c00;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 

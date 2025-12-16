@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { flushSync } from 'react-dom';
+import AppFooter from './AppFooter';
 import '../assets/Ping.css';
 
 function Ping({ apiBaseUrl, setAuth, auth }) {
@@ -439,7 +440,9 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
           </button>
           <img src="logo_left.png" alt="Left Logo" className="logo" />
         </div>
-        <h2 className="title">Network Operations</h2>
+        <h2 className="title">
+          Network Operations <span className="version-tag">v1.0</span>
+        </h2>
         <div className="right-section">
           <img src="logo_right.png" alt="Right Logo" className="logo" />
           <div className="sc-settings-trigger" ref={settingsMenuRef}>
@@ -688,6 +691,7 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
           </div>
         )}
       </div>
+      <AppFooter apiBaseUrl={apiBaseUrl} />
     </div>
   );
 }

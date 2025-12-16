@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import AppFooter from './AppFooter';
 import '../App.css';
 import '../assets/ServiceCommunications.css';
 
@@ -2515,6 +2516,8 @@ const parseEntriesFromEmails = (rawInput) => {
           </div>
         </div>
       )}
+
+      <AppFooter apiBaseUrl={apiBaseUrl} />
 
       {loading && <div className="backdrop">Working...</div>}
     </div>

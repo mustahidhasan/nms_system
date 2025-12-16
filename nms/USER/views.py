@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.utils.timezone import now, timedelta
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
+from django.views.decorators.http import require_GET
 import logging
 from USER.models import UserActivity, UserProfile, UserRole, get_user_role
 
@@ -14,6 +15,22 @@ logger = logging.getLogger(__name__)
 
 RECENT_LOGIN_DUPLICATE_WINDOW = timedelta(seconds=5)
 SESSION_ACTIVITY_KEY = "active_login_activity_id"
+
+
+@require_GET
+def app_metadata(request):
+    contact_email = (
+        settings.DEFAULT_FROM_EMAIL
+        or settings.EMAIL_HOST_USER
+        or settings.EMAIL_HOST
+        or "no-reply@example.com"
+    )
+    return JsonResponse(
+        {
+            "contact_email": contact_email,
+        }
+    )
+
 
 def login_view(request):
     return JsonResponse({"message": "Render login page here (SSO button logic handled in frontend)"})

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AppFooter from './AppFooter';
 import '../assets/Login.css';
 
 function Login({ apiBaseUrl, legacyBaseUrl }) {
@@ -131,6 +132,7 @@ function Login({ apiBaseUrl, legacyBaseUrl }) {
           <small className="login-hint">SSO is required. Reach out to the NMS team if you need access.</small>
         </main>
       </div>
+      <AppFooter apiBaseUrl={apiBaseUrl} />
     </div>
   );
 }

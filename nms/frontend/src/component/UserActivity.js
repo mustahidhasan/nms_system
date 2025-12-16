@@ -1,6 +1,7 @@
 // src/components/UserActivity.js
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // import useNavigate
+import AppFooter from './AppFooter';
 import '../assets/UserActivity.css';
 
 const formatDateTimeIST = (value) => {
@@ -90,6 +91,7 @@ function UserActivity({ apiBaseUrl }) {
           ))}
         </tbody>
       </table>
+      <AppFooter apiBaseUrl={apiBaseUrl} />
     </div>
   );
 }
