@@ -1,12 +1,20 @@
 // src/components/Ping.js
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { flushSync } from 'react-dom';
 import AppFooter from './AppFooter';
 import '../assets/Ping.css';
 
 function Ping({ apiBaseUrl, setAuth, auth }) {
   const navigate = useNavigate();
+  const legacyBaseUrl = useMemo(() => {
+    if (!apiBaseUrl) return '';
+    try {
+      const parsed = new URL(apiBaseUrl);
+      return `${parsed.protocol}//${parsed.host}`;
+    } catch (err) {
+      return apiBaseUrl.replace(/\/api\/?$/, '') || apiBaseUrl;
+    }
+  }, [apiBaseUrl]);
   const allOps = [
     'enable_ping',
     'verbose_ping',
@@ -32,6 +40,7 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
   const [emailStatus, setEmailStatus] = useState(null);
   const [lastRunAt, setLastRunAt] = useState(null);
   const settingsMenuRef = useRef(null);
+  const profileHydrateRef = useRef(false);
   const storedAuth = useMemo(() => {
     try {
       const raw = localStorage.getItem('nmsAuth');
@@ -43,18 +52,7 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
   const effectiveAuth = auth || storedAuth;
   const profileDisplayName = useMemo(() => {
     const first = (effectiveAuth?.user?.first_name || '').trim();
-    if (first) return first;
-    const fallback = (effectiveAuth?.user?.name || '').trim();
-    if (fallback) {
-      const [firstWord] = fallback.split(/\s+/);
-      if (firstWord) return firstWord;
-    }
-    const email = (effectiveAuth?.user?.email || '').trim();
-    if (email) {
-      const [localPart] = email.split('@');
-      if (localPart) return localPart;
-    }
-    return 'Network User';
+    return first;
   }, [effectiveAuth]);
   const userInitials = useMemo(() => {
     const first = (effectiveAuth?.user?.first_name || '').trim();
@@ -75,6 +73,37 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
     const storedLastRun = sessionStorage.getItem('last_run_at');
     if (storedLastRun) setLastRunAt(storedLastRun);
   }, []);
+
+  useEffect(() => {
+    if (profileHydrateRef.current) return;
+    if (effectiveAuth?.user?.first_name) return;
+    profileHydrateRef.current = true;
+    const hydrateProfile = async () => {
+      try {
+        const csrfToken = getCookie('csrftoken');
+        const response = await fetch(`${apiBaseUrl}/auth/session-login/`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          body: JSON.stringify({}),
+        });
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        localStorage.setItem('nmsAuth', JSON.stringify(data));
+        if (typeof setAuth === 'function') {
+          setAuth(data);
+        }
+      } catch (err) {
+        // ignore profile hydration errors
+      }
+    };
+    hydrateProfile();
+  }, [apiBaseUrl, effectiveAuth, setAuth]);
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
@@ -110,69 +139,55 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
     return cookieValue;
   }
 
+  const clearLocalSession = useCallback(() => {
+    localStorage.removeItem('nmsAuth');
+    if (typeof setAuth === 'function') {
+      setAuth(null);
+    }
+  }, [setAuth]);
+
   const handleLogout = async () => {
     try {
       setLoading(true);
+      setShowSettingsDropdown(false);
       const csrfToken = getCookie('csrftoken');
-      const response = await fetch(`${apiBaseUrl}/logout/`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'X-CSRFToken': csrfToken,
-        },
-      });
+      const headers = csrfToken ? { 'X-CSRFToken': csrfToken } : {};
+      const tryLogout = async (url) => {
+        const response = await fetch(`${url}/logout/`, {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+        });
+        let data = null;
+        try {
+          data = await response.json();
+        } catch (err) {
+          // ignore json parsing errors
+        }
+        return { response, data };
+      };
 
-      const data = await response.json();
-      if (data.success && data.logout_url) {
-        window.location.href = data.logout_url;
+      let result = await tryLogout(legacyBaseUrl);
+      if (!result.response.ok && apiBaseUrl && apiBaseUrl !== legacyBaseUrl) {
+        result = await tryLogout(apiBaseUrl);
+      }
+
+      if (result.data?.success && result.data?.logout_url) {
+        clearLocalSession();
+        window.location.href = result.data.logout_url;
         return;
       }
 
-      if (response.ok) {
-        localStorage.removeItem('nmsAuth');
-        if (typeof setAuth === 'function') {
-          setAuth(null);
-        }
-        navigate('/');
-      } else {
-        console.error('Logout failed:', data.message || 'Unknown error');
+      if (!result.response.ok) {
+        console.error('Logout failed:', result.data?.message || 'Unknown error');
       }
+      clearLocalSession();
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
+      clearLocalSession();
+      navigate('/');
     }finally{
-      setLoading(false);
-    }
-  };
-
-  const handleServiceCommunications = async () => {
-    try {
-      setLoading(true);
-      const csrfToken = getCookie('csrftoken');
-      const response = await fetch(`${apiBaseUrl}/auth/session-login/`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrfToken,
-        },
-        body: JSON.stringify({}),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || 'Unable to open Service Communications.');
-      }
-      flushSync(() => {
-        localStorage.setItem('nmsAuth', JSON.stringify(data));
-        if (typeof setAuth === 'function') {
-          setAuth(data);
-        }
-      });
-      setShowSettingsDropdown(false);
-      navigate('/service-communications');
-    } catch (error) {
-      console.error('Service Communications error:', error);
-      alert(error.message || 'Failed to load Service Communications.');
-    } finally {
       setLoading(false);
     }
   };
@@ -461,7 +476,6 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
                   <div className="sc-avatar">{userInitials}</div>
                   <div className="sc-profile-details">
                     <span>{profileDisplayName}</span>
-                    <small>Network Operations</small>
                   </div>
                 </div>
                 <button
@@ -472,9 +486,6 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
                   }}
                 >
                   👤 User
-                </button>
-                <button type="button" onClick={handleServiceCommunications}>
-                  🛰️ Service Communications
                 </button>
                 <button type="button" onClick={handleLogout}>
                   ↩ Logout
@@ -666,8 +677,7 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
               <h3>About this workspace</h3>
               <p>
                 Network Operations collects diagnostics (ping, traceroute, DNS, SNMP, MTR) and lets you
-                notify distribution lists instantly. Service Communications manages teams, incidents, and
-                distribution lists used for messaging stakeholders.
+                notify distribution lists instantly.
               </p>
               <div className="tour-columns">
                 <div>
@@ -676,14 +686,6 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
                     <li>Select the checks you need from the sidebar.</li>
                     <li>Enter IPs, ranges, or hostnames and click Run Diagnostics.</li>
                     <li>Review results, export CSV, or email stakeholders.</li>
-                  </ol>
-                </div>
-                <div>
-                  <h4>Service Communications</h4>
-                  <ol>
-                    <li>Create or select a team to manage templates/lists.</li>
-                    <li>Open incidents, send timeline updates, or close with final messaging.</li>
-                    <li>Leverage distribution lists for consistent, audited communications.</li>
                   </ol>
                 </div>
               </div>
