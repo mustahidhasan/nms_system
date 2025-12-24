@@ -40,6 +40,7 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
   const [emailStatus, setEmailStatus] = useState(null);
   const [lastRunAt, setLastRunAt] = useState(null);
   const settingsMenuRef = useRef(null);
+  const profileHydrateRef = useRef(false);
   const storedAuth = useMemo(() => {
     try {
       const raw = localStorage.getItem('nmsAuth');
@@ -51,22 +52,8 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
   const effectiveAuth = auth || storedAuth;
   const profileDisplayName = useMemo(() => {
     const first = (effectiveAuth?.user?.first_name || '').trim();
-    const last = (effectiveAuth?.user?.last_name || '').trim();
-    const fullName = [first, last].filter(Boolean).join(' ').trim();
-    if (fullName) return fullName;
-    const fallback = (effectiveAuth?.user?.name || '').trim();
-    if (fallback) return fallback;
-    const email = (effectiveAuth?.user?.email || '').trim();
-    if (email) {
-      const [localPart] = email.split('@');
-      if (localPart) return localPart;
-    }
-    return 'Network User';
+    return first;
   }, [effectiveAuth]);
-  const profileEmail = useMemo(
-    () => (effectiveAuth?.user?.email || '').trim(),
-    [effectiveAuth]
-  );
   const userInitials = useMemo(() => {
     const first = (effectiveAuth?.user?.first_name || '').trim();
     const last = (effectiveAuth?.user?.last_name || '').trim();
@@ -86,6 +73,37 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
     const storedLastRun = sessionStorage.getItem('last_run_at');
     if (storedLastRun) setLastRunAt(storedLastRun);
   }, []);
+
+  useEffect(() => {
+    if (profileHydrateRef.current) return;
+    if (effectiveAuth?.user?.first_name) return;
+    profileHydrateRef.current = true;
+    const hydrateProfile = async () => {
+      try {
+        const csrfToken = getCookie('csrftoken');
+        const response = await fetch(`${apiBaseUrl}/auth/session-login/`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          body: JSON.stringify({}),
+        });
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        localStorage.setItem('nmsAuth', JSON.stringify(data));
+        if (typeof setAuth === 'function') {
+          setAuth(data);
+        }
+      } catch (err) {
+        // ignore profile hydration errors
+      }
+    };
+    hydrateProfile();
+  }, [apiBaseUrl, effectiveAuth, setAuth]);
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
@@ -131,29 +149,37 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
   const handleLogout = async () => {
     try {
       setLoading(true);
+      setShowSettingsDropdown(false);
       const csrfToken = getCookie('csrftoken');
-      const response = await fetch(`${legacyBaseUrl}/logout/`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'X-CSRFToken': csrfToken,
-        },
-      });
+      const headers = csrfToken ? { 'X-CSRFToken': csrfToken } : {};
+      const tryLogout = async (url) => {
+        const response = await fetch(`${url}/logout/`, {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+        });
+        let data = null;
+        try {
+          data = await response.json();
+        } catch (err) {
+          // ignore json parsing errors
+        }
+        return { response, data };
+      };
 
-      let data = null;
-      try {
-        data = await response.json();
-      } catch (err) {
-        // ignore json parsing errors
+      let result = await tryLogout(legacyBaseUrl);
+      if (!result.response.ok && apiBaseUrl && apiBaseUrl !== legacyBaseUrl) {
+        result = await tryLogout(apiBaseUrl);
       }
-      if (data.success && data.logout_url) {
+
+      if (result.data?.success && result.data?.logout_url) {
         clearLocalSession();
-        window.location.href = data.logout_url;
+        window.location.href = result.data.logout_url;
         return;
       }
 
-      if (!response.ok) {
-        console.error('Logout failed:', data?.message || 'Unknown error');
+      if (!result.response.ok) {
+        console.error('Logout failed:', result.data?.message || 'Unknown error');
       }
       clearLocalSession();
       navigate('/');
@@ -450,7 +476,6 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
                   <div className="sc-avatar">{userInitials}</div>
                   <div className="sc-profile-details">
                     <span>{profileDisplayName}</span>
-                    <small>{profileEmail || 'Network Operations'}</small>
                   </div>
                 </div>
                 <button
