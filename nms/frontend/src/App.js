@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import Login from './component/Login';
-import Dashboard from './component/Dashboard';
 import Ping from './component/Ping';
 import UserActivity from './component/UserActivity';
 import OAuthCallback from './component/OAuthCallback';
@@ -60,24 +59,14 @@ function App() {
           path="/dashboard"
           element={<Ping apiBaseUrl={apiBaseUrl} auth={auth} setAuth={setAuth} />}
         />
-        <Route
-          path="/service-communications"
-          element={
-            auth ? (
-              <Dashboard apiBaseUrl={apiBaseUrl} auth={auth} setAuth={setAuth} />
-            ) : (
-              <Navigate to="/dashboard" replace />
-            )
-          }
-        />
         <Route path="/admin/*" element={<AdminRedirect adminBaseUrl={baseUrl} />} />
         <Route path="/diagnostics" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/user-activity" element={<UserActivity apiBaseUrl={apiBaseUrl} />} />
-        <Route path="/oauth2/callback" element={<OAuthCallback apiBaseUrl={baseUrl} />} />
         <Route
-          path="*"
-          element={<Navigate to={auth ? '/service-communications' : '/dashboard'} replace />}
+          path="/user-activity"
+          element={<UserActivity apiBaseUrl={apiBaseUrl} auth={auth} setAuth={setAuth} />}
         />
+        <Route path="/oauth2/callback" element={<OAuthCallback apiBaseUrl={baseUrl} />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );
