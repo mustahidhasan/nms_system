@@ -47,6 +47,7 @@ HOSTNAME_PATTERN = re.compile(
 )
 SIMPLE_SNMP_TIMEOUT = 1  # seconds
 SIMPLE_SNMP_RETRIES = 0
+MAX_OPERATION_TARGETS = 50
 
 
 def generate_ip_list(ip_input):
@@ -588,6 +589,11 @@ def ping_operation(request):
     print("line 435", ip_addresses)
     if not ip_addresses:
         return JsonResponse({"error": "No valid IP address or hostname found."}, status=400)
+    if len(ip_addresses) > MAX_OPERATION_TARGETS:
+        return JsonResponse(
+            {"error": f"Please enter maximum {MAX_OPERATION_TARGETS} ip addresses for the operation."},
+            status=400,
+        )
 
     os_name = platform.system()
     table = PrettyTable()

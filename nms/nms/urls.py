@@ -10,7 +10,6 @@ api_patterns = [
     path("", include("USER.urls")),
     path("dashboard/", include("DASHBOARD.urls")),
     path("send-email/", dashboard_views.send_email, name="api_send_email"),
-    path("", include("communications.urls")),
 ]
 
 urlpatterns = [

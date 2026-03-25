@@ -49,6 +49,22 @@ def azure_login(request):
     return JsonResponse({"login_url": login_url})
 
 
+@login_required
+def session_login(request):
+    return JsonResponse(
+        {
+            "user": {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+                "first_name": request.user.first_name,
+                "last_name": request.user.last_name,
+                "role": get_user_role(request.user),
+            }
+        }
+    )
+
+
 def azure_callback(request):
     code = request.GET.get('code')
     next_url = request.GET.get('next', '/dashboard')
