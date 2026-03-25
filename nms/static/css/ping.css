@@ -180,6 +180,12 @@ body {
   width: 400px;
 }
 
+.ip-entry-note {
+  color: #dbe9d2;
+  font-size: 14px;
+  margin: 10px 0 0;
+}
+
 /* Left navigation bar styling */
 .left-navigation {
   height: calc(100vh - 105px); /* Full height minus the top nav height (105px) */

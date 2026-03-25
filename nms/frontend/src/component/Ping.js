@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import AppFooter from './AppFooter';
 import '../assets/Ping.css';
 
+const MAX_OPERATION_TARGETS = 50;
+
 function Ping({ apiBaseUrl, setAuth, auth }) {
   const navigate = useNavigate();
   const legacyBaseUrl = useMemo(() => {
@@ -81,7 +83,7 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
     const hydrateProfile = async () => {
       try {
         const csrfToken = getCookie('csrftoken');
-        const response = await fetch(`${apiBaseUrl}/auth/session-login/`, {
+        const response = await fetch(`${apiBaseUrl}/session-login/`, {
           method: 'POST',
           credentials: 'include',
           headers: {
@@ -232,6 +234,15 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
     e.preventDefault();
     setLoading(true);
     try {
+        const enteredTargets = startIp
+          .split(/[\s,]+/)
+          .map((value) => value.trim())
+          .filter(Boolean);
+        if (enteredTargets.length > MAX_OPERATION_TARGETS) {
+          alert(`Please enter maximum ${MAX_OPERATION_TARGETS} ip addresses for the operation.`);
+          return;
+        }
+
         const formData = new FormData();
         formData.append('start_ip_address', startIp);
         Object.entries(operations).forEach(([key, value]) => {
@@ -558,9 +569,7 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
           <section className="panel-card hero-card">
             <div className="hero-text">
               <h2>Network Operations Center</h2>
-              <p>
-                Execute diagnostics, observe telemetry, and share updates without leaving this dashboard.
-              </p>
+              <p>Execute diagnostics, observe telemetry, and share updates without leaving this dashboard.</p>
               <div className="action-toolbar">
                 <button type="button" className="ghost-button" onClick={() => setShowAbout(true)}>
                   ℹ️ Quick tour
@@ -600,6 +609,9 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
                   Clear
                 </button>
               </div>
+              <p className="ip-entry-note">
+                Please enter maximum 50 ip addresses for the operation
+              </p>
             </form>
             <div className="action-buttons">
               <button type="button" onClick={handleSelectAll} disabled={operations.snmp_walk}>
@@ -676,8 +688,7 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
               <button className="close-btn" onClick={() => setShowAbout(false)}>✖</button>
               <h3>About this workspace</h3>
               <p>
-                Network Operations collects diagnostics (ping, traceroute, DNS, SNMP, MTR) and lets you
-                notify distribution lists instantly.
+                Network Operations collects diagnostics (ping, traceroute, DNS, SNMP, MTR) in one dashboard.
               </p>
               <div className="tour-columns">
                 <div>

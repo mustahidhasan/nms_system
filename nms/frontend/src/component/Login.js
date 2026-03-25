@@ -116,16 +116,16 @@ function Login({ apiBaseUrl, legacyBaseUrl }) {
               </button>
               <p className="insights-title">Operational insights</p>
               <ul>
-                <li>Send consistent updates using curated templates.</li>
-                <li>Audit timelines, incidents, and distribution lists in one workspace.</li>
-                <li>Track the next communication commitment without spreadsheets.</li>
+                <li>Run diagnostics for ping, traceroute, DNS, SNMP, and MTR from one workspace.</li>
+                <li>Export or email results after each operation.</li>
+                <li>Track operator activity through the shared NMS login flow.</li>
               </ul>
             </div>
           )}
         </header>
         <main className="login-box">
           <h1>Welcome back</h1>
-          <p className="login-subtitle">Securely access diagnostics, ping tools, and incident workflows.</p>
+          <p className="login-subtitle">Securely access diagnostics, ping tools, and operator workflows.</p>
           <button type="button" onClick={handleSSOLogin} disabled={loading}>
             {loading ? 'Signing you in…' : 'Login via SSO'}
           </button>

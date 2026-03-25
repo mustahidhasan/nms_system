@@ -327,6 +327,12 @@
   gap: 16px;
 }
 
+.ip-entry-note {
+  margin: -4px 0 0;
+  color: #5f6f63;
+  font-size: 14px;
+}
+
 .input-section {
   display: flex;
   gap: 12px;

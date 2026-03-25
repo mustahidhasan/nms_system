@@ -1,4 +1,6 @@
 // Function to clear the form inputs without submitting the form
+const MAX_OPERATION_TARGETS = 50;
+
 function clearForm() {
   var form = document.getElementById("inputForm");
   var div_result = document.getElementById("result_div");
@@ -104,7 +106,20 @@ const form = document.getElementById("inputForm");
 const spinnerOverlay = document.getElementById("spinnerOverlay");
 
 // Add event listener for form submission
-form.addEventListener("submit", function () {
+form.addEventListener("submit", function (event) {
+  const enteredTargets = document
+    .getElementById("ipAddress")
+    .value
+    .split(/[\s,]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (enteredTargets.length > MAX_OPERATION_TARGETS) {
+    event.preventDefault();
+    alert(`Please enter maximum ${MAX_OPERATION_TARGETS} ip addresses for the operation.`);
+    return;
+  }
+
   // Show the spinner
   spinnerOverlay.style.display = "flex";
 
