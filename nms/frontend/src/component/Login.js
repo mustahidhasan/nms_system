@@ -10,6 +10,7 @@ function Login({ apiBaseUrl, auth, setAuth }) {
   const [showInsights, setShowInsights] = useState(false);
   const [mode, setMode] = useState('home');
   const [errorText, setErrorText] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
 
   useEffect(() => {
@@ -171,15 +172,25 @@ function Login({ apiBaseUrl, auth, setAuth }) {
                 required
               />
               <label htmlFor="login-password">Password</label>
-              <input
-                id="login-password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                value={loginForm.password}
-                onChange={onLoginFieldChange}
-                required
-              />
+              <div className="password-input-wrap">
+                <input
+                  id="login-password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={loginForm.password}
+                  onChange={onLoginFieldChange}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  👁
+                </button>
+              </div>
               <button type="submit" disabled={loading}>
                 {loading ? 'Signing you in…' : 'Login as User'}
               </button>

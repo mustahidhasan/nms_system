@@ -211,6 +211,39 @@
   font-size: 0.95rem;
 }
 
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 2.8rem;
+  box-sizing: border-box;
+}
+
+.login-box .password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  margin-top: 0;
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.45rem;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: none;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.login-box .password-toggle-btn:hover:not(:disabled) {
+  transform: translateY(-50%);
+  box-shadow: none;
+  background: #eef2f7;
+}
+
 .auth-form input:focus {
   outline: none;
   border-color: #22c55e;
