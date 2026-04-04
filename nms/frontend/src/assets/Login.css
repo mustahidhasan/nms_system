@@ -171,6 +171,66 @@
   font-size: 0.9rem;
 }
 
+.auth-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.login-box .auth-mode-btn {
+  margin-top: 0;
+  padding: 0.7rem 1rem;
+  border-radius: 0.7rem;
+  box-shadow: none;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.login-box .auth-mode-btn.active {
+  background: linear-gradient(120deg, #059669, #22c55e);
+  color: #ecfdf5;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.auth-form label {
+  font-size: 0.85rem;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.auth-form input {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.7rem;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.95rem;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+.auth-error,
+.auth-success {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.auth-error {
+  color: #dc2626;
+}
+
+.auth-success {
+  color: #15803d;
+}
+
 @media (max-width: 640px) {
   .login-container {
     padding: 1.5rem 1rem 200px;

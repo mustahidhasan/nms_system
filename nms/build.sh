@@ -18,11 +18,16 @@ fi
 
 ENV=${1:-dev}
 
+if [ "$ENV" != "dev" ] && [ "$ENV" != "prod" ]; then
+  echo "Invalid environment '$ENV'. Use: ./build.sh dev OR ./build.sh prod"
+  exit 1
+fi
+
 if [ "$ENV" = "prod" ]; then
   echo "Building Production Environment..."
   ENV_FILE_BE=".env.prod.be"
   ENV_FILE_FE=".env.prod.fe"
-  HOST_IP="18.212.236.236"
+  HOST_IP="${HOST_IP:-18.212.236.236}"
   COMPOSE_FILE="docker-compose.prod.yml"
   CERT_TARGET_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/certs"
   CERT_TARGET_CRT="$CERT_TARGET_DIR/server.crt"
@@ -40,12 +45,16 @@ if [ "$ENV" = "prod" ]; then
     echo "Reusing existing certificates in $CERT_TARGET_DIR"
   fi
 
-  if [ -w /etc/ssl ]; then
-    echo "Copying certificates into /etc/ssl for host-level usage..."
-    sudo cp "$CERT_TARGET_CRT" /etc/ssl/server.crt
-    sudo cp "$CERT_TARGET_KEY" /etc/ssl/server.key
+  if command -v sudo >/dev/null 2>&1; then
+    if sudo -n true >/dev/null 2>&1; then
+      echo "Copying certificates into /etc/ssl for host-level usage..."
+      sudo cp "$CERT_TARGET_CRT" /etc/ssl/server.crt
+      sudo cp "$CERT_TARGET_KEY" /etc/ssl/server.key
+    else
+      echo "Skipping copy to /etc/ssl (sudo requires password/non-interactive shell)."
+    fi
   else
-    echo "Warning: unable to write to /etc/ssl; ensure nginx host has access to $CERT_TARGET_DIR"
+    echo "Skipping copy to /etc/ssl (sudo unavailable)."
   fi
 else
   echo "Building Development Environment..."
@@ -72,9 +81,15 @@ echo "Building frontend container with $ENV_FILE_FE..."
 "${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" build frontend \
   --build-arg ENV_FILE="$ENV_FILE_FE"
 
-# Reset the schema, run migrations from scratch, and create the default admin user.
-echo "Resetting database schema and bootstrapping admin credentials..."
-"${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" run --rm backend python manage.py reset_and_bootstrap
+if [ "$ENV" = "dev" ]; then
+  # Dev reset: rebuild schema from scratch and seed predictable default admin credentials.
+  echo "Resetting database schema and bootstrapping admin credentials (dev)..."
+  "${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" run --rm backend python manage.py reset_and_bootstrap
+else
+  # Prod safety: never wipe data; just apply migrations.
+  echo "Applying database migrations (prod, non-destructive)..."
+  "${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" run --rm backend python manage.py migrate --noinput
+fi
 
 echo "Starting all containers..."
 "${COMPOSE_BIN[@]}" -f "$COMPOSE_FILE" up -d

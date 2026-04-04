@@ -1,4 +1,3 @@
-
 ---
 
 # 🚀 Production Deployment Guide (Docker + Private/Public IP + HTTPS + Azure SSO)
@@ -75,7 +74,7 @@ ALLOWED_HOSTS=18.212.236.236,localhost
 DJANGO_SECRET_KEY=your-secret-key
 
 # Azure SSO redirect
-AZURE_REDIRECT_URI=https://18.212.236.236:8000/oauth2/callback/
+AZURE_REDIRECT_URI=https://18.212.236.236/oauth2/callback/
 ```
 
 ### Frontend Example
@@ -102,6 +101,9 @@ Check logs:
 ```bash
 docker-compose -f docker-compose.prod.yml logs -f --tail=100
 ```
+
+> `./build.sh prod` is non-destructive and only applies migrations.
+> `./build.sh dev` rebuilds the DB and reseeds default admin credentials.
 
 ---
 
@@ -131,6 +133,6 @@ docker-compose -f docker-compose.prod.yml logs -f --tail=100
 
 This handoff is scoped to Network Management System diagnostics and operator access:
 
-* **Authentication** – Azure SSO login/logout plus session-backed access for the dashboard.
+* **Authentication** – Home page supports both `Login with Username` and Azure SSO. App self-registration is disabled. Default seeded admin user is `admin@gmail.com` with password `admin@gmail.com` (admin can manage users from Django admin).
 * **Diagnostics** – Ping, traceroute, DNS, SNMP, MTR, CSV export, and result email sharing.
 * **Operations Guardrail** – The dashboard now warns users to keep each run to a maximum of 50 IP addresses.

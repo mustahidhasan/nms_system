@@ -32,9 +32,9 @@ class Command(BaseCommand):
 
     def _ensure_default_admin(self):
         User = get_user_model()
-        username = "admin"
-        email = "admin@example.com"
-        password = "admin"
+        username = "admin@gmail.com"
+        email = "admin@gmail.com"
+        password = "admin@gmail.com"
 
         user, created = User.objects.get_or_create(
             username=username,
@@ -59,7 +59,8 @@ class Command(BaseCommand):
         message = "created" if created else "updated"
         self.stdout.write(
             self.style.SUCCESS(
-                f"Default admin user {message}: username='admin', password='admin'."
+                "Default admin user "
+                f"{message}: username='admin@gmail.com', password='admin@gmail.com'."
             )
         )
 

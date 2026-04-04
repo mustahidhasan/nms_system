@@ -3,47 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import AppFooter from './AppFooter';
 import '../assets/Login.css';
 
-function Login({ apiBaseUrl, legacyBaseUrl }) {
+function Login({ apiBaseUrl, auth, setAuth }) {
   const navigate = useNavigate();
-  const pollingRef = useRef(null);
   const insightsRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+  const [mode, setMode] = useState('home');
+  const [errorText, setErrorText] = useState('');
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
 
   useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
-
-  const startPollingLoginStatus = () => {
-    let attempts = 0;
-    const maxAttempts = 20;
-    pollingRef.current = setInterval(async () => {
-      attempts += 1;
-      try {
-        const res = await fetch(`${apiBaseUrl}/azure-login/status/`, {
-          credentials: 'include',
-        });
-        const data = await res.json();
-        if (data.success) {
-          clearInterval(pollingRef.current);
-          setLoading(false);
-          navigate('/diagnostics');
-        } else if (attempts >= maxAttempts) {
-          clearInterval(pollingRef.current);
-          setLoading(false);
-          alert('Login timed out. Please try again.');
-        }
-      } catch (err) {
-        clearInterval(pollingRef.current);
-        setLoading(false);
-        alert('Error checking login status.');
-      }
-    }, 1000);
-  };
+    const hasSession = auth || localStorage.getItem('nmsAuth');
+    if (hasSession) {
+      navigate('/dashboard');
+    }
+  }, [auth, navigate]);
 
   const handleSSOLogin = async () => {
+    setErrorText('');
     setLoading(true);
     try {
       const response = await fetch(`${apiBaseUrl}/azure-login/`, {
@@ -53,17 +30,53 @@ function Login({ apiBaseUrl, legacyBaseUrl }) {
 
       if (data.login_url) {
         window.location.href = data.login_url;
-      } else if (data.success) {
-        setLoading(false);
-        navigate('/diagnostics');
       } else {
-        startPollingLoginStatus();
+        throw new Error('SSO login URL is missing.');
       }
     } catch (error) {
       console.error('Login error:', error);
       setLoading(false);
-      alert('Login failed.');
+      setErrorText('SSO login failed. Please try again.');
     }
+  };
+
+  const storeAuthAndRedirect = (data) => {
+    localStorage.setItem('nmsAuth', JSON.stringify(data));
+    if (typeof setAuth === 'function') {
+      setAuth(data);
+    }
+    navigate('/dashboard');
+  };
+
+  const handleLocalLogin = async (event) => {
+    event.preventDefault();
+    setErrorText('');
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/local-login/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginForm),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed.');
+      }
+      storeAuthAndRedirect(data);
+    } catch (error) {
+      setErrorText(error.message || 'Login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onLoginFieldChange = (event) => {
+    const { name, value } = event.target;
+    setLoginForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const toggleInsights = () => setShowInsights((prev) => !prev);
@@ -126,10 +139,65 @@ function Login({ apiBaseUrl, legacyBaseUrl }) {
         <main className="login-box">
           <h1>Welcome back</h1>
           <p className="login-subtitle">Securely access diagnostics, ping tools, and operator workflows.</p>
-          <button type="button" onClick={handleSSOLogin} disabled={loading}>
-            {loading ? 'Signing you in…' : 'Login via SSO'}
-          </button>
-          <small className="login-hint">SSO is required. Reach out to the NMS team if you need access.</small>
+          {mode === 'home' && (
+            <div className="auth-mode-switch">
+              <button
+                type="button"
+                className="auth-mode-btn active"
+                onClick={() => {
+                  setMode('login');
+                  setErrorText('');
+                }}
+                disabled={loading}
+              >
+                Login with Username
+              </button>
+              <button type="button" className="auth-mode-btn active" onClick={handleSSOLogin} disabled={loading}>
+                Login via SSO
+              </button>
+            </div>
+          )}
+
+          {mode === 'login' && (
+            <form className="auth-form" onSubmit={handleLocalLogin}>
+              <label htmlFor="login-email">Email</label>
+              <input
+                id="login-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={loginForm.email}
+                onChange={onLoginFieldChange}
+                required
+              />
+              <label htmlFor="login-password">Password</label>
+              <input
+                id="login-password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                value={loginForm.password}
+                onChange={onLoginFieldChange}
+                required
+              />
+              <button type="submit" disabled={loading}>
+                {loading ? 'Signing you in…' : 'Login as User'}
+              </button>
+              <button
+                type="button"
+                className="auth-mode-btn"
+                onClick={() => {
+                  setMode('home');
+                  setErrorText('');
+                }}
+                disabled={loading}
+              >
+                Back
+              </button>
+            </form>
+          )}
+          {/* <small className="login-hint">Default user: admin@gmail.com | password: admin@gmail.com</small> */}
+          {errorText && <p className="auth-error">{errorText}</p>}
         </main>
       </div>
       <AppFooter apiBaseUrl={apiBaseUrl} />
