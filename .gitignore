@@ -121,6 +121,10 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
+.env.production.local
+.env.development.local
+.env.test.local
 .venv
 env/
 venv/
@@ -128,6 +132,22 @@ ENV/
 env.bak/
 venv.bak/
 certs/
+*.sqlite3
+*.sqlite
+db.dev
+db.dev*
+db.dev.sqlite3
+nms/db.dev
+nms/db.dev*
+nms/db.dev.sqlite3
+nms/.wrangler/
+nms/workers/**/.wrangler/
+nms/workers/**/node_modules/
+nms/frontend/node_modules/
+nms/frontend/build/
+*.pid
+*.out
+*.tmp
 
 # Spyder project settings
 .spyderproject

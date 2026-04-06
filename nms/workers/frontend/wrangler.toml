@@ -1,0 +1,25 @@
+name = "nms-frontend-worker"
+main = "src/index.js"
+compatibility_date = "2026-04-06"
+workers_dev = true
+account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+
+assets = { directory = "../../frontend/build", binding = "ASSETS" }
+
+[vars]
+BACKEND_API_ORIGIN = "http://127.0.0.1:8787"
+
+[env.dev]
+name = "nms-frontend-worker-dev"
+
+[env.dev.vars]
+BACKEND_API_ORIGIN = "http://127.0.0.1:8787"
+
+[env.prod]
+name = "nms-frontend-worker-prod"
+routes = [
+  { pattern = "frontend.example.com/*", zone_name = "example.com" }
+]
+
+[env.prod.vars]
+BACKEND_API_ORIGIN = "https://backend.example.com"

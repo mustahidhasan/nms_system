@@ -1,138 +1,108 @@
----
+# NMS Cloudflare-First Migration
 
-# 🚀 Production Deployment Guide (Docker + Private/Public IP + HTTPS + Azure SSO)
+## Old vs New Architecture
 
----
+Previous architecture:
+- Django backend running as a server/container runtime.
+- React frontend served through containerized deployment.
+- Container-oriented build and deployment flow.
 
-## 1 Upload Project to Server
+Current architecture:
+- `nms/workers/backend` is the backend Cloudflare Worker project.
+- `nms/workers/frontend` is the frontend Cloudflare Worker project.
+- Backend and frontend are deployed separately in production.
+- Development runs backend and frontend on separate local ports.
+- Production database is Cloudflare D1.
+- Local development database persistence is stored under `nms/db.dev`.
 
-Copy your project folder or zip to the EC2 instance:
+Docker has been removed from this repository.
 
+## Project Structure
+
+- `nms/workers/backend`: backend Worker source, Wrangler config, D1 schema, backend env files.
+- `nms/workers/frontend`: frontend Worker source, Wrangler config, frontend-worker env files.
+- `nms/frontend`: React app source; assets are built and served by frontend Worker.
+- `nms/build.sh`: primary dev/prod entrypoint.
+
+## Environment Files
+
+Backend Worker:
+- `nms/workers/backend/.env.dev`
+- `nms/workers/backend/.env.prod`
+
+Frontend Worker:
+- `nms/workers/frontend/.env.dev`
+- `nms/workers/frontend/.env.prod`
+
+Frontend app build env:
+- `nms/frontend/.env.dev`
+- `nms/frontend/.env.prod`
+
+All cloud-specific identifiers and secrets are placeholders and must be filled before deployment.
+
+## Frontend/Backend Communication Model
+
+- Frontend Worker serves the SPA and proxies `/api/*` requests to the backend Worker origin.
+- Frontend app uses `REACT_APP_API_BASE_URL=/api` so request contracts stay aligned with existing frontend behavior.
+- Backend CORS and redirect variables are environment-driven.
+
+## Local Development (No Docker)
+
+`./build.sh dev` does all required local setup and starts separate local services:
+- Backend Worker on `http://127.0.0.1:8787`
+- Frontend Worker on `http://127.0.0.1:8788`
+- Local D1 persistence under `nms/db.dev`
+
+Run:
 ```bash
-# Copy folder
-scp -i your-key.pem -r /path/to/your/project ec2-user@18.212.236.236:~/nms
-
-# Or copy zip
-scp -i your-key.pem /path/to/nms.zip ec2-user@18.212.236.236:~/
-```
-
-Connect to the server:
-
-```bash
-ssh -i your-key.pem ec2-user@18.212.236.236
-cd ~/
-unzip nms.zip   # Only if uploaded as zip
 cd nms
+./build.sh dev
 ```
 
-> Replace `18.212.236.236` with your **private or public IP** depending on your environment.
+## Production Deployment (Separate Workers + D1)
 
----
+`./build.sh prod` performs:
+- frontend asset build
+- backend D1 schema migration (remote)
+- backend Worker deployment
+- frontend Worker deployment
 
-## 2 Install Docker & Docker Compose (Amazon Linux 2023)
-
+Run:
 ```bash
-sudo dnf update -y
-sudo dnf install docker -y
-sudo systemctl enable docker
-sudo systemctl start docker
-sudo usermod -aG docker ec2-user
-```
-
-> Log out and reconnect for Docker group permissions:
-
-```bash
-exit
-ssh -i your-key.pem ec2-user@18.212.236.236
-docker ps
-```
-
-Install Docker Compose:
-
-```bash
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-docker-compose --version
-```
-
----
-
-## 3 Configure `.env` Files for Production
-
-There are **two `.env` files**:
-
-1. **Backend `.env.prod.be`** → `nms/.env.prod.be`
-2. **Frontend `.env.prod.fe`** → `nms/frontend/.env.prod.fe`
-
-### Backend Example
-
-```env
-HOST_URL=https://18.212.236.236       # Use private or public IP
-BACKEND_PORT=8000
-DEBUG=False
-ALLOWED_HOSTS=18.212.236.236,localhost
-DJANGO_SECRET_KEY=your-secret-key
-
-# Azure SSO redirect
-AZURE_REDIRECT_URI=https://18.212.236.236/oauth2/callback/
-```
-
-### Frontend Example
-
-```env
-REACT_APP_API_BASE_URL=https://18.212.236.236/api
-REACT_APP_SCOPES=openid profile email offline_access User.Read
-```
-
-> Replace `18.212.236.236` with your instance’s IP (private or public depending on your setup).
-> Ensure the SSL certificate CN matches this IP.
-
-## 4 Build & Run Production Containers
-
-Make the build script executable:
-
-```bash
-chmod +x build.sh
+cd nms
 ./build.sh prod
 ```
 
-Check logs:
-
+Optional target env override:
 ```bash
-docker-compose -f docker-compose.prod.yml logs -f --tail=100
+cd nms
+CLOUDFLARE_ENV=prod ./build.sh prod
 ```
 
-> `./build.sh prod` is non-destructive and only applies migrations.
-> `./build.sh dev` rebuilds the DB and reseeds default admin credentials.
+## Required Cloudflare Configuration
 
----
+Update both Wrangler files before deploy:
+- `nms/workers/backend/wrangler.toml`
+- `nms/workers/frontend/wrangler.toml`
 
-## 5 Access the App
+Set real values for:
+- `account_id`
+- worker names
+- routes / zone names
+- D1 `database_id` and `preview_database_id`
+- backend/frontend origin vars
 
-| Component     | URL                                          |
-| ------------- | -------------------------------------------- |
-| Frontend SPA  | `https://18.212.236.236/`                          |
-| Backend Admin | `https://18.212.236.236/admin/login/?next=/admin/` |
+## D1 Setup Notes
 
-> Browser will warn about the **self-signed SSL certificate**.
-> Import the `.crt` into your system/browser if you want to remove the warning.
+Backend schema file:
+- `nms/workers/backend/schema.sql`
 
----
+Used by build flow:
+- local migration in `dev`
+- remote migration in `prod`
 
-## 6 Azure SSO
+## Cloudflare-Specific Limitations
 
-* **Backend redirect URI**: `https://18.212.236.236/oauth2/callback/`
-* **Frontend scopes**: `openid profile email offline_access User.Read`
-
-> Azure must be able to reach the IP — if using a **private IP**, only internal networks or VPN can access it.
-> For external access, use a **public IP/domain or tunnel**.
-
----
-
-## 7 NMS Scope
-
-This handoff is scoped to Network Management System diagnostics and operator access:
-
-* **Authentication** – Home page supports both `Login with Username` and Azure SSO. App self-registration is disabled. Default seeded admin user is `admin@gmail.com` with password `admin@gmail.com` (admin can manage users from Django admin).
-* **Diagnostics** – Ping, traceroute, DNS, SNMP, MTR, CSV export, and result email sharing.
-* **Operations Guardrail** – The dashboard now warns users to keep each run to a maximum of 50 IP addresses.
+- Cloudflare Worker runtime does not execute full OS-level network binaries the same way as a full host runtime.
+- Where Worker runtime constraints apply, the backend preserves external API shape and responds explicitly.
+- If strict parity is required for host-level diagnostics execution, that requires an external execution service integrated behind existing API contracts.

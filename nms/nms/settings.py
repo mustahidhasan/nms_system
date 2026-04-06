@@ -60,11 +60,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "nms.wsgi.application"
 
-# Database (SQLite for now)
+# Database
+SQLITE_DB_PATH = config("SQLITE_DB_PATH", default=str(BASE_DIR / "db.dev.sqlite3"))
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": SQLITE_DB_PATH,
     }
 }
 

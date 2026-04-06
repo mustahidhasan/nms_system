@@ -1,0 +1,13 @@
+{
+  "name": "nms-frontend-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --env dev",
+    "deploy:dev": "wrangler deploy --env dev",
+    "deploy:prod": "wrangler deploy --env prod"
+  },
+  "devDependencies": {
+    "wrangler": "^4.12.0"
+  }
+}
