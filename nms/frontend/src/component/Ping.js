@@ -498,6 +498,15 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
                 >
                   👤 User
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAbout(true);
+                    setShowSettingsDropdown(false);
+                  }}
+                >
+                  ℹ️ About
+                </button>
                 <button type="button" onClick={handleLogout}>
                   ↩ Logout
                 </button>
@@ -556,11 +565,6 @@ function Ping({ apiBaseUrl, setAuth, auth }) {
               </label>
 
               {renderSNMPFields()}
-            </div>
-
-            <div className="footer-icons">
-              <div style={{ cursor: 'pointer' }} onClick={() => setShowAbout(true)}>ℹ️ ABOUT</div>
-              <div style={{ cursor: 'pointer' }} onClick={handleLogout}>↩ LOGOUT</div>
             </div>
           </aside>
         )}
