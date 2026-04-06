@@ -1,108 +1,97 @@
-# NMS Cloudflare-First Migration
+# NMS Cloudflare Architecture (Organized Env Layout)
 
-## Old vs New Architecture
+## Final Scenario
 
-Previous architecture:
-- Django backend running as a server/container runtime.
-- React frontend served through containerized deployment.
-- Container-oriented build and deployment flow.
+Production:
+- `frontend-worker` (Cloudflare Worker)
+- `backend-worker` (Cloudflare Worker)
+- `diagnostics-service` (Django executor on Cloudflare Containers/host compute)
+- Worker-side production DB: Cloudflare D1
 
-Current architecture:
-- `nms/workers/backend` is the backend Cloudflare Worker project.
-- `nms/workers/frontend` is the frontend Cloudflare Worker project.
-- Backend and frontend are deployed separately in production.
-- Development runs backend and frontend on separate local ports.
-- Production database is Cloudflare D1.
-- Local development database persistence is stored under `nms/db.dev`.
+Development:
+- frontend worker: `http://127.0.0.1:8788`
+- backend worker: `http://127.0.0.1:8787`
+- diagnostics Django service: `http://127.0.0.1:8000`
+- local Worker D1 persistence: `nms/db.dev`
+- local Django sqlite: `nms/db.dev.sqlite3`
 
-Docker has been removed from this repository.
+## Organized Env Folders
 
-## Project Structure
+All source env files are organized under:
+- `nms/config/env/backend`
+- `nms/config/env/frontend`
+- `nms/config/env/diagnostics`
 
-- `nms/workers/backend`: backend Worker source, Wrangler config, D1 schema, backend env files.
-- `nms/workers/frontend`: frontend Worker source, Wrangler config, frontend-worker env files.
-- `nms/frontend`: React app source; assets are built and served by frontend Worker.
-- `nms/build.sh`: primary dev/prod entrypoint.
+Each contains both editable runtime files and examples:
 
-## Environment Files
+Backend:
+- `nms/config/env/backend/.env.dev`
+- `nms/config/env/backend/.env.prod`
+- `nms/config/env/backend/.env.dev.example`
+- `nms/config/env/backend/.env.prod.example`
 
-Backend Worker:
-- `nms/workers/backend/.env.dev`
-- `nms/workers/backend/.env.prod`
+Frontend app build:
+- `nms/config/env/frontend/.env.dev`
+- `nms/config/env/frontend/.env.prod`
+- `nms/config/env/frontend/.env.dev.example`
+- `nms/config/env/frontend/.env.prod.example`
 
-Frontend Worker:
-- `nms/workers/frontend/.env.dev`
-- `nms/workers/frontend/.env.prod`
+Frontend worker runtime:
+- `nms/config/env/frontend/.env.worker.dev`
+- `nms/config/env/frontend/.env.worker.prod`
+- `nms/config/env/frontend/.env.worker.dev.example`
+- `nms/config/env/frontend/.env.worker.prod.example`
 
-Frontend app build env:
-- `nms/frontend/.env.dev`
-- `nms/frontend/.env.prod`
+Diagnostics service:
+- `nms/config/env/diagnostics/.env.dev`
+- `nms/config/env/diagnostics/.env.prod`
+- `nms/config/env/diagnostics/.env.dev.example`
+- `nms/config/env/diagnostics/.env.prod.example`
 
-All cloud-specific identifiers and secrets are placeholders and must be filled before deployment.
+## How build.sh Uses Env Files
 
-## Frontend/Backend Communication Model
+`./build.sh dev` and `./build.sh prod` now:
+1. load env from `nms/config/env/**`
+2. sync runtime files automatically into:
+   - `nms/workers/backend/.env.dev|.env.prod`
+   - `nms/workers/frontend/.env.dev|.env.prod`
+   - `nms/frontend/.env.dev|.env.prod`
+3. run the corresponding dev/prod flow
 
-- Frontend Worker serves the SPA and proxies `/api/*` requests to the backend Worker origin.
-- Frontend app uses `REACT_APP_API_BASE_URL=/api` so request contracts stay aligned with existing frontend behavior.
-- Backend CORS and redirect variables are environment-driven.
+If a runtime env file in `config/env` is missing, `build.sh` auto-creates it from its `.example` template.
 
-## Local Development (No Docker)
+## Commands
 
-`./build.sh dev` does all required local setup and starts separate local services:
-- Backend Worker on `http://127.0.0.1:8787`
-- Frontend Worker on `http://127.0.0.1:8788`
-- Local D1 persistence under `nms/db.dev`
-
-Run:
+Local development (all services):
 ```bash
 cd nms
 ./build.sh dev
 ```
 
-## Production Deployment (Separate Workers + D1)
-
-`./build.sh prod` performs:
-- frontend asset build
-- backend D1 schema migration (remote)
-- backend Worker deployment
-- frontend Worker deployment
-
-Run:
+Production deploy flow:
 ```bash
 cd nms
 ./build.sh prod
 ```
 
-Optional target env override:
-```bash
-cd nms
-CLOUDFLARE_ENV=prod ./build.sh prod
-```
+## Diagnostics Execution Path
 
-## Required Cloudflare Configuration
+- frontend -> backend (`/api/dashboard/`)
+- backend worker -> diagnostics executor (`/dashboard/executor-dashboard/`) using `DIAGNOSTICS_EXECUTOR_TOKEN`
+- diagnostics executor runs ping/traceroute/dns/snmp/mtr and returns existing response contract
 
-Update both Wrangler files before deploy:
-- `nms/workers/backend/wrangler.toml`
-- `nms/workers/frontend/wrangler.toml`
+## Production Diagnostics Deployment Hook
 
-Set real values for:
-- `account_id`
-- worker names
-- routes / zone names
-- D1 `database_id` and `preview_database_id`
-- backend/frontend origin vars
+`./build.sh prod` calls:
+- `nms/scripts/deploy_diagnostics_service.sh`
 
-## D1 Setup Notes
+Set in `nms/config/env/diagnostics/.env.prod`:
+- `DIAGNOSTICS_DEPLOY_CMD` with your Cloudflare Containers deployment command.
 
-Backend schema file:
-- `nms/workers/backend/schema.sql`
+## Important Placeholders to Fill
 
-Used by build flow:
-- local migration in `dev`
-- remote migration in `prod`
-
-## Cloudflare-Specific Limitations
-
-- Cloudflare Worker runtime does not execute full OS-level network binaries the same way as a full host runtime.
-- Where Worker runtime constraints apply, the backend preserves external API shape and responds explicitly.
-- If strict parity is required for host-level diagnostics execution, that requires an external execution service integrated behind existing API contracts.
+- Cloudflare `account_id`, routes, and D1 IDs in both wrangler files
+- Azure SSO credentials
+- `DIAGNOSTICS_EXECUTOR_URL`
+- `DIAGNOSTICS_EXECUTOR_TOKEN`
+- `DIAGNOSTICS_DEPLOY_CMD`

@@ -17,6 +17,8 @@ COOKIE_SECURE = "false"
 AUTH_PASSWORD_SALT = "replace-with-secure-random-salt"
 DEFAULT_LOCAL_ADMIN_EMAIL = "admin@gmail.com"
 DEFAULT_LOCAL_ADMIN_PASSWORD = "admin@gmail.com"
+DIAGNOSTICS_EXECUTOR_URL = "http://127.0.0.1:8000"
+DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-shared-executor-token"
 
 [[d1_databases]]
 binding = "NMS_DB"
@@ -31,7 +33,14 @@ name = "nms-backend-worker-dev"
 FRONTEND_URL = "http://127.0.0.1:8788"
 POST_LOGOUT_REDIRECT_URI = "http://127.0.0.1:8788/"
 CORS_ALLOWED_ORIGINS = "http://127.0.0.1:8788"
+AZURE_SCOPES = "openid profile email offline_access User.Read"
+DEFAULT_FROM_EMAIL = "no-reply@example.com"
 COOKIE_SECURE = "false"
+AUTH_PASSWORD_SALT = "replace-with-secure-random-salt"
+DEFAULT_LOCAL_ADMIN_EMAIL = "admin@gmail.com"
+DEFAULT_LOCAL_ADMIN_PASSWORD = "admin@gmail.com"
+DIAGNOSTICS_EXECUTOR_URL = "http://127.0.0.1:8000"
+DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-shared-executor-token"
 
 [[env.dev.d1_databases]]
 binding = "NMS_DB"
@@ -47,6 +56,16 @@ routes = [
 
 [env.prod.vars]
 COOKIE_SECURE = "true"
+FRONTEND_URL = "https://frontend.example.com"
+POST_LOGOUT_REDIRECT_URI = "https://frontend.example.com/"
+CORS_ALLOWED_ORIGINS = "https://frontend.example.com"
+AZURE_SCOPES = "openid profile email offline_access User.Read"
+DEFAULT_FROM_EMAIL = "no-reply@example.com"
+AUTH_PASSWORD_SALT = "replace-with-secure-random-salt"
+DEFAULT_LOCAL_ADMIN_EMAIL = "admin@gmail.com"
+DEFAULT_LOCAL_ADMIN_PASSWORD = "replace-or-disable-in-prod"
+DIAGNOSTICS_EXECUTOR_URL = "https://diagnostics.example.com"
+DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-prod-shared-executor-token"
 
 [[env.prod.d1_databases]]
 binding = "NMS_DB"

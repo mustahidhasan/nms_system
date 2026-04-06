@@ -125,6 +125,7 @@ celerybeat.pid
 .env.production.local
 .env.development.local
 .env.test.local
+!nms/config/env/**/.env*.example
 .venv
 env/
 venv/
@@ -148,6 +149,10 @@ nms/frontend/build/
 *.pid
 *.out
 *.tmp
+!nms/config/
+!nms/config/env/
+!nms/config/env/**
+!nms/config/env/**/.env*.example
 
 # Spyder project settings
 .spyderproject

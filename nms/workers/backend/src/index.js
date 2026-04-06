@@ -376,6 +376,48 @@ async function handleDashboard(request, env) {
     );
   }
 
+  const executorBaseUrl = String(env.DIAGNOSTICS_EXECUTOR_URL || "").trim();
+  const executorToken = String(env.DIAGNOSTICS_EXECUTOR_TOKEN || "").trim();
+  if (executorBaseUrl) {
+    if (!executorToken) {
+      return jsonResponse(
+        { success: false, error: "Diagnostics executor token is not configured." },
+        500
+      );
+    }
+
+    try {
+      const endpoint = `${executorBaseUrl.replace(/\/$/, "")}/dashboard/executor-dashboard/`;
+      const proxyResponse = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${executorToken}`,
+        },
+        body: formData,
+      });
+
+      const proxyData = await safeJson(proxyResponse);
+      if (!proxyResponse.ok) {
+        return jsonResponse(
+          {
+            success: false,
+            error: proxyData?.error || proxyData?.message || "Diagnostics executor request failed.",
+          },
+          proxyResponse.status
+        );
+      }
+      return jsonResponse(proxyData || { success: false, error: "Invalid executor response." });
+    } catch (error) {
+      return jsonResponse(
+        {
+          success: false,
+          error: `Unable to reach diagnostics executor: ${String(error?.message || error)}`,
+        },
+        502
+      );
+    }
+  }
+
   const selectedOperations = [
     "enable_ping",
     "verbose_ping",

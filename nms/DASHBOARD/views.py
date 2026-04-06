@@ -41,6 +41,7 @@ from pysnmp.hlapi import (
 from django.contrib import messages
 from ipaddress import ip_address
 import re
+from hmac import compare_digest
 
 HOSTNAME_PATTERN = re.compile(
     r"^(?!-)(?:[A-Za-z0-9-]{1,63}(?<!-)\.)*(?:[A-Za-z0-9-]{1,63})(?<!-)\.?$"
@@ -538,11 +539,7 @@ from django.conf import settings
 from django.http import JsonResponse
 
 
-@login_required
-def ping_operation(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST method allowed."}, status=405)
-
+def _execute_dashboard_operations(request):
     get_ip_address_start = request.POST.get("start_ip_address")
     get_ip_address_all = generate_ip_list(get_ip_address_start)
 
@@ -692,6 +689,33 @@ def ping_operation(request):
             "success": False,
             "error": f"An unexpected error occurred: {str(e)}"
         }, status=500)
+
+
+@login_required
+def ping_operation(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed."}, status=405)
+    return _execute_dashboard_operations(request)
+
+
+@csrf_exempt
+def executor_dashboard(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed."}, status=405)
+
+    expected_token = (getattr(settings, "DIAGNOSTICS_EXECUTOR_TOKEN", "") or "").strip()
+    if not expected_token:
+        return JsonResponse({"error": "Diagnostics executor token is not configured."}, status=500)
+
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return JsonResponse({"error": "Unauthorized diagnostics request."}, status=401)
+
+    provided_token = auth_header[7:].strip()
+    if not compare_digest(provided_token, expected_token):
+        return JsonResponse({"error": "Unauthorized diagnostics request."}, status=401)
+
+    return _execute_dashboard_operations(request)
 
 
 def snmp_results(request):
