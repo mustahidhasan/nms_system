@@ -1,13 +1,13 @@
+import { handleApiRequest } from "./api.js";
+
 const SPA_FALLBACK = "/index.html";
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (url.pathname.startsWith("/api/") && env.BACKEND_API_ORIGIN) {
-      const proxyUrl = new URL(url.pathname + url.search, env.BACKEND_API_ORIGIN);
-      const proxyRequest = new Request(proxyUrl.toString(), request);
-      return fetch(proxyRequest);
+    if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
+      return handleApiRequest(request, env);
     }
 
     let response = await env.ASSETS.fetch(request);

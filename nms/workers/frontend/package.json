@@ -1,11 +1,15 @@
 {
   "name": "nms-frontend-worker",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "wrangler dev --env dev",
     "deploy:dev": "wrangler deploy --env dev",
-    "deploy:prod": "wrangler deploy --env prod"
+    "deploy:prod": "wrangler deploy --env prod",
+    "d1:migrate:local": "wrangler d1 execute NMS_DB --local --file=./schema.sql --persist-to ../../dev.db",
+    "d1:migrate:remote:dev": "wrangler d1 execute NMS_DB --env dev --remote --file=./schema.sql",
+    "d1:migrate:remote:prod": "wrangler d1 execute NMS_DB --env prod --remote --file=./schema.sql"
   },
   "devDependencies": {
     "wrangler": "^4.12.0"
