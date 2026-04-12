@@ -3,7 +3,8 @@
 ## What Runs Where
 - Production: Cloudflare Worker serves the SPA and `/api/*` (D1 in prod)
 - Local dev: same worker via `wrangler dev` (D1 persisted in `nms/dev.db`)
-- Diagnostics execution: `/api/dashboard` proxies to the Django executor (`nms/manage.py`)
+- Diagnostics execution (prod): `/api/dashboard` returns a stub message on Cloudflare Free (no OS tools in Workers)
+- Diagnostics execution (dev): `/api/dashboard` proxies to the local Django executor (`nms/manage.py`)
 
 ## Run
 
@@ -12,9 +13,15 @@ Local development (worker + diagnostics):
 bash run.sh dev
 ```
 
-Production deploy (migrate D1 + deploy worker + diagnostics hook):
+Production deploy (migrate D1 + deploy worker):
 ```bash
 bash deploy.sh prod
+```
+
+Wrangler auth (first time only):
+```bash
+bash deploy.sh login
+bash deploy.sh logout
 ```
 
 ## Env
@@ -25,8 +32,4 @@ bash deploy.sh prod
 ## Required Setup
 - Fill Cloudflare `account_id` and D1 IDs in `nms/workers/frontend/wrangler.toml:1`
 - If using a custom domain, set `routes` to a zone that exists in your Cloudflare account (otherwise leave routes commented out)
-- Set diagnostics executor URL/token in `nms/workers/frontend/wrangler.toml:1` (or leave empty to use stub diagnostics)
-- Optional: set `DIAGNOSTICS_DEPLOY_CMD` in `nms/config/env/diagnostics/.env.prod.example:1`
-
-npx wrangler login
-npx wrangler logout
+- (Optional) For real diagnostics in prod, set `DIAGNOSTICS_MODE=url` and `DIAGNOSTICS_EXECUTOR_URL`/`DIAGNOSTICS_EXECUTOR_TOKEN` in `nms/workers/frontend/wrangler.toml:1`

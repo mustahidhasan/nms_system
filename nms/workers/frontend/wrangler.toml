@@ -16,8 +16,8 @@ COOKIE_SECURE = "false"
 AUTH_PASSWORD_SALT = "replace-with-secure-random-salt"
 DEFAULT_LOCAL_ADMIN_EMAIL = "admin@gmail.com"
 DEFAULT_LOCAL_ADMIN_PASSWORD = "admin@gmail.com"
+DIAGNOSTICS_MODE = "url"
 DIAGNOSTICS_EXECUTOR_URL = "http://127.0.0.1:8000"
-DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-shared-executor-token"
 
 [[d1_databases]]
 binding = "NMS_DB"
@@ -38,6 +38,7 @@ COOKIE_SECURE = "false"
 AUTH_PASSWORD_SALT = "replace-with-secure-random-salt"
 DEFAULT_LOCAL_ADMIN_EMAIL = "admin@gmail.com"
 DEFAULT_LOCAL_ADMIN_PASSWORD = "admin@gmail.com"
+DIAGNOSTICS_MODE = "url"
 DIAGNOSTICS_EXECUTOR_URL = "http://127.0.0.1:8000"
 DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-shared-executor-token"
 
@@ -65,8 +66,12 @@ DEFAULT_FROM_EMAIL = "no-reply@example.com"
 AUTH_PASSWORD_SALT = "replace-with-secure-random-salt"
 DEFAULT_LOCAL_ADMIN_EMAIL = "admin@gmail.com"
 DEFAULT_LOCAL_ADMIN_PASSWORD = "admin@gmail.com"
-DIAGNOSTICS_EXECUTOR_URL = "https://diagnostics.example.com"
-DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-prod-shared-executor-token"
+DIAGNOSTICS_MODE = "stub"
+DIAGNOSTICS_EXECUTOR_URL = ""
+# On Cloudflare Free, keep diagnostics as stub (or configure an external executor URL).
+# DIAGNOSTICS_MODE = "url"
+# DIAGNOSTICS_EXECUTOR_URL = "https://your-executor.example.com"
+# DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-prod-shared-executor-token"
 # If you haven't deployed the diagnostics executor yet, set these to empty strings to use the stub response.
 #
 # If you haven't deployed the diagnostics executor yet, set these to empty strings to use the stub response:
@@ -78,3 +83,7 @@ binding = "NMS_DB"
 database_name = "nms-db"
 database_id = "7ce85d17-f418-42cc-9f3a-168aba0935ee"
 preview_database_id = "7ce85d17-f418-42cc-9f3a-168aba0935ee"
+
+[[env.prod.migrations]]
+tag = "v2"
+deleted_classes = ["DiagnosticsContainer"]

@@ -367,6 +367,30 @@ async function handleDashboard(request, env) {
     );
   }
 
+  const diagnosticsMode = String(env.DIAGNOSTICS_MODE || "stub").trim().toLowerCase();
+  if (diagnosticsMode === "url") {
+    return await proxyToDiagnosticsUrl(formData, env);
+  }
+
+  const selectedOperations = [
+    "enable_ping",
+    "verbose_ping",
+    "traceroute",
+    "dns_lookup",
+    "verbos_dns_lookup",
+    "simple_snmp_walk",
+    "mtr",
+    "snmp_walk",
+  ].filter((operation) => formData.has(operation));
+
+  if (!selectedOperations.length) {
+    return jsonResponse({ success: true, results: [{ operation: "none", result: "No operations selected." }] });
+  }
+
+  return jsonResponse({ success: true, results: buildStubDiagnosticsResults(formData) });
+}
+
+async function proxyToDiagnosticsUrl(formData, env) {
   const executorBaseUrl = String(env.DIAGNOSTICS_EXECUTOR_URL || "").trim();
   const executorToken = String(env.DIAGNOSTICS_EXECUTOR_TOKEN || "").trim();
 
@@ -376,59 +400,54 @@ async function handleDashboard(request, env) {
     executorToken &&
     !looksLikePlaceholder(executorToken);
 
-  if (executorConfigured) {
-    if (!executorToken) {
-      return jsonResponse(
-        { success: false, error: "Diagnostics executor token is not configured." },
-        500
-      );
-    }
+  if (!executorConfigured) {
+    return jsonResponse({ success: true, results: buildStubDiagnosticsResults(formData) });
+  }
 
-    try {
-      const endpoint = `${executorBaseUrl.replace(/\/$/, "")}/dashboard/executor-dashboard/`;
-      const proxyResponse = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${executorToken}`,
-        },
-        body: formData,
-      });
+  try {
+    const endpoint = `${executorBaseUrl.replace(/\/$/, "")}/dashboard/executor-dashboard/`;
+    const proxyResponse = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${executorToken}`,
+      },
+      body: formData,
+    });
 
-      const proxyData = await safeJson(proxyResponse);
-      if (!proxyResponse.ok) {
-        const status = proxyResponse.status || 502;
-        const upstreamMessage = proxyData?.error || proxyData?.message;
-        const hint =
-          status === 530
-            ? "Cloudflare returned 530 from the executor URL. Check DIAGNOSTICS_EXECUTOR_URL DNS/SSL and that the URL is publicly reachable."
-            : "Check DIAGNOSTICS_EXECUTOR_URL/DIAGNOSTICS_EXECUTOR_TOKEN and that the executor endpoint is reachable.";
+    const proxyData = await safeJson(proxyResponse);
+    if (!proxyResponse.ok) {
+      const status = proxyResponse.status || 502;
+      const upstreamMessage = proxyData?.error || proxyData?.message;
+      const hint =
+        status === 530
+          ? "Cloudflare returned 530 from the executor URL. Check DIAGNOSTICS_EXECUTOR_URL DNS/SSL and that the URL is publicly reachable."
+          : "Check DIAGNOSTICS_EXECUTOR_URL/DIAGNOSTICS_EXECUTOR_TOKEN and that the executor endpoint is reachable.";
 
-        return jsonResponse(
-          {
-            success: false,
-            error: upstreamMessage || "Diagnostics executor request failed.",
-            executor_url: executorBaseUrl,
-            executor_status: status,
-            hint,
-          },
-          status
-        );
-      }
-      return jsonResponse(proxyData || { success: false, error: "Invalid executor response." });
-    } catch (error) {
       return jsonResponse(
         {
           success: false,
-          error: `Unable to reach diagnostics executor: ${String(error?.message || error)}`,
+          error: upstreamMessage || "Diagnostics executor request failed.",
           executor_url: executorBaseUrl,
-          hint:
-            "If you haven't deployed the diagnostics executor yet, set DIAGNOSTICS_EXECUTOR_URL/DIAGNOSTICS_EXECUTOR_TOKEN to empty to use the built-in stub response.",
+          executor_status: status,
+          hint,
         },
-        502
+        status
       );
     }
+    return jsonResponse(proxyData || { success: false, error: "Invalid executor response." });
+  } catch (error) {
+    return jsonResponse(
+      {
+        success: false,
+        error: `Unable to reach diagnostics executor: ${String(error?.message || error)}`,
+        executor_url: executorBaseUrl,
+      },
+      502
+    );
   }
+}
 
+function buildStubDiagnosticsResults(formData) {
   const selectedOperations = [
     "enable_ping",
     "verbose_ping",
@@ -453,7 +472,7 @@ async function handleDashboard(request, env) {
     });
   }
 
-  return jsonResponse({ success: true, results });
+  return results;
 }
 
 function looksLikePlaceholder(value) {

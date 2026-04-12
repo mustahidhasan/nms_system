@@ -333,13 +333,6 @@ run_prod() {
   echo "[prod] Deploying frontend Worker..."
   (cd "$FRONTEND_WORKER_DIR" && npm run "deploy:${CF_ENV}")
 
-  echo "[prod] Diagnostics service deployment:"
-  if [[ -x "$SCRIPT_DIR/scripts/deploy_diagnostics_service.sh" ]]; then
-    DIAGNOSTICS_EXECUTOR_TOKEN="$DIAGNOSTICS_EXECUTOR_TOKEN" "$SCRIPT_DIR/scripts/deploy_diagnostics_service.sh" "$CF_ENV"
-  else
-    echo "  scripts/deploy_diagnostics_service.sh not found. Deploy diagnostics service separately."
-  fi
-
   echo "[prod] Deployment complete."
 }
 
