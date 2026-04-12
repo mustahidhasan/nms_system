@@ -2,7 +2,7 @@ name = "nms-backend-worker"
 main = "src/index.js"
 compatibility_date = "2026-04-06"
 workers_dev = true
-account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+account_id = "819afce68059fabdf7fcea000e2d162c"
 
 [observability]
 enabled = true
@@ -23,7 +23,7 @@ DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-shared-executor-token"
 [[d1_databases]]
 binding = "NMS_DB"
 database_name = "nms-db"
-database_id = "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID"
+database_id = "7ce85d17-f418-42cc-9f3a-168aba0935ee"
 preview_database_id = "REPLACE_WITH_PREVIEW_D1_DATABASE_ID"
 
 [env.dev]
@@ -63,12 +63,12 @@ AZURE_SCOPES = "openid profile email offline_access User.Read"
 DEFAULT_FROM_EMAIL = "no-reply@example.com"
 AUTH_PASSWORD_SALT = "replace-with-secure-random-salt"
 DEFAULT_LOCAL_ADMIN_EMAIL = "admin@gmail.com"
-DEFAULT_LOCAL_ADMIN_PASSWORD = "replace-or-disable-in-prod"
+DEFAULT_LOCAL_ADMIN_PASSWORD = "admin@gmail.com"
 DIAGNOSTICS_EXECUTOR_URL = "https://diagnostics.example.com"
 DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-prod-shared-executor-token"
 
 [[env.prod.d1_databases]]
 binding = "NMS_DB"
 database_name = "nms-db"
-database_id = "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID"
+database_id = "7ce85d17-f418-42cc-9f3a-168aba0935ee"
 preview_database_id = "REPLACE_WITH_PREVIEW_D1_DATABASE_ID"

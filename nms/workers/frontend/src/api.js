@@ -369,7 +369,14 @@ async function handleDashboard(request, env) {
 
   const executorBaseUrl = String(env.DIAGNOSTICS_EXECUTOR_URL || "").trim();
   const executorToken = String(env.DIAGNOSTICS_EXECUTOR_TOKEN || "").trim();
-  if (executorBaseUrl) {
+
+  const executorConfigured =
+    executorBaseUrl &&
+    !looksLikePlaceholder(executorBaseUrl) &&
+    executorToken &&
+    !looksLikePlaceholder(executorToken);
+
+  if (executorConfigured) {
     if (!executorToken) {
       return jsonResponse(
         { success: false, error: "Diagnostics executor token is not configured." },
@@ -389,12 +396,22 @@ async function handleDashboard(request, env) {
 
       const proxyData = await safeJson(proxyResponse);
       if (!proxyResponse.ok) {
+        const status = proxyResponse.status || 502;
+        const upstreamMessage = proxyData?.error || proxyData?.message;
+        const hint =
+          status === 530
+            ? "Cloudflare returned 530 from the executor URL. Check DIAGNOSTICS_EXECUTOR_URL DNS/SSL and that the URL is publicly reachable."
+            : "Check DIAGNOSTICS_EXECUTOR_URL/DIAGNOSTICS_EXECUTOR_TOKEN and that the executor endpoint is reachable.";
+
         return jsonResponse(
           {
             success: false,
-            error: proxyData?.error || proxyData?.message || "Diagnostics executor request failed.",
+            error: upstreamMessage || "Diagnostics executor request failed.",
+            executor_url: executorBaseUrl,
+            executor_status: status,
+            hint,
           },
-          proxyResponse.status
+          status
         );
       }
       return jsonResponse(proxyData || { success: false, error: "Invalid executor response." });
@@ -403,6 +420,9 @@ async function handleDashboard(request, env) {
         {
           success: false,
           error: `Unable to reach diagnostics executor: ${String(error?.message || error)}`,
+          executor_url: executorBaseUrl,
+          hint:
+            "If you haven't deployed the diagnostics executor yet, set DIAGNOSTICS_EXECUTOR_URL/DIAGNOSTICS_EXECUTOR_TOKEN to empty to use the built-in stub response.",
         },
         502
       );
@@ -434,6 +454,17 @@ async function handleDashboard(request, env) {
   }
 
   return jsonResponse({ success: true, results });
+}
+
+function looksLikePlaceholder(value) {
+  const lowered = String(value || "").toLowerCase();
+  return (
+    lowered.includes("replace-with") ||
+    lowered.includes("example.com") ||
+    lowered.includes("replace_with") ||
+    lowered === "changeme" ||
+    lowered === "todo"
+  );
 }
 
 async function handleSendEmail(request, env) {
@@ -811,4 +842,3 @@ async function safeJson(response) {
     return null;
   }
 }
-

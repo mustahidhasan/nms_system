@@ -132,6 +132,52 @@ ensure_node_modules() {
   fi
 }
 
+assert_wrangler_prod_ready() {
+  local config_file="$FRONTEND_WORKER_DIR/wrangler.toml"
+  if [[ ! -f "$config_file" ]]; then
+    echo "[prod] Missing $config_file"
+    exit 1
+  fi
+
+  if grep -q 'account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"' "$config_file"; then
+    echo "[prod] Set Cloudflare account_id in $config_file"
+    exit 1
+  fi
+
+  local env_name="$CF_ENV"
+  local prod_db_id
+  local prod_preview_id
+  prod_db_id="$(
+    awk -v env="$env_name" '
+      $0 ~ "^\\[\\[env\\." env "\\.d1_databases\\]\\]" { in_d1=1; next }
+      in_d1 && $0 ~ "^\\[" { in_d1=0 }
+      in_d1 && $0 ~ "^[[:space:]]*database_id[[:space:]]*=" {
+        n = split($0, a, "\""); if (n >= 3) { print a[2]; exit }
+      }
+    ' "$config_file"
+  )"
+  prod_preview_id="$(
+    awk -v env="$env_name" '
+      $0 ~ "^\\[\\[env\\." env "\\.d1_databases\\]\\]" { in_d1=1; next }
+      in_d1 && $0 ~ "^\\[" { in_d1=0 }
+      in_d1 && $0 ~ "^[[:space:]]*preview_database_id[[:space:]]*=" {
+        n = split($0, a, "\""); if (n >= 3) { print a[2]; exit }
+      }
+    ' "$config_file"
+  )"
+
+  if [[ -z "${prod_db_id:-}" || "$prod_db_id" == REPLACE_WITH_* ]]; then
+    echo "[prod] Set D1 database_id in $config_file (env.${env_name})"
+    exit 1
+  fi
+
+  if [[ -n "${prod_preview_id:-}" && "$prod_preview_id" == REPLACE_WITH_* ]]; then
+    echo "[prod] Set D1 preview_database_id in $config_file (env.${env_name})"
+    echo "[prod] Or remove preview_database_id if you don't use preview DB."
+    exit 1
+  fi
+}
+
 prepare_frontend_env() {
   local env_name="$1"
   if [[ "$env_name" == "dev" ]]; then
@@ -275,6 +321,8 @@ run_prod() {
   ensure_node_modules "$FRONTEND_APP_DIR"
 
   prepare_frontend_env prod
+
+  assert_wrangler_prod_ready
 
   echo "[prod] Building frontend assets..."
   (cd "$FRONTEND_APP_DIR" && npm run build)

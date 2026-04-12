@@ -23,5 +23,10 @@ bash deploy.sh prod
 - To reset/re-copy examples over existing env files: `NMS_ENV_FROM_EXAMPLES=1 bash run.sh dev`
 
 ## Required Setup
-- Fill Cloudflare `account_id`, routes, and D1 IDs in `nms/workers/frontend/wrangler.toml:1`
-- Set diagnostics executor URL/token in `nms/config/env/frontend/.env.worker.*.example:1`
+- Fill Cloudflare `account_id` and D1 IDs in `nms/workers/frontend/wrangler.toml:1`
+- If using a custom domain, set `routes` to a zone that exists in your Cloudflare account (otherwise leave routes commented out)
+- Set diagnostics executor URL/token in `nms/workers/frontend/wrangler.toml:1` (or leave empty to use stub diagnostics)
+- Optional: set `DIAGNOSTICS_DEPLOY_CMD` in `nms/config/env/diagnostics/.env.prod.example:1`
+
+npx wrangler login
+npx wrangler logout

@@ -2,7 +2,7 @@ name = "nms-frontend-worker"
 main = "src/index.js"
 compatibility_date = "2026-04-06"
 workers_dev = true
-account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+account_id = "819afce68059fabdf7fcea000e2d162c"
 
 assets = { directory = "../../frontend/build", binding = "ASSETS" }
 
@@ -22,8 +22,8 @@ DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-shared-executor-token"
 [[d1_databases]]
 binding = "NMS_DB"
 database_name = "nms-db"
-database_id = "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID"
-preview_database_id = "REPLACE_WITH_PREVIEW_D1_DATABASE_ID"
+database_id = "7ce85d17-f418-42cc-9f3a-168aba0935ee"
+preview_database_id = "7ce85d17-f418-42cc-9f3a-168aba0935ee"
 
 [env.dev]
 name = "nms-frontend-worker-dev"
@@ -49,9 +49,11 @@ preview_database_id = "REPLACE_WITH_DEV_D1_DATABASE_ID"
 
 [env.prod]
 name = "nms-frontend-worker-prod"
-routes = [
-  { pattern = "frontend.example.com/*", zone_name = "example.com" }
-]
+# If you want to deploy to a custom domain, set `routes` to a zone that exists in your Cloudflare account.
+# Otherwise, omit routes and use the Workers default domain (workers.dev / *.workers.dev).
+# routes = [
+#   { pattern = "frontend.your-domain.com/*", zone_name = "your-domain.com" }
+# ]
 
 [env.prod.vars]
 COOKIE_SECURE = "true"
@@ -62,12 +64,17 @@ AZURE_SCOPES = "openid profile email offline_access User.Read"
 DEFAULT_FROM_EMAIL = "no-reply@example.com"
 AUTH_PASSWORD_SALT = "replace-with-secure-random-salt"
 DEFAULT_LOCAL_ADMIN_EMAIL = "admin@gmail.com"
-DEFAULT_LOCAL_ADMIN_PASSWORD = "replace-or-disable-in-prod"
+DEFAULT_LOCAL_ADMIN_PASSWORD = "admin@gmail.com"
 DIAGNOSTICS_EXECUTOR_URL = "https://diagnostics.example.com"
 DIAGNOSTICS_EXECUTOR_TOKEN = "replace-with-prod-shared-executor-token"
+# If you haven't deployed the diagnostics executor yet, set these to empty strings to use the stub response.
+#
+# If you haven't deployed the diagnostics executor yet, set these to empty strings to use the stub response:
+# DIAGNOSTICS_EXECUTOR_URL = ""
+# DIAGNOSTICS_EXECUTOR_TOKEN = ""
 
 [[env.prod.d1_databases]]
 binding = "NMS_DB"
 database_name = "nms-db"
-database_id = "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID"
-preview_database_id = "REPLACE_WITH_PREVIEW_D1_DATABASE_ID"
+database_id = "7ce85d17-f418-42cc-9f3a-168aba0935ee"
+preview_database_id = "7ce85d17-f418-42cc-9f3a-168aba0935ee"

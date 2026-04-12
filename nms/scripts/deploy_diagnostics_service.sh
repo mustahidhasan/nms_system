@@ -16,5 +16,18 @@ if [[ -z "$DEPLOY_CMD" ]]; then
   exit 0
 fi
 
+if [[ "$DEPLOY_CMD" == *"replace-with-"* || "$DEPLOY_CMD" == *"REPLACE_WITH_"* ]]; then
+  echo "[diagnostics] DIAGNOSTICS_DEPLOY_CMD still looks like a placeholder; skipping."
+  exit 0
+fi
+
 echo "[diagnostics] Running deployment command for env '${ENV_NAME}'..."
+set +e
 /bin/sh -lc "$DEPLOY_CMD"
+STATUS=$?
+set -e
+
+if [[ $STATUS -ne 0 ]]; then
+  echo "[diagnostics] Deployment command failed (exit $STATUS); continuing."
+  exit 0
+fi
