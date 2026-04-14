@@ -1,0 +1,15 @@
+[Unit]
+Description=NMS (docker compose, prod)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ec2-user/nms/nms
+ExecStart=/bin/bash /home/ec2-user/nms/nms/scripts/compose-prod-up.sh
+ExecStop=/bin/bash /home/ec2-user/nms/nms/scripts/compose-prod-down.sh
+
+[Install]
+WantedBy=multi-user.target

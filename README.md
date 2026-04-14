@@ -136,3 +136,24 @@ This handoff is scoped to Network Management System diagnostics and operator acc
 * **Authentication** – Home page supports both `Login with Username` and Azure SSO. App self-registration is disabled. Default seeded admin user is `admin@gmail.com` with password `admin@gmail.com` (admin can manage users from Django admin).
 * **Diagnostics** – Ping, traceroute, DNS, SNMP, MTR, CSV export, and result email sharing.
 * **Operations Guardrail** – The dashboard now warns users to keep each run to a maximum of 50 IP addresses.
+
+---
+
+## 8 Auto-start on EC2 reboot (systemd)
+
+Docker is enabled in step 2, but you also need to auto-start the **compose stack** on boot.
+
+On the server (after `./build.sh prod` has been run at least once):
+
+```bash
+cd ~/nms/nms
+chmod +x scripts/compose-prod-up.sh scripts/compose-prod-down.sh
+
+sudo cp deploy/systemd/nms-compose-prod.service /etc/systemd/system/nms-compose-prod.service
+sudo nano /etc/systemd/system/nms-compose-prod.service  # update paths if your folder is not /home/ec2-user/nms/nms
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now nms-compose-prod
+
+sudo systemctl status nms-compose-prod --no-pager
+```
